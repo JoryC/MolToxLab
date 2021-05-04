@@ -1,9 +1,9 @@
 setwd("E:\\Alamar Blue\\Alamar Blue R Outputs")
-library(dplyr)
+library(tidyverse)
 library(data.table)
 library(abind)
 
-#load files
+####load files####
 baseline_1 <- read.table("E:\\Alamar Blue\\TGSH 2021_02_02\\TGSH_Baseline_1.txt", skip = 13, nrows = 8, fill = TRUE)
 baseline_2 <- read.table("E:\\Alamar Blue\\TGSH 2021_02_02\\TGSH_Baseline_2.txt", skip = 13, nrows = 8, fill = TRUE)
 after24h_1 <- read.table("E:\\Alamar Blue\\TGSH 2021_02_02\\TGSH_24h_1.txt", skip = 13, nrows = 8, fill = TRUE)
@@ -26,6 +26,8 @@ baseline_2 <- data.frame(templist2[2])
 after24h_1 <- data.frame(templist2[3])
 after24h_2 <- data.frame(templist2[4])
 
+rm(templist, templist2) #remove templists
+
 #convert to array and get the mean of each cell
 #along is along the "3rd dimension", i.e. not along rows or columns
 baseline_avg <- rowMeans(abind(baseline_1, baseline_2, along = 3), dims=2)
@@ -35,3 +37,71 @@ after24h_avg <- rowMeans(abind(after24h_1, after24h_2, along = 3), dims=2)
 baseline_avg <- as.data.frame(baseline_avg)
 after24h_avg <- as.data.frame(after24h_avg)
 
+rm(after24h_1, after24h_2, baseline_1, baseline_2) #remove old separated data
+
+#seperate out data from control (i.e. final row) NOTE:Breaks if run multiple times...
+baseline_avg_control <- baseline_avg[7,1:4]
+baseline_avg_control <- t(baseline_avg_control)
+baseline_avg <- baseline_avg[-7,]
+after24h_avg_control <- after24h_avg[7,1:4]
+after24h_avg_control <- t(after24h_avg_control)
+after24h_avg <- after24h_avg[-7,]
+
+####assign highest dose####
+highestdose <- 1 #in mg/L
+dose1 <- highestdose
+dose2 <- highestdose/10
+dose3 <- highestdose/100
+dose4 <- highestdose/1000
+dose5 <- highestdose/10000
+dose6 <- 0
+
+#formatting data into columns function
+formatting <- function(x) {
+  value <- as.vector(t(x)) #transpose data into a vector
+  temp1 <- data.frame(value) #convert into a dataframe
+  #add doses, rep function repeats string, "each" is how often each value is repeated before going to the next one
+  temp1$dose <- rep(c(dose1, dose2, dose3, dose4, dose5, dose6), each = 9) 
+  #add reps, rep function repeats string, "each" is how often each value is repeated before going to the next one
+  temp1$replicate <- rep(c("A", "B", "C"), each = 1)
+  return(temp1)
+}
+
+baseline <- formatting(baseline_avg)
+after24h <- formatting(after24h_avg)
+rm(after24h_avg, baseline_avg) #remove old dfs
+
+####Need to know how to normalize data####
+
+#test data
+deltavalue <- after24h$value - baseline$value
+temp1 <- as.data.frame(cbind(deltavalue))
+temp1$dose <- rep(c(dose1, dose2, dose3, dose4, dose5, dose6), each = 9) 
+temp1$replicate <- rep(c("A", "B", "C"), each = 1)
+rm(deltavalue)
+
+####ANOVA####
+
+#set factor levels from highest to lowest
+temp1$dose <- ordered(temp1$dose,
+                         levels = c(dose1, dose2, dose3, dose4, dose5, dose6))
+
+#summary of data
+group_by(temp1, dose) %>%
+  summarise(
+    count = n(),
+    mean = mean(deltavalue, na.rm = TRUE),
+    sd = sd(deltavalue, na.rm = TRUE)
+  )
+
+group_by(temp1, replicate) %>%
+  summarise(
+    count = n(),
+    mean = mean(deltavalue, na.rm = TRUE),
+    sd = sd(deltavalue, na.rm = TRUE)
+  )
+
+anovadose <- aov(deltavalue ~ dose, data = temp1)
+summary(anovadose)
+anovareps <- aov(deltavalue ~ replicate, data = temp1)
+summary(anovareps)
