@@ -5,11 +5,29 @@ library(car)
 
 #### LOAD FILE AND CLEAN UP ####
 
+# names of all files in all folders (one folder for now)
+folderNames<-list.files("Data/")
+# start on first folder for now (get it working for TGSH for now, 5th folder)
+folder_for_now<-folderNames[5]
+files_in_folder <- list.files(paste0("Data/",folder_for_now))
+
+
+# simulation of loop on all chemicals
+finalResults<-vector()
+for(i in 1:length(folderNames)){
+  p_results<-c(0.07, 0.09)
+  names(p_results)<-c("dose","replicate")
+  finalResults<-rbind(finalResults, p_results)
+}
+row.names(finalResults)<-folderNames
+
+
+
 #load files
-baseline_1 <- read.table("Data\\TGSH_2021_02_02\\TGSH_Baseline_1.txt", skip = 13, nrows = 8, fill = TRUE)
-baseline_2 <- read.table("Data\\TGSH_2021_02_02\\TGSH_Baseline_2.txt", skip = 13, nrows = 8, fill = TRUE)
-after24h_1 <- read.table("Data\\TGSH_2021_02_02\\TGSH_24h_1.txt", skip = 13, nrows = 8, fill = TRUE)
-after24h_2 <- read.table("Data\\TGSH_2021_02_02\\TGSH_24h_2.txt", skip = 13, nrows = 8, fill = TRUE)
+baseline_1 <- read.table(paste0("Data/",folder_for_now,"/", files_in_folder[3]), skip = 13, nrows = 8, fill = TRUE)
+baseline_2 <- read.table(paste0("Data/",folder_for_now,"/", files_in_folder[4]), skip = 13, nrows = 8, fill = TRUE)
+after24h_1 <- read.table(paste0("Data/",folder_for_now,"/", files_in_folder[1]), skip = 13, nrows = 8, fill = TRUE)
+after24h_2 <- read.table(paste0("Data/",folder_for_now,"/", files_in_folder[2]), skip = 13, nrows = 8, fill = TRUE)
 
 #Remove last 3 columns and 7th row function
 cleanup <- function(x) {
@@ -52,6 +70,7 @@ after24h_avg <- after24h_avg[-7,]
 #assign highest dose and reformatting data #
 
 #dose assignment
+# HOMEWORK - separate text to imporrt with dose information
 highestdose <- 1 #in mg/L
 dose1 <- highestdose
 dose2 <- highestdose/10
@@ -84,6 +103,7 @@ temp1$dose <- rep(c(dose1, dose2, dose3, dose4, dose5, dose6), each = 9)
 temp1$replicate <- rep(c("A", "B", "C"), each = 1)
 rm(deltavalue)
 
+
 #### ANCOVA ####
 
 #set factor levels from highest to lowest
@@ -102,7 +122,9 @@ HomoVar <- leveneTest(deltavalue ~ dose, temp1) #should be insig, if not, not go
 
 #run ancova, replicate is covariable, should not use type 1 since multiple factors
 anovadose <- aov(deltavalue ~ dose + replicate, data = temp1) #aov(values ~ groups + covariable, data = x)
-Anova(anovadose, type = "3") #intercept being significant just means grand mean =/= 0
+testResult<-Anova(anovadose, type = "3") #intercept being significant just means grand mean =/= 0
+
+
 
 
 #### PLOTTING ####
