@@ -1,8 +1,10 @@
+#### LOAD LIBRARIES ####
 library(tidyverse)
 library(abind)
 library(car)
 
-####load files and basic clean up####
+#### LOAD FILE AND CLEAN UP ####
+
 #load files
 baseline_1 <- read.table("Data\\TGSH_2021_02_02\\TGSH_Baseline_1.txt", skip = 13, nrows = 8, fill = TRUE)
 baseline_2 <- read.table("Data\\TGSH_2021_02_02\\TGSH_Baseline_2.txt", skip = 13, nrows = 8, fill = TRUE)
@@ -47,7 +49,8 @@ after24h_avg_control <- after24h_avg[7,1:4]
 after24h_avg_control <- t(after24h_avg_control)
 after24h_avg <- after24h_avg[-7,]
 
-####assign highest dose and reformatting data####
+#assign highest dose and reformatting data #
+
 #dose assignment
 highestdose <- 1 #in mg/L
 dose1 <- highestdose
@@ -72,7 +75,7 @@ baseline <- formatting(baseline_avg)
 after24h <- formatting(after24h_avg)
 rm(after24h_avg, baseline_avg) #remove old dfs
 
-####Need to know how to normalize data####
+#### NORMALIZE ####
 
 #test data
 deltavalue <- after24h$value - baseline$value
@@ -81,7 +84,7 @@ temp1$dose <- rep(c(dose1, dose2, dose3, dose4, dose5, dose6), each = 9)
 temp1$replicate <- rep(c("A", "B", "C"), each = 1)
 rm(deltavalue)
 
-####ANCOVA####
+#### ANCOVA ####
 
 #set factor levels from highest to lowest
 temp1$dose <- ordered(temp1$dose,
@@ -102,7 +105,8 @@ anovadose <- aov(deltavalue ~ dose + replicate, data = temp1) #aov(values ~ grou
 Anova(anovadose, type = "3") #intercept being significant just means grand mean =/= 0
 
 
-####plotting (still testing)####
+#### PLOTTING ####
+# (still testing)
 
 temp2 <- temp1
 temp2$mean <- rep((summary1$mean), each = 9)
