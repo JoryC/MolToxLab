@@ -1,9 +1,10 @@
 setwd("E:\\Alamar Blue\\Alamar Blue R Outputs")
 library(tidyverse)
-library(data.table)
 library(abind)
+library(car)
 
-####load files####
+####load files and basic clean up####
+#load files
 baseline_1 <- read.table("E:\\Alamar Blue\\TGSH 2021_02_02\\TGSH_Baseline_1.txt", skip = 13, nrows = 8, fill = TRUE)
 baseline_2 <- read.table("E:\\Alamar Blue\\TGSH 2021_02_02\\TGSH_Baseline_2.txt", skip = 13, nrows = 8, fill = TRUE)
 after24h_1 <- read.table("E:\\Alamar Blue\\TGSH 2021_02_02\\TGSH_24h_1.txt", skip = 13, nrows = 8, fill = TRUE)
@@ -47,7 +48,8 @@ after24h_avg_control <- after24h_avg[7,1:4]
 after24h_avg_control <- t(after24h_avg_control)
 after24h_avg <- after24h_avg[-7,]
 
-####assign highest dose####
+####assign highest dose and reformatting data####
+#dose assignment
 highestdose <- 1 #in mg/L
 dose1 <- highestdose
 dose2 <- highestdose/10
@@ -80,28 +82,39 @@ temp1$dose <- rep(c(dose1, dose2, dose3, dose4, dose5, dose6), each = 9)
 temp1$replicate <- rep(c("A", "B", "C"), each = 1)
 rm(deltavalue)
 
-####ANOVA####
+####ANCOVA####
 
 #set factor levels from highest to lowest
 temp1$dose <- ordered(temp1$dose,
                          levels = c(dose1, dose2, dose3, dose4, dose5, dose6))
 
 #summary of data
-group_by(temp1, dose) %>%
+summary1 <- group_by(temp1, dose) %>% #(dataframe, group)
   summarise(
     count = n(),
-    mean = mean(deltavalue, na.rm = TRUE),
-    sd = sd(deltavalue, na.rm = TRUE)
+    mean = mean(deltavalue, na.rm = TRUE), #replace deltavalue with data, na.rm is NA skipping
+    sd = sd(deltavalue, na.rm = TRUE) #replace deltavalue with data, na.rm is NA skipping
   )
+#check for homogeneity of variance
+HomoVar <- leveneTest(deltavalue ~ dose, temp1) #should be insig, if not, not good
 
-group_by(temp1, replicate) %>%
-  summarise(
-    count = n(),
-    mean = mean(deltavalue, na.rm = TRUE),
-    sd = sd(deltavalue, na.rm = TRUE)
+#run ancova, replicate is covariable, should not use type 1 since multiple factors
+anovadose <- aov(deltavalue ~ dose + replicate, data = temp1) #aov(values ~ groups + covariable, data = x)
+Anova(anovadose, type = "3") #intercept being significant just means grand mean =/= 0
+
+
+####plotting (still testing)####
+
+temp2 <- temp1
+temp2$mean <- rep((summary1$mean), each = 9)
+temp2$sd <- rep((summary1$sd), each = 9)
+
+ggplot() +
+  geom_point(data = temp2, aes(dose, deltavalue)) +
+  geom_point(data = temp2, aes(dose, mean), size = 3, color = 'red') +
+  geom_errorbar(
+    data = temp2,
+    aes(dose, mean, ymin = mean - sd, ymax = mean + sd),
+    width = 0.4,
+    color = 'red'
   )
-
-anovadose <- aov(deltavalue ~ dose, data = temp1)
-summary(anovadose)
-anovareps <- aov(deltavalue ~ replicate, data = temp1)
-summary(anovareps)
