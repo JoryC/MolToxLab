@@ -2,17 +2,19 @@
 library(tidyverse)
 library(abind)
 library(car)
+#May require you to install libcurl package at https://pkgs.org/download/libcurl4-openssl-dev
+library(ggplot2)
+library(data.table)
 
 #### LOAD FILE AND CLEAN UP ####
 
 # names of all files in all folders (one folder for now)
 folderNames<-list.files("Data/")
 # start on first folder for now (get it working for TGSH for now, 5th folder)
-folder_for_now<-folderNames[5]
-files_in_folder <- list.files(paste0("Data/",folder_for_now))
+folder<-folderNames
+files_in_folder <- list.files(paste0("Data/",folder))
 
-
-# simulation of loop on all chemicals
+#### simulation of loop on all chemicals ####
 finalResults<-vector()
 for(i in 1:length(folderNames)){
   p_results<-c(0.07, 0.09)
@@ -21,13 +23,26 @@ for(i in 1:length(folderNames)){
 }
 row.names(finalResults)<-folderNames
 
+#### Apply Tyler's script to all chemicals ####
+#Name and subset files
+Names_B_1 <- paste0(folderNames,"_", "baseline_1")
+Names_B_2 <- paste0(folderNames,"_", "baseline_2")
+Names_h24_1 <- paste0(folderNames,"_", "24h_1")
+Names_h24_2 <- paste0(folderNames,"_", "24h_2")
+B_1 <- grep("*Baseline_1.txt",files_in_folder)
+B_2 <- grep("*Baseline_2.txt",files_in_folder)
+h24_1 <- grep("*24h_1.txt",files_in_folder)
+h24_2 <- grep("*24h_2.txt",files_in_folder)
+names(B_1) <- Names_B_1
+names(B_2) <- Names_B_2
+names(h24_1) <- Names_h24_1
+names(h24_2) <- Names_h24_2
 
-
-#load files
-baseline_1 <- read.table(paste0("Data/",folder_for_now,"/", files_in_folder[3]), skip = 13, nrows = 8, fill = TRUE)
-baseline_2 <- read.table(paste0("Data/",folder_for_now,"/", files_in_folder[4]), skip = 13, nrows = 8, fill = TRUE)
-after24h_1 <- read.table(paste0("Data/",folder_for_now,"/", files_in_folder[1]), skip = 13, nrows = 8, fill = TRUE)
-after24h_2 <- read.table(paste0("Data/",folder_for_now,"/", files_in_folder[2]), skip = 13, nrows = 8, fill = TRUE)
+#Load Files
+baseline_1 <- lapply(X = paste0("Data/",folder,"/", files_in_folder[B_1]), FUN = read.table, skip = 13, nrows = 8, fill = TRUE)
+baseline_2 <- lapply(X = paste0("Data/",folder,"/", files_in_folder[B_2]), FUN = read.table, skip = 13, nrows = 8, fill = TRUE)
+after24h_1 <- lapply(X = paste0("Data/",folder,"/", files_in_folder[h24_1]), FUN = read.table, skip = 13, nrows = 8, fill = TRUE)
+after24h_2 <- lapply(X = paste0("Data/",folder,"/", files_in_folder[h24_2]), FUN = read.table, skip = 13, nrows = 8, fill = TRUE)
 
 #Remove last 3 columns and 7th row function
 cleanup <- function(x) {
@@ -38,15 +53,18 @@ cleanup <- function(x) {
 
 #turn into a list to lapply cleanup function on all objects
 templist <- list(baseline_1, baseline_2, after24h_1, after24h_2)
-templist2 <- lapply(templist, cleanup)
+baseline_1_list <- lapply(X = templist[[1]], FUN = cleanup)
+baseline_2_list <- lapply(X = templist[[2]], FUN = cleanup)
+h24_1_list <- lapply(X = templist[[3]], FUN = cleanup)
+h24_2_list <- lapply(X = templist[[4]], FUN = cleanup)
 
 #extract list into dataframes
-baseline_1 <- data.frame(templist2[1])
-baseline_2 <- data.frame(templist2[2])
-after24h_1 <- data.frame(templist2[3])
-after24h_2 <- data.frame(templist2[4])
+baseline_1 <- rbindlist(baseline_1_list, idcol = TRUE)
+baseline_2 <- rbindlist(baseline_2_list, idcol = TRUE)
+after24h_1 <- rbindlist(h24_1_list, idcol = TRUE)
+after24h_2 <- rbindlist(h24_2_list, idcol = TRUE)
 
-rm(templist, templist2) #remove templists
+rm(templist, baseline_1_list, baseline_2_list, h24_1_list, h24_2_list) #remove templists
 
 #convert to array and get the mean of each cell
 #along is along the "3rd dimension", i.e. not along rows or columns
@@ -60,37 +78,40 @@ after24h_avg <- as.data.frame(after24h_avg)
 rm(after24h_1, after24h_2, baseline_1, baseline_2) #remove old separated data
 
 #seperate out data from control (i.e. final row) NOTE:Breaks if run multiple times...
-baseline_avg_control <- baseline_avg[7,1:4]
+baseline_avg_control <- baseline_avg[c(7,14,21,28,35),1:4]
 baseline_avg_control <- t(baseline_avg_control)
-baseline_avg <- baseline_avg[-7,]
-after24h_avg_control <- after24h_avg[7,1:4]
+baseline_avg <- baseline_avg[-c(7,14,21,28,35),]
+after24h_avg_control <- after24h_avg[c(7,14,21,28,35),1:4]
 after24h_avg_control <- t(after24h_avg_control)
-after24h_avg <- after24h_avg[-7,]
+after24h_avg <- after24h_avg[-c(7,14,21,28,35),]
 
 #assign highest dose and reformatting data #
 
 #dose assignment
-# HOMEWORK - separate text to imporrt with dose information
-highestdose <- 1 #in mg/L
-dose1 <- highestdose
-dose2 <- highestdose/10
-dose3 <- highestdose/100
-dose4 <- highestdose/1000
-dose5 <- highestdose/10000
-dose6 <- 0
+alldoses <- read_tsv("Highest_Dose.txt", col_names = TRUE, skip = 1,)
+print(alldoses) #in mg/L
 
-#formatting data into columns function
-formatting <- function(x) {
-  value <- as.vector(t(x)) #transpose data into a vector
-  temp1 <- data.frame(value) #convert into a dataframe
-  #add doses, rep function repeats string, "each" is how often each value is repeated before going to the next one
-  temp1$dose <- rep(c(dose1, dose2, dose3, dose4, dose5, dose6), each = 9) 
-  #add reps, rep function repeats string, "each" is how often each value is repeated before going to the next one
-  temp1$replicate <- rep(c("A", "B", "C"), each = 1)
-  return(temp1)
+test <- as_tibble(inner_join(x=baseline_avg, y=alldoses, by=".id"))
+function(tbl_df, group) {
+  split(tbl_df, tbl_df[, group])
 }
+split_test <- t(split_df2l(test, ".id"))
+for (i in 1:5) {
+  i+1
+  BPA <- split_test[[i]]
+  BPAF <- split_test[[i]]
+}
+BPA <- split_test[[1]]
+BPAF <- split_test[[2]]
+DES <- 
 
-baseline <- formatting(baseline_avg)
+#Split avg data frame into different chemicals by id
+baseline_avg <- as.data.frame(split(baseline_avg, baseline_avg$.id))
+after24h_avg <- as.data.frame(split(after24h_avg, after24h_avg$.id))
+
+
+
+baseline <- formatting(baseline_avg[[1]])
 after24h <- formatting(after24h_avg)
 rm(after24h_avg, baseline_avg) #remove old dfs
 
