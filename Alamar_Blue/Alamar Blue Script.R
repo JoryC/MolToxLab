@@ -1,13 +1,16 @@
 #### LOAD LIBRARIES ####
 library(tidyverse)
+library(dplyr)
 library(abind)
 library(car)
 #May require you to install libcurl package at https://pkgs.org/download/libcurl4-openssl-dev
 library(ggplot2)
 library(data.table)
+library(readr)
+library(tibble)
 
 #### LOAD FILE AND CLEAN UP ####
-
+#NOTE: run getwd() to confirm you are in the ~/MolToxLab/Alamar_Blue directory
 # names of all files in all folders (one folder for now)
 folderNames<-list.files("Data/")
 # start on first folder for now (get it working for TGSH for now, 5th folder)
@@ -24,19 +27,11 @@ for(i in 1:length(folderNames)){
 row.names(finalResults)<-folderNames
 
 #### Apply Tyler's script to all chemicals ####
-#Name and subset files
-Names_B_1 <- paste0(folderNames,"_", "baseline_1")
-Names_B_2 <- paste0(folderNames,"_", "baseline_2")
-Names_h24_1 <- paste0(folderNames,"_", "24h_1")
-Names_h24_2 <- paste0(folderNames,"_", "24h_2")
+#Subset files
 B_1 <- grep("*Baseline_1.txt",files_in_folder)
 B_2 <- grep("*Baseline_2.txt",files_in_folder)
 h24_1 <- grep("*24h_1.txt",files_in_folder)
 h24_2 <- grep("*24h_2.txt",files_in_folder)
-names(B_1) <- Names_B_1
-names(B_2) <- Names_B_2
-names(h24_1) <- Names_h24_1
-names(h24_2) <- Names_h24_2
 
 #Load Files
 baseline_1 <- lapply(X = paste0("Data/",folder,"/", files_in_folder[B_1]), FUN = read.table, skip = 13, nrows = 8, fill = TRUE)
@@ -59,10 +54,10 @@ h24_1_list <- lapply(X = templist[[3]], FUN = cleanup)
 h24_2_list <- lapply(X = templist[[4]], FUN = cleanup)
 
 #extract list into dataframes
-baseline_1 <- rbindlist(baseline_1_list, idcol = TRUE)
-baseline_2 <- rbindlist(baseline_2_list, idcol = TRUE)
-after24h_1 <- rbindlist(h24_1_list, idcol = TRUE)
-after24h_2 <- rbindlist(h24_2_list, idcol = TRUE)
+baseline_1 <- rbindlist(baseline_1_list, idcol = FALSE)
+baseline_2 <- rbindlist(baseline_2_list, idcol = FALSE)
+after24h_1 <- rbindlist(h24_1_list, idcol = FALSE)
+after24h_2 <- rbindlist(h24_2_list, idcol = FALSE)
 
 rm(templist, baseline_1_list, baseline_2_list, h24_1_list, h24_2_list) #remove templists
 
@@ -80,50 +75,47 @@ rm(after24h_1, after24h_2, baseline_1, baseline_2) #remove old separated data
 #seperate out data from control (i.e. final row) NOTE:Breaks if run multiple times...
 baseline_avg_control <- baseline_avg[c(7,14,21,28,35),1:4]
 baseline_avg_control <- t(baseline_avg_control)
-baseline_avg <- baseline_avg[-c(7,14,21,28,35),]
+baseline_avg <- t(baseline_avg[-c(7,14,21,28,35),])
 after24h_avg_control <- after24h_avg[c(7,14,21,28,35),1:4]
 after24h_avg_control <- t(after24h_avg_control)
-after24h_avg <- after24h_avg[-c(7,14,21,28,35),]
+after24h_avg <- t(after24h_avg[-c(7,14,21,28,35),])
 
 #assign highest dose and reformatting data #
 
 #dose assignment
-alldoses <- read_tsv("Highest_Dose.txt", col_names = TRUE, skip = 1,)
-print(alldoses) #in mg/L
+alldoses <- as.vector(read_tsv("Highest_Dose.txt", col_names = TRUE, skip = 1,)) #Located in Alamar_Blue directory
 
-test <- as_tibble(inner_join(x=baseline_avg, y=alldoses, by=".id"))
-function(tbl_df, group) {
-  split(tbl_df, tbl_df[, group])
+#Repeat Each iteration of alldoses 9 times and create a vector
+Doses_column <- vector(mode = "double")
+for (i in 1:nrow(alldoses)) {
+  for (j in 1:ncol(alldoses)) {
+    x <- rep(alldoses[i, j], each = 9)
+    Doses_column <- as.vector(c(Doses_column, x), mode = "double")
+  }
 }
-split_test <- t(split_df2l(test, ".id"))
-for (i in 1:5) {
-  i+1
-  BPA <- split_test[[i]]
-  BPAF <- split_test[[i]]
+
+#Formatting Data into columns function - edited
+formatting <- function(x) {
+  value <- as.vector((x)) #transpose data into a vector
+  temp1 <- data.frame(value) #convert into a dataframe
+  #add doses
+  temp1$dose <- Doses_column
+  #add reps, rep function repeats string, "each" is how often each value is repeated before going to the next one
+  temp1$replicate <- rep(c("A", "B", "C"), each = 3)
+  return(temp1)
 }
-BPA <- split_test[[1]]
-BPAF <- split_test[[2]]
-DES <- 
 
-#Split avg data frame into different chemicals by id
-baseline_avg <- as.data.frame(split(baseline_avg, baseline_avg$.id))
-after24h_avg <- as.data.frame(split(after24h_avg, after24h_avg$.id))
-
-
-
-baseline <- formatting(baseline_avg[[1]])
+baseline <- formatting(baseline_avg)
 after24h <- formatting(after24h_avg)
-rm(after24h_avg, baseline_avg) #remove old dfs
 
 #### NORMALIZE ####
 
 #test data
 deltavalue <- after24h$value - baseline$value
 temp1 <- as.data.frame(cbind(deltavalue))
-temp1$dose <- rep(c(dose1, dose2, dose3, dose4, dose5, dose6), each = 9) 
-temp1$replicate <- rep(c("A", "B", "C"), each = 1)
+temp1$dose <- Doses_column 
+temp1$replicate <- rep(c("A", "B", "C"), each = 3)
 rm(deltavalue)
-
 
 #### ANCOVA ####
 
