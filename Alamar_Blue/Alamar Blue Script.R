@@ -3,7 +3,6 @@ library(tidyverse)
 library(dplyr)
 library(abind)
 library(car)
-#May require you to install libcurl package at https://pkgs.org/download/libcurl4-openssl-dev
 library(ggplot2)
 library(data.table)
 library(readr)
@@ -26,7 +25,9 @@ for(i in 1:length(folderNames)){
 }
 row.names(finalResults)<-folderNames
 
-#### Apply Tyler's script to all chemicals ####
+
+#### Apply Tyler's (altered by Jory) script to import all chemicals in 2 dfs ####
+
 #Subset files
 B_1 <- grep("*Baseline_1.txt",files_in_folder)
 B_2 <- grep("*Baseline_2.txt",files_in_folder)
@@ -111,27 +112,39 @@ after24h <- formatting(after24h_avg)
 #### NORMALIZE ####
 
 #test data
-deltavalue <- after24h$value - baseline$value
-temp1 <- as.data.frame(cbind(deltavalue))
+Delta <- after24h$value - baseline$value
+temp1 <- as.data.frame(cbind(Delta))
 temp1$dose <- Doses_column 
 temp1$replicate <- rep(c("A", "B", "C"), each = 3)
-rm(deltavalue)
+temp1$group <- rep(c("BPA", "BPAF", "DES", "EE2", "TGSH"), each = 54)
+rm(Delta)
 
 #### ANCOVA ####
 
-#set factor levels from highest to lowest
+#set factor levels in ascending order
 temp1$dose <- ordered(temp1$dose,
-                         levels = c(dose1, dose2, dose3, dose4, dose5, dose6))
+                         levels = rev(unique(temp1$dose)))
 
 #summary of data
-summary1 <- group_by(temp1, dose) %>% #(dataframe, group)
+summary1 <- group_by(temp1, group) %>% #(dataframe, group)
   summarise(
     count = n(),
-    mean = mean(deltavalue, na.rm = TRUE), #replace deltavalue with data, na.rm is NA skipping
-    sd = sd(deltavalue, na.rm = TRUE) #replace deltavalue with data, na.rm is NA skipping
+    mean = mean(Delta, na.rm = TRUE), #replace deltavalue with data, na.rm is NA skipping
+    sd = sd(Delta, na.rm = TRUE) #replace deltavalue with data, na.rm is NA skipping
   )
+
 #check for homogeneity of variance
-HomoVar <- leveneTest(deltavalue ~ dose, temp1) #should be insig, if not, not good
+output <- split(temp1, temp1$group)
+
+LeveneResults <- t(as.data.frame(c(
+  leveneTest(y = Delta ~ dose, data = output$BPA),
+  leveneTest(y = Delta ~ dose, data = output$BPAF),
+  leveneTest(y = Delta ~ dose, data = output$DES),
+  leveneTest(y = Delta ~ dose, data = output$EE2),
+  leveneTest(y = Delta ~ dose, data = output$TGSH)
+)
+  )
+) #should be insig, if not, not good
 
 #run ancova, replicate is covariable, should not use type 1 since multiple factors
 anovadose <- aov(deltavalue ~ dose + replicate, data = temp1) #aov(values ~ groups + covariable, data = x)
