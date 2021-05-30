@@ -84,9 +84,11 @@ after24h_avg <- t(after24h_avg[-c(7,14,21,28,35),])
 #assign highest dose and reformatting data #
 
 #dose assignment
+options(scipen = 999) #Make sure R doesn't convert to scientific notation
 alldoses <- as.vector(read_tsv("Highest_Dose.txt", col_names = TRUE, skip = 1,)) #Located in Alamar_Blue directory
 
 #Repeat Each iteration of alldoses 9 times and create a vector
+
 Doses_column <- vector(mode = "double")
 for (i in 1:nrow(alldoses)) {
   for (j in 1:ncol(alldoses)) {
@@ -135,7 +137,6 @@ summary1 <- group_by(temp1, group) %>% #(dataframe, group)
 
 #check for homogeneity of variance
 output <- split(temp1, temp1$group)
-
 LeveneResults <- t(as.data.frame(c(
   leveneTest(y = Delta ~ dose, data = output$BPA),
   leveneTest(y = Delta ~ dose, data = output$BPAF),
@@ -144,28 +145,46 @@ LeveneResults <- t(as.data.frame(c(
   leveneTest(y = Delta ~ dose, data = output$TGSH)
 )
   )
-) #should be insig, if not, not good
+) 
+Insig <- print(all(LeveneResults[c(2,5,8,11,14),1] > 0.05))
+#Insig should = TRUE
 
+#ANCOVA
 #run ancova, replicate is covariable, should not use type 1 since multiple factors
-anovadose <- aov(deltavalue ~ dose + replicate, data = temp1) #aov(values ~ groups + covariable, data = x)
-testResult<-Anova(anovadose, type = "3") #intercept being significant just means grand mean =/= 0
+bpaancova <- aov(formula = Delta ~ dose + replicate, data = output$BPA)
+summary(bpaancova)
+bpafancova <- aov(formula = Delta ~ dose + replicate, data = output$BPAF)
+summary(bpafancova)
+desancova <- aov(formula = Delta ~ dose + replicate, data = output$DES)
+summary(desancova)
+ee2ancova <- aov(formula = Delta ~ dose + replicate, data = output$EE2)
+summary(ee2ancova)
+tgshancova <- aov(formula = Delta ~ dose + replicate, data = output$TGSH)
+summary(tgshancova)
+#aov(values ~ groups + covariable, data = x)
 
-
-
+#ANOVA
+bpaanova <-Anova(bpaancova, type = "3")
+summary(bpaanova)
+bpafanova <- Anova(bpafancova, type = "3")
+summary(bpafanova)
+desanova <- Anova(desancova, type = "3")#intercept being significant just means grand mean =/= 0
+summary(desanova)
+ee2anova <- Anova(ee2ancova, type = "3")
+summary(ee2anova)
+tgshanova <- Anova(tgshancova, type = "3")
+summary(tgshanova)
 
 #### PLOTTING ####
 # (still testing)
-
-temp2 <- temp1
-temp2$mean <- rep((summary1$mean), each = 9)
-temp2$sd <- rep((summary1$sd), each = 9)
+Final <- temp1 %>%
+  mutate(mean = rep((summary1$mean), each = 54)) %>%
+  mutate(sd = rep((summary1$sd), each = 54))
 
 ggplot() +
-  geom_point(data = temp2, aes(dose, deltavalue)) +
-  geom_point(data = temp2, aes(dose, mean), size = 3, color = 'red') +
-  geom_errorbar(
-    data = temp2,
-    aes(dose, mean, ymin = mean - sd, ymax = mean + sd),
-    width = 0.4,
-    color = 'red'
-  )
+  geom_boxplot(data = subset(Final, group == "BPA"), aes(x = dose, y = Delta)) +
+  geom_boxplot(data = subset(Final, group == "BPAF"), aes(x = dose, y = Delta)) +
+  geom_boxplot(data = subset(Final, group == "DES"), aes(x = dose, y = Delta)) +
+  geom_boxplot(data = subset(Final, group == "EE2"), aes(x = dose, y = Delta)) +
+  geom_boxplot(data = subset(Final, group == "TGSH"), aes(x = dose, y = Delta)) +
+  facet_wrap( ~ group, scales = "free")
