@@ -1,4 +1,4 @@
-#Highest Dose Information (mg/L)
+#Highest Dose Information (mg/L) (order: BPA, BPAF, DES, EE2, TGSH)
 dose1	dose2	dose3	dose4	dose5	dose6
 1	0.1	0.01	0.001	0.0001	0
 1	0.1	0.01	0.001	0.0001	0
