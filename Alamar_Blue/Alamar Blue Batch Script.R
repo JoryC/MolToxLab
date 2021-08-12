@@ -170,8 +170,14 @@ Tidy_Data %>%
   facet_wrap(~Chemical, scales = "free") +
   xlab("Dose(mg/L)")
 
-#Individual variance
-Tidy_Data %>%
+#Individual variance (w/ 75% Interquartile Range Removed)
+#Replace 75% IQR w/ NA
+out <- boxplot.stats(Tidy_Data$Fluorescence)$out
+out_index <- which(Tidy_Data$Fluorescence %in% c(out))
+replacewithna <- Tidy_Data[out_index,5]
+BoxPlotData <- replace_with_na(Tidy_Data, replacewithna)
+
+BoxPlotData %>%
   group_by(Chemical) %>%
   select(Chemical, Group, `Dose(mg/L)`, Fluorescence) %>%
   ggplot(aes(x = as.factor(`Dose(mg/L)`), y = Fluorescence)) +
@@ -179,12 +185,21 @@ Tidy_Data %>%
   facet_wrap(~Chemical, scales = "free") +
   xlab("Dose(mg/L)")
 
-#Dose Variance
+#Dose Variance 
+#Columns = mean of all values in dose group 
+#points = raw values coloured by replicate group w/ 75% IQR outliers removed
 Tidy_Data %>%
-  group_by(Chemical) %>%
-  select(Chemical, Group, `Dose(mg/L)`, Fluorescence) %>%
+  group_by(Chemical, `Dose(mg/L)`) %>%
+  summarise(Fluorescence = mean(Fluorescence, na.rm = TRUE)) %>%
   ggplot(aes(x = as.factor(`Dose(mg/L)`), y = Fluorescence)) +
   geom_col() +
-  geom_jitter(aes(color = Group)) +
   facet_wrap(~Chemical, scales = "free") +
-  xlab("Dose(mg/L)")
+  xlab("Dose(mg/L)") +
+  geom_point(data = 
+               BoxPlotData %>%
+               group_by(Chemical) %>%
+               select(Chemical, Group, `Dose(mg/L)`, Fluorescence), 
+             aes(x = as.factor(`Dose(mg/L)`), 
+                 y = Fluorescence, 
+                 colour = Group), 
+             na.rm = TRUE)
