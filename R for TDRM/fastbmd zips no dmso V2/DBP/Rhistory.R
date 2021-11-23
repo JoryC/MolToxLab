@@ -1,0 +1,59 @@
+# Below is your R command history : 
+ReadTabExpressData("raw.txt");
+ReadTabExpressData("raw.txt");
+PerformDataAnnot("noAnn", "NA", "custom", "sum");
+GetSummaryData()
+PlotDataBox("qc_boxplot_0", "72", "png");
+PlotDataPCA("qc_pca_0","72", "png", "NA");
+PerformExpressNormalization("none", 0, 0,"noAnn");
+PlotDataBox("qc_norm_boxplot_0", "72", "png");
+PlotDataPCA("qc_norm_pca_0","72", "png", "NA");
+qc.density("qc_norm_density_0","72", "png", "NA");
+SetupDesignMatrix("limma");
+PerformDEAnal("reference", "dose_0.0003");
+GetSigGenes("Result_1", 0.05, 1.0,"false",1,"noAnn");
+PlotMAPlot("ma_plot_0","72","png","0.05","1.0","1");
+PlotVolcanoPlot("volcano_plot_0","72", "png", "0.05", "1.0" ,"1");
+GetMetaColLength();
+nrow(dataSet$sig.mat)
+PlotMAPlot("ma_plot_1","72","png","0.05","1.0","4");
+PlotVolcanoPlot("volcano_plot_1","72", "png", "0.05", "1.0" ,"4");
+nrow(dataSet$sig.mat)
+PlotMAPlot("ma_plot_2","72","png","0.05","1.0","3");
+PlotVolcanoPlot("volcano_plot_2","72", "png", "0.05", "1.0" ,"3");
+nrow(dataSet$sig.mat)
+PlotMAPlot("ma_plot_3","72","png","0.05","1.0","2");
+PlotVolcanoPlot("volcano_plot_3","72", "png", "0.05", "1.0" ,"2");
+nrow(dataSet$sig.mat)
+PrepareDataForDoseResponse();
+GetSigDRItems( 0.05,1.0,"false","false", 0.05);
+InitDrcFitObj();
+FilterDRFit();
+PerformBMDCalc();
+PlotDRModelBars("dr_barplot_0", 72, "png");
+PlotDRHistogram("dr_histogram_0", 72, "png", "mg/kg", "natural");
+PreparePDFReport("doseresponse", "guest17443610682709879313", "Fit Curves")
+
+ReadTabExpressData("raw.txt");
+PerformDataAnnot("noAnn", "NA", "custom", "sum");
+GetSummaryData()
+PlotDataBox("qc_boxplot_1", "72", "png");
+PlotDataPCA("qc_pca_1","72", "png", "NA");
+PerformExpressNormalization("none", 0, 0,"noAnn");
+PlotDataBox("qc_norm_boxplot_1", "72", "png");
+PlotDataPCA("qc_norm_pca_1","72", "png", "NA");
+qc.density("qc_norm_density_1","72", "png", "NA");
+SetupDesignMatrix("limma");
+PerformDEAnal("reference", "dose_0.0003");
+GetSigGenes("Result_2", 0.05, 1.0,"false",2,"noAnn");
+PlotMAPlot("ma_plot_4","72","png","0.05","1.0","2");
+PlotVolcanoPlot("volcano_plot_4","72", "png", "0.05", "1.0" ,"2");
+GetMetaColLength();
+nrow(dataSet$sig.mat)
+PrepareDataForDoseResponse();
+GetSigDRItems( 0.05,1.0,"false","false", 0.05);
+InitDrcFitObj();
+FilterDRFit();
+PerformBMDCalc();
+PlotDRModelBars("dr_barplot_1", 72, "png");
+PlotDRHistogram("dr_histogram_1", 72, "png", "mg/kg", "natural");
