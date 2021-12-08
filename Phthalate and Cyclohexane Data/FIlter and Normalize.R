@@ -102,6 +102,16 @@ testDGE <- DGEList(counts = combined_data_median_filtered,
 ####GROUP NOT MATCHING...?
 testDGE2 <- calcNormFactors(testDGE)
 testDGE2$samples
+
+
+
+sizeFactor <- calcNormFactors(combined_data_median_filtered)
+normData<-combined_data_median_filtered
+for(i in 1:ncol(normData)){
+  normData[,i]<-normData[,i]/(sum(normData[,i])*sizeFactor[i])
+}
+
+
 testDGEtoDF <- edgeR::as.data.frame.DGEList(testDGE2)
 ##Not normalizing...?
 
@@ -145,12 +155,18 @@ testDGEtoDF <- edgeR::as.data.frame.DGEList(testDGE2)
 
 ####PCA####
 
-test1 <- as.data.frame(t(log2(combined_data_median_filtered+1)))
-chemgroupsdf <- as.data.frame(chemgroups)
-test2 <- cbind(chemgroupsdf,test1)
+
+
+test1 <- as.data.frame(t(normData))
+chemgroupsdf <- as.factor(chemgroups)
+test2 <- data.frame(chemgroupsdf,test1)
 #can't use chemgroups column... prcomp breaks
 
-pca_model <- prcomp(test2)
+pca_model <- prcomp(test2[,-1])
+
+
+autoplot(pca_model, colour = 'chemgroupsdf', data = test2, label = TRUE)
+
 autoplot(pca_model)
 
 # library(FactoMineR)
