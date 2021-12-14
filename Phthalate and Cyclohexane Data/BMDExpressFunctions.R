@@ -14,14 +14,16 @@ BMDfiltering <- function(x,
                          BMDU.div.BMDL,
                          BMDU.div.BMD,
                          lowdose,
-                         highdose){
+                         highdose,
+                         fitP){
   x %>%
     filter(
-      BMD/BMDL > BMD.div.BMDL,
-      BMDU/BMDL > BMDU.div.BMDL,
-      BMDU/BMD > BMDU.div.BMD,
+      BMD/BMDL < BMD.div.BMDL,
+      BMDU/BMDL < BMDU.div.BMDL,
+      BMDU/BMD < BMDU.div.BMD,
       BMD > lowdose/10,
-      BMD < highdose
+      BMD <= highdose,
+      fitPValue > fitP
       )
 }
 
