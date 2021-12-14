@@ -1,14 +1,10 @@
+
 #### FUNCTION: countFilter #####
 countFilter <- function(data, grouping, median_threshold){
   require(tidyverse)
  
   medianthrs <- median_threshold
-  
-  # function to combine sapply with median for nested data
-  sapply_Median<-function(data){
-    sapply(data, median)
-  }
-  
+
   # group and nest by "grouping"
   nestData<-data %>%
     dplyr::select(-sample) %>%
@@ -61,6 +57,13 @@ countFilter <- function(data, grouping, median_threshold){
 #  
 #  
   
+}
+
+
+#### FUNCTION: sapply_median ####
+# a function needed to combine sapply with median for nested data
+sapply_Median<-function(data){
+  sapply(data, median)
 }
 
 

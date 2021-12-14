@@ -64,26 +64,39 @@ nestData <- nestData %>%
 nestData <- nestData %>%
   mutate(normData = map(filterData, tmmNorm)) 
 
-# export
-apply(nestData, 1, FUN = function(x){
-  write_delim(x$normData,
-              paste0("RNAseqData/normalizedData/",x$chemical, "_normData.txt"),
-              delim = "\t"
-              )
-})
+
+#### EXPORT NORM DATA ####
+
+if(FALSE){
+  apply(nestData, 1, FUN = function(x){
+    
+    outData <- x$normData %>%
+      select(-sample, -dose) %>%
+      t() %>%
+      as.data.frame() 
+    
+    colnames(outData) <- x$normData$dose
+    outData <- data.frame(gene=rownames(outData), outData, check.names = FALSE)
+   
+    write_delim(outData,
+                paste0("RNAseqData/normalizedData/",x$chemical, "_normData.txt"),
+                delim = "\t"
+      )
+  })
+}
 
 
 
 
 
-####PCA####
+####PCA####  haven't updated this yet -Jason
 
-temp1 <- as.data.frame(t(norm_combined_data))
-chemgroupsfactor <- as.factor(newchemgroups)
-grouped_norm_data <- data.frame(chemgroupsfactor,temp1)
-rm(temp1)
-pca_model <- prcomp(grouped_norm_data[,-1])
-autoplot(pca_model, colour = 'chemgroupsfactor', data = grouped_norm_data, label = TRUE)
+#temp1 <- as.data.frame(t(norm_combined_data))
+#chemgroupsfactor <- as.factor(newchemgroups)
+#grouped_norm_data <- data.frame(chemgroupsfactor,temp1)
+#rm(temp1)
+#pca_model <- prcomp(grouped_norm_data[,-1])
+#autoplot(pca_model, colour = 'chemgroupsfactor', data = grouped_norm_data, label = TRUE)
 
 
 
