@@ -10,12 +10,12 @@ cleanupcolumns <- function(x){
 
 # BMD/BMDL > 20, BMDU/BMDL > 40, BMDU/BMD > 20, BMD > lowdose, BMD < highdose
 BMDfiltering <- function(x,
-                         BMD.div.BMDL,
-                         BMDU.div.BMDL,
-                         BMDU.div.BMD,
+                         BMD.div.BMDL = 20,
+                         BMDU.div.BMDL = 40,
+                         BMDU.div.BMD = 20,
                          lowdose,
                          highdose,
-                         fitP){
+                         fitP = 0.1){
   x %>%
     filter(
       BMD/BMDL < BMD.div.BMDL,
