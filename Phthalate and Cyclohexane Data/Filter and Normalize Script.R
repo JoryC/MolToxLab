@@ -10,7 +10,7 @@ source("RNAseqFunctions.R")
 
 
 #### IMPORT METADATA ####
-metadata <- read.csv("RNAseqData/metadata2.csv", header = TRUE) %>%
+metadata <- read.csv("RNAseqData/metadata_nocontrol.csv", header = TRUE) %>%
   arrange(chemical, dose)
 
 
@@ -67,7 +67,7 @@ nestData <- nestData %>%
 
 #### EXPORT NORM DATA ####
 
-if(FALSE){
+if(TRUE){
   apply(nestData, 1, FUN = function(x){
     
     outData <- x$normData %>%

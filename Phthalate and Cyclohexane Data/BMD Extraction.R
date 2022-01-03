@@ -5,7 +5,7 @@ library(purrr)
 source("BMDExpressFunctions.R")
 
 ####Metadata Import####
-metadata <- read.csv("RNAseqData/metadata2.csv")
+metadata <- read.csv("RNAseqData/metadata_nocontrol.csv")
 chemnames <- unique(metadata$chemical)
 lowestdoses <- unique(metadata[,c("chemical","dose")]) %>%
   group_by(chemical) %>%
@@ -97,12 +97,12 @@ for(i in 1:length(raw_data)){
 write.table(tpod_values, file = "tpod_values.txt", quote = FALSE, sep = "\t")
 
 #save tPoD figures? T or F. If F, will only display then
-savefigures <- FALSE
+savefigures <- TRUE
 
 for(i in 1:length(raw_data_filtered)){
   #i<-1
   if(savefigures == TRUE){
-    png(filename = paste0("tPoDFigures/", chemnames[i], "_tPoD.png"), width = 720, height = 480)
+    png(filename = paste0("tPoD Figures/", chemnames[i], "_tPoD.png"), width = 720, height = 480)
   }
   hist(raw_data_filtered[[i]]$logBMD, breaks=histBreaks[[i]], prob=TRUE, main=names(raw_data_filtered)[i])
   lines(density(raw_data_filtered[[i]]$logBMD, bw=dataModes[[i]]$bw), col=hsv(0.5,1,0.8,0.4), lwd=3)
