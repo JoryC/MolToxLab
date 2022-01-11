@@ -41,7 +41,7 @@ source("mode_antimode.R")
 
 
 # variables and options (current values based on optimization results)
-min_dense<-0.055  # minimum probability density to be considered a "mode"
+min_dense<-0.06  # minimum probability density to be considered a "mode"
 min_bw <- 0.015 # minimum bandwidth (too much resolution gives strange "peaks")
 bwFun<-"SJ" # choose nrd0 or SJ. the "bandwidth" function to use to determine modes. I've selected the Sheather & Jones (1991) method. see: https://www.ncbi.nlm.nih.gov/pubmed/24885339
 # does bwFun work here or down at below at "# calculate modes"
@@ -96,23 +96,45 @@ for(i in 1:length(raw_data)){
 #export tPoDs
 write.table(tpod_values, file = "tpod_values.txt", quote = FALSE, sep = "\t")
 
+##Export parameters
 #save tPoD figures? T or F. If F, will only display then
 savefigures <- TRUE
+#plot all plots together?
+multiplot <- FALSE
+
+if(multiplot == TRUE && savefigures == TRUE){
+  png(filename = paste0("tPoD Figures/multiplot_tPoD.png"), width = 1000*length(chemnames), height = 500)
+}
+
+if(multiplot == TRUE){
+  par(mfrow = c(1,length(chemnames)))
+} else {
+  par(mfrow = c(1,1))
+}
 
 for(i in 1:length(raw_data_filtered)){
   #i<-1
-  if(savefigures == TRUE){
-    png(filename = paste0("tPoD Figures/", chemnames[i], "_tPoD.png"), width = 720, height = 480)
+  if(savefigures == TRUE && multiplot == FALSE){
+    png(filename = paste0("tPoD Figures/", chemnames[i], "_tPoD.png"), width = 1000, height = 500)
   }
-  hist(raw_data_filtered[[i]]$logBMD, breaks=histBreaks[[i]], prob=TRUE, main=names(raw_data_filtered)[i])
+  hist(raw_data_filtered[[i]]$logBMD, 
+       breaks=histBreaks[[i]], 
+       prob=TRUE, 
+       main=names(raw_data_filtered)[i], 
+       xlim = c(-5,1),
+       xlab = "logBMD"
+       )
   lines(density(raw_data_filtered[[i]]$logBMD, bw=dataModes[[i]]$bw), col=hsv(0.5,1,0.8,0.4), lwd=3)
   abline(v=log10(lowestdoses[i,"dose"]), col="red", lwd = 3)
   abline(v=tpod_values[i, "first_mode"], col = "blue", lwd = 3)
   abline(v=tpod_values[i, "10th_percentile"], col = "green", lwd = 3)
   abline(v=tpod_values[i, "20th_gene"], col = "purple", lwd = 3)
-  if(savefigures == TRUE){
+  if(savefigures == TRUE && multiplot == FALSE){
     dev.off()
   }
+}
+if(savefigures == TRUE && multiplot == TRUE){
+  dev.off()
 }
 
 
