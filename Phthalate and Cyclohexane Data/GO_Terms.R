@@ -18,10 +18,10 @@ lowestdoses <- unique(metadata[,c("chemical","dose")]) %>%
 # Must be converted to a csv file first.
 
 raw_data <- list()
-filenames <- list.files("BMDExpressData/REACTOME_CSV")
+filenames <- list.files("BMDExpressData/GO_TERM_CSV")
 for(i in 1:length(chemnames)){
-  raw_data[[chemnames[i]]] <- read.csv(paste0("BMDExpressData/REACTOME_CSV/",filenames[i]), header = TRUE) %>%
-    cleanupcolumns_reactome()
+  raw_data[[chemnames[i]]] <- read.csv(paste0("BMDExpressData/GO_TERM_CSV/",filenames[i]), header = TRUE) %>%
+    cleanupcolumns_goterm()
 }
 
 tPoD_values <- read.table(file = "tpod_values.txt")
@@ -30,19 +30,19 @@ tPoD_values <- read.table(file = "tpod_values.txt")
 
 raw_data_filtered <- list()
 for(i in 1:length(raw_data)){
-  raw_data_filtered[[chemnames[i]]] <- reactome_filtering(x = raw_data[[i]]) %>%
+  raw_data_filtered[[chemnames[i]]] <- goterm_filtering(x = raw_data[[i]]) %>%
     mutate(logBMD = log10(BMD.Median))
 }
 
-####Plot Data####
-##Export parameters
+##Plot Data####
+#Export parameters
 #save tPoD figures? T or F. If F, will only display then
 savefigures <- TRUE
 #plot all plots together?
 multiplot <- FALSE
 
 if(multiplot == TRUE && savefigures == TRUE){
-  png(filename = paste0("Reactome Figures/multiplot_reactome.png"), width = 1000*length(chemnames), height = 500)
+  png(filename = paste0("Reactome Figures/multiplot_GO_term.png"), width = 1000*length(chemnames), height = 500)
 }
 
 if(multiplot == TRUE){
@@ -53,13 +53,13 @@ if(multiplot == TRUE){
 
 
 for(i in 1:length(raw_data_filtered)){
-  # if(savefigures == TRUE && multiplot == FALSE){
-  #   png(filename = paste0("Reactome Figures/", chemnames[i], "_Reactome.png"), width = 1000, height = 500)
-  # }
+  if(savefigures == TRUE && multiplot == FALSE){
+    png(filename = paste0("Go_Term Figures/", chemnames[i], "_GO_Term.png"), width = 1000, height = 500)
+  }
   print(
     ggplot(raw_data_filtered[[i]], aes(x = logBMD)) +
       stat_ecdf(geom = "step") +
-      labs(title = chemnames[i], x = "logBMD", y = "REACTOME Cumulative Distribution") +
+      labs(title = chemnames[i], x = "logBMD", y = "GO Term Cumulative Distribution") +
       xlim(-5,1) +
       ylim(0,1) +
       theme_classic() +
