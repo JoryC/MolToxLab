@@ -106,6 +106,7 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
                                       layout.pos.col = matchidx$col))
     }
   }
+}
 
  
 ####GO Term Functions####
