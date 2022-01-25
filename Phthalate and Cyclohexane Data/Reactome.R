@@ -39,7 +39,7 @@ for(i in 1:length(raw_data)){
 #save tPoD figures? T or F. If F, will only display then
 savefigures <- TRUE
 #plot all plots together?
-multiplot <- TRUE
+multiplot <- FALSE
 
 if(multiplot == TRUE && savefigures == TRUE){
   png(filename = paste0("Reactome Figures/multiplot_reactome.png"), width = 1000*length(chemnames), height = 500)
@@ -53,9 +53,9 @@ if(multiplot == TRUE){
 
 
 for(i in 1:length(raw_data_filtered)){
-  if(savefigures == TRUE && multiplot == FALSE){
-    png(filename = paste0("Reactome Figures/", chemnames[i], "_Reactome.png"), width = 1000, height = 500)
-  }
+  # if(savefigures == TRUE && multiplot == FALSE){
+  #   png(filename = paste0("Reactome Figures/", chemnames[i], "_Reactome.png"), width = 1000, height = 500)
+  # }
   print(
     ggplot(raw_data_filtered[[i]], aes(x = logBMD)) +
       stat_ecdf(geom = "step") +

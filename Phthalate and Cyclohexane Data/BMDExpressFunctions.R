@@ -57,6 +57,7 @@ reactome_filtering <- function(x,
 }
 
 
+
 #### GENERAL FUNCTIONS ####
 
 # Multiple plot function
@@ -105,4 +106,35 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
                                       layout.pos.col = matchidx$col))
     }
   }
+
+ 
+####GO Term Functions####
+#Clean up columns
+cleanupcolumns_goterm <- function(x){
+  x %>%
+    select(GO.Pathway.Gene.Set.Gene.ID,
+           GO.Level,
+           GO.Pathway.Gene.Set.Gene.Name,
+           All.Genes..Expression.Data.,
+           Genes.That.Passed.All.Filters,
+           Fisher.s.Exact.Two.Tail,
+           Percentage,
+           BMD.Mean,
+           BMD.Median
+    )
+}
+
+# GO-term Filtering
+# Two Tail Test < 0.05, genes that passed all filters > 3, GO Term level > 5
+goterm_filtering <- function(x,
+                               p = 0.05,
+                               min_gene = 3,
+                               min_level = 5){
+  x %>%
+    filter(
+      p >= Fisher.s.Exact.Two.Tail,
+      min_gene <= Genes.That.Passed.All.Filters,
+      min_level <= GO.Level
+    )
+
 }
