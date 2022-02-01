@@ -1,5 +1,5 @@
 ####Libraries####
-library(Rfast)
+# library(Rfast)
 library(tidyverse)
 library(purrr)
 source("BMDExpressFunctions.R")
@@ -31,8 +31,24 @@ tPoD_values <- read.table(file = "tpod_values.txt")
 raw_data_filtered <- list()
 for(i in 1:length(raw_data)){
   raw_data_filtered[[chemnames[i]]] <- reactome_filtering(x = raw_data[[i]]) %>%
-    mutate(logBMD = log10(BMD.Median))
+    mutate(logBMD = log10(BMD.Median)) %>%
+    arrange(logBMD)
 }
+
+####Export Lowest Median GO-Term####
+export_median <- TRUE
+
+Reactome_Endpoints <- data.frame()
+for(i in 1:length(chemnames)){
+  Reactome_Endpoints[i,1] <- chemnames[i]
+  Reactome_Endpoints[i,2] <- raw_data_filtered[[i]][1,"logBMD"]
+}
+colnames(Reactome_Endpoints) <- c("chemical", "reactome_median")
+
+if(export_median == TRUE){
+  write.table(Reactome_Endpoints, file = "reactome_values.txt", quote = FALSE, sep = "\t")
+}
+
 
 ####Plot Data####
 ##Export parameters

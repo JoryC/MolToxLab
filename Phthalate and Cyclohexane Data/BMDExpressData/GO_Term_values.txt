@@ -1,0 +1,834 @@
+$DBC
+   GO.Pathway.Gene.Set.Gene.ID GO.Level                      GO.Pathway.Gene.Set.Gene.Name
+1                   GO:0001932        8              regulation of protein phosphorylation
+2                   GO:0004930        5                G protein-coupled receptor activity
+3                   GO:0006873        6                           cellular ion homeostasis
+4                   GO:0006875        8                     cellular metal ion homeostasis
+5                   GO:0007186        5       G protein-coupled receptor signaling pathway
+6                   GO:0009967        6         positive regulation of signal transduction
+7                   GO:0010647        6          positive regulation of cell communication
+8                   GO:0019220        7          regulation of phosphate metabolic process
+9                   GO:0023056        5                   positive regulation of signaling
+10                  GO:0030003        7                        cellular cation homeostasis
+11                  GO:0030334        6                       regulation of cell migration
+12                  GO:0031399        7         regulation of protein modification process
+13                  GO:0032268        6   regulation of cellular protein metabolic process
+14                  GO:0042325        8                      regulation of phosphorylation
+15                  GO:0048878        5                               chemical homeostasis
+16                  GO:0050801        6                                    ion homeostasis
+17                  GO:0051174        6         regulation of phosphorus metabolic process
+18                  GO:0051246        6            regulation of protein metabolic process
+19                  GO:0051270        5          regulation of cellular component movement
+20                  GO:0055065        8                              metal ion homeostasis
+21                  GO:0055074        9                            calcium ion homeostasis
+22                  GO:0055080        7                                 cation homeostasis
+23                  GO:0055082        5                      cellular chemical homeostasis
+24                  GO:0072507        8              divalent inorganic cation homeostasis
+25                  GO:0098771        7                          inorganic ion homeostasis
+26                  GO:2000026        5 regulation of multicellular organismal development
+27                  GO:2000145        5                        regulation of cell motility
+   All.Genes..Expression.Data. Genes.That.Passed.All.Filters Fisher.s.Exact.Two.Tail Percentage  BMD.Mean
+1                          244                             3               0.0121940       1.08 0.8717533
+2                          353                             7               0.0001790       0.99 0.8501393
+3                          264                             4               0.0016907       1.35 0.8852020
+4                          221                             3               0.0095473       1.19 0.9060583
+5                          516                             7               0.0007640       0.78 0.8501393
+6                          355                             3               0.0354440       0.72 0.2006460
+7                          391                             3               0.0445570       0.66 0.2006460
+8                          364                             3               0.0319000       0.75 0.8717533
+9                          392                             3               0.0447990       0.66 0.2006460
+10                         258                             3               0.0139150       1.03 0.9060583
+11                         196                             3               0.0058050       1.42 0.4038023
+12                         345                             3               0.0276100       0.79 0.8717533
+13                         619                             5               0.0061960       0.73 0.7582592
+14                         324                             3               0.0241730       0.84 0.8717533
+15                         415                             4               0.0077934       0.88 0.8852020
+16                         335                             4               0.0038861       1.07 0.8852020
+17                         364                             3               0.0319000       0.75 0.8717533
+18                         660                             5               0.0079310       0.69 0.7582592
+19                         222                             3               0.0081764       1.26 0.4038023
+20                         270                             4               0.0018854       1.31 0.8852020
+21                         170                             3               0.0052154       1.48 0.7719593
+22                         311                             4               0.0030033       1.15 0.8852020
+23                         275                             4               0.0019307       1.30 0.8852020
+24                         185                             3               0.0063525       1.38 0.7719593
+25                         321                             4               0.0033245       1.12 0.8852020
+26                         356                             4               0.0041510       1.05 0.6576565
+27                         210                             3               0.0071005       1.32 0.4038023
+   BMD.Median      logBMD
+1   0.8226330 -0.08479387
+2   1.2345000  0.09149109
+3   1.0237815  0.01020728
+4   1.2249300  0.08811127
+5   1.2345000  0.09149109
+6   0.2101950 -0.67737762
+7   0.2101950 -0.67737762
+8   0.8226330 -0.08479387
+9   0.2101950 -0.67737762
+10  1.2249300  0.08811127
+11  0.3886870 -0.41039998
+12  0.8226330 -0.08479387
+13  0.8226330 -0.08479387
+14  0.8226330 -0.08479387
+15  1.0237815  0.01020728
+16  1.0237815  0.01020728
+17  0.8226330 -0.08479387
+18  0.8226330 -0.08479387
+19  0.3886870 -0.41039998
+20  1.0237815  0.01020728
+21  0.8226330 -0.08479387
+22  1.0237815  0.01020728
+23  1.0237815  0.01020728
+24  0.8226330 -0.08479387
+25  1.0237815  0.01020728
+26  0.4128445 -0.38421353
+27  0.3886870 -0.41039998
+
+$DBP
+    GO.Pathway.Gene.Set.Gene.ID GO.Level                          GO.Pathway.Gene.Set.Gene.Name
+1                    GO:0001523        8                             retinoid metabolic process
+2                    GO:0001889        6                                      liver development
+3                    GO:0002253        6                          activation of immune response
+4                    GO:0002684        5           positive regulation of immune system process
+5                    GO:0003677        5                                            DNA binding
+6                    GO:0003723        5                                            RNA binding
+7                    GO:0004175        5                                 endopeptidase activity
+8                    GO:0004177        6                                aminopeptidase activity
+9                    GO:0004180        6                              carboxypeptidase activity
+10                   GO:0004252        6                     serine-type endopeptidase activity
+11                   GO:0004745        6                     NAD-retinol dehydrogenase activity
+12                   GO:0004866        6                       endopeptidase inhibitor activity
+13                   GO:0004867        7           serine-type endopeptidase inhibitor activity
+14                   GO:0004869        7         cysteine-type endopeptidase inhibitor activity
+15                   GO:0005506        7                                       iron ion binding
+16                   GO:0005579        5                                membrane attack complex
+17                   GO:0005634        6                                                nucleus
+18                   GO:0005777        7                                             peroxisome
+19                   GO:0005789        5                         endoplasmic reticulum membrane
+20                   GO:0005811        6                                          lipid droplet
+21                   GO:0006006        6                              glucose metabolic process
+22                   GO:0006022        5                          aminoglycan metabolic process
+23                   GO:0006094        7                                        gluconeogenesis
+24                   GO:0006144        6                    purine nucleobase metabolic process
+25                   GO:0006145        7                    purine nucleobase catabolic process
+26                   GO:0006355        7             regulation of transcription, DNA-templated
+27                   GO:0006357        8       regulation of transcription by RNA polymerase II
+28                   GO:0006464        6                  cellular protein modification process
+29                   GO:0006508        5                                            proteolysis
+30                   GO:0006520        6                  cellular amino acid metabolic process
+31                   GO:0006536        7                            glutamate metabolic process
+32                   GO:0006547        7                            histidine metabolic process
+33                   GO:0006548        7                            histidine catabolic process
+34                   GO:0006568        7                           tryptophan metabolic process
+35                   GO:0006569        6                           tryptophan catabolic process
+36                   GO:0006576        6              cellular biogenic amine metabolic process
+37                   GO:0006584        7                        catecholamine metabolic process
+38                   GO:0006586        6                      indolalkylamine metabolic process
+39                   GO:0006638        5                        neutral lipid metabolic process
+40                   GO:0006639        6                         acylglycerol metabolic process
+41                   GO:0006641        7                         triglyceride metabolic process
+42                   GO:0006720        5                           isoprenoid metabolic process
+43                   GO:0006721        6                            terpenoid metabolic process
+44                   GO:0006820        6                                        anion transport
+45                   GO:0006826        9                                     iron ion transport
+46                   GO:0006869        6                                        lipid transport
+47                   GO:0006956        7                                  complement activation
+48                   GO:0006958        8               complement activation, classical pathway
+49                   GO:0006996        5                                 organelle organization
+50                   GO:0007166        5                cell surface receptor signaling pathway
+51                   GO:0007186        5           G protein-coupled receptor signaling pathway
+52                   GO:0007596        5                                      blood coagulation
+53                   GO:0007599        5                                             hemostasis
+54                   GO:0008028        6 monocarboxylic acid transmembrane transporter activity
+55                   GO:0008202        5                              steroid metabolic process
+56                   GO:0008235        6                           metalloexopeptidase activity
+57                   GO:0008236        5                         serine-type peptidase activity
+58                   GO:0008237        5                              metallopeptidase activity
+59                   GO:0008238        5                                  exopeptidase activity
+60                   GO:0008270        7                                       zinc ion binding
+61                   GO:0008374        6                             O-acyltransferase activity
+62                   GO:0008395        5                           steroid hydroxylase activity
+63                   GO:0008483        5                                  transaminase activity
+64                   GO:0008652        6               cellular amino acid biosynthetic process
+65                   GO:0009063        6                  cellular amino acid catabolic process
+66                   GO:0009064        8          glutamine family amino acid metabolic process
+67                   GO:0009069        8             serine family amino acid metabolic process
+68                   GO:0009072        6           aromatic amino acid family metabolic process
+69                   GO:0009074        6           aromatic amino acid family catabolic process
+70                   GO:0009112        6                           nucleobase metabolic process
+71                   GO:0009116        6                           nucleoside metabolic process
+72                   GO:0009308        5                                amine metabolic process
+73                   GO:0009310        6                                amine catabolic process
+74                   GO:0009435        9                               NAD biosynthetic process
+75                   GO:0009617        5                                  response to bacterium
+76                   GO:0009712        6         catechol-containing compound metabolic process
+77                   GO:0009889        5                     regulation of biosynthetic process
+78                   GO:0009893        5               positive regulation of metabolic process
+79                   GO:0009966        5                      regulation of signal transduction
+80                   GO:0010466        7              negative regulation of peptidase activity
+81                   GO:0010467        5                                        gene expression
+82                   GO:0010468        6                          regulation of gene expression
+83                   GO:0010556        6       regulation of macromolecule biosynthetic process
+84                   GO:0010604        6 positive regulation of macromolecule metabolic process
+85                   GO:0010646        5                       regulation of cell communication
+86                   GO:0010951        8          negative regulation of endopeptidase activity
+87                   GO:0014070        5                    response to organic cyclic compound
+88                   GO:0015031        5                                      protein transport
+89                   GO:0015291        5    secondary active transmembrane transporter activity
+90                   GO:0015293        6                                     symporter activity
+91                   GO:0015669        5                                          gas transport
+92                   GO:0015671        6                                       oxygen transport
+93                   GO:0015711        6                                organic anion transport
+94                   GO:0015718        8                          monocarboxylic acid transport
+95                   GO:0015833        6                                      peptide transport
+96                   GO:0015849        6                                 organic acid transport
+97                   GO:0015850        6                     organic hydroxy compound transport
+98                   GO:0015918        7                                       sterol transport
+99                   GO:0015942        8                              formate metabolic process
+100                  GO:0016051        5                      carbohydrate biosynthetic process
+    All.Genes..Expression.Data. Genes.That.Passed.All.Filters Fisher.s.Exact.Two.Tail Percentage  BMD.Mean
+1                            32                             4              2.1137e-03      12.50 0.6139185
+2                            98                             7              2.1368e-03       6.73 1.0242194
+3                            64                            10              2.4500e-06      11.49 0.8339911
+4                           131                            10              8.4900e-04       5.78 0.8339911
+5                          1789                            16              6.1900e-04       0.82 0.9980214
+6                           852                             4              8.8100e-04       0.44 1.0242520
+7                           332                            19              5.7100e-05       4.82 0.7995794
+8                            30                             3              1.4525e-02      10.00 0.7793930
+9                            31                             3              1.8798e-02       9.09 1.0155493
+10                          120                            15              9.1300e-08       9.55 0.7992597
+11                            6                             3              9.7100e-05      50.00 0.7856993
+12                          104                            18              4.3000e-12      14.52 0.9036102
+13                           65                            11              1.5600e-07      13.41 0.9013685
+14                           24                             4              9.5300e-04      15.38 0.8845958
+15                          166                            21              4.2200e-12      11.80 0.8586700
+16                            6                             3              3.9200e-04      33.33 0.7870277
+17                         3729                            21              3.7200e-13       0.53 1.0673928
+18                           69                             6              1.6010e-03       8.22 0.9282780
+19                          412                            14              1.9259e-02       3.36 0.8855884
+20                           34                             3              2.0361e-02       8.82 0.5699430
+21                           38                             3              3.1189e-02       7.50 0.6315167
+22                           66                             5              8.4544e-03       6.85 0.7916204
+23                           17                             3              3.3976e-03      16.67 0.6315167
+24                           19                             6              5.5600e-07      31.58 1.0318367
+25                            3                             3              5.0400e-06     100.00 0.7962933
+26                         1966                            16              8.7400e-05       0.76 1.0685846
+27                         1530                            14              3.6946e-03       0.85 0.9176316
+28                         1909                            14              3.0400e-05       0.68 1.1169131
+29                          817                            24              3.4784e-02       2.65 0.8311174
+30                          202                            14              1.7400e-05       6.67 0.6906434
+31                           17                             4              1.7100e-04      23.53 0.4912145
+32                            5                             4              4.2400e-07      80.00 0.4912145
+33                            5                             4              4.2400e-07      80.00 0.4912145
+34                            7                             3              1.6800e-04      42.86 0.5962463
+35                            7                             3              1.6800e-04      42.86 0.5962463
+36                           43                             7              1.0800e-05      15.56 0.7534714
+37                           16                             3              2.8676e-03      17.65 1.0998630
+38                            7                             3              1.6800e-04      42.86 0.5962463
+39                           44                             6              1.0100e-04      13.64 0.5347993
+40                           44                             6              1.0100e-04      13.64 0.5347993
+41                           29                             4              1.4538e-03      13.79 0.5372150
+42                           52                             4              1.2173e-02       7.69 0.6139185
+43                           37                             4              3.6295e-03      10.81 0.6139185
+44                          244                            14              1.4300e-04       5.49 0.9288515
+45                           32                             3              1.7305e-02       9.38 0.8706017
+46                          175                             9              6.3518e-03       4.66 0.6457452
+47                           29                             9              1.5900e-08      23.08 0.7680423
+48                            8                             3              1.9682e-03      20.00 0.7870277
+49                         1351                             8              1.1500e-04       0.57 0.8978808
+50                          909                             9              4.3909e-02       0.90 0.7586059
+51                          516                             7              2.4345e-02       0.78 0.4989851
+52                           36                             7              6.7200e-06      16.67 0.7336744
+53                           37                             8              6.0400e-07      18.60 0.7442720
+54                           41                             4              8.5730e-03       8.51 0.9986422
+55                           98                             8              4.9200e-04       7.55 0.9584624
+56                           47                             4              9.9154e-03       8.16 0.8372397
+57                          132                            15              2.6000e-07       8.82 0.7992597
+58                          158                            10              7.7600e-04       5.85 0.8587941
+59                           83                             7              6.5500e-04       8.24 0.8874177
+60                          623                            20              3.7873e-02       2.80 0.9664268
+61                           40                             4              5.7520e-03       9.52 0.6728660
+62                           56                            12              5.4900e-10      19.35 0.8007987
+63                           23                             3              6.9210e-03      13.04 0.4848820
+64                           59                             5              3.6813e-03       8.33 0.6862702
+65                           80                             9              1.5400e-05      10.59 0.6399838
+66                           51                             4              1.3847e-02       7.41 0.4912145
+67                           26                             3              1.0868e-02      11.11 0.8286850
+68                           24                             4              9.5300e-04      15.38 0.7246997
+69                           16                             4              2.1700e-04      22.22 0.7246997
+70                           35                             8              1.4000e-07      22.22 0.8679256
+71                           44                             4              6.7918e-03       9.09 0.3584415
+72                           45                             8              1.2300e-06      17.02 0.7331410
+73                           17                             5              1.0400e-05      27.78 0.5660482
+74                           13                             3              1.9682e-03      20.00 0.8098053
+75                           84                             6              2.9400e-02       4.44 0.8025042
+76                           16                             3              2.8676e-03      17.65 1.0998630
+77                         2203                            18              3.1200e-05       0.76 1.0396817
+78                          963                             5              5.1100e-04       0.48 0.6550512
+79                          996                             6              1.0085e-03       0.55 0.8051208
+80                           69                            15              2.1400e-11      17.24 0.9594181
+81                           32                             3              4.2096e-02       6.67 1.1263287
+82                         2425                            18              7.8900e-07       0.67 1.0787757
+83                         2156                            17              2.5300e-05       0.73 1.0582607
+84                          861                             5              1.8089e-03       0.53 0.6550512
+85                         1129                             6              1.4500e-04       0.49 0.8051208
+86                           48                            12              2.8600e-11      24.49 0.9648745
+87                           69                             7              1.2668e-03       7.37 1.1202864
+88                          697                             5              3.6973e-02       0.71 0.6078062
+89                          206                            10              5.7472e-03       4.44 0.9191152
+90                          124                             8              2.4688e-03       5.88 0.8724396
+91                           14                             5              3.0200e-05      22.73 1.0820442
+92                           11                             5              1.0400e-05      27.78 1.0820442
+93                          127                             9              5.5400e-04       6.67 0.9905234
+94                           46                             5              1.2395e-03      10.64 0.9552392
+95                           20                             3              6.9210e-03      13.04 0.8121787
+96                          116                             6              1.6368e-02       5.08 0.9343622
+97                           42                             5              8.2300e-04      11.63 0.4896214
+98                           26                             3              9.7827e-03      11.54 0.3148387
+99                            4                             4              8.6000e-08     100.00 0.4912145
+100                          65                             4              3.8683e-02       5.41 0.6380710
+    BMD.Median       logBMD
+1    0.5283515 -0.277077055
+2    1.0882900  0.036744639
+3    0.8972285 -0.047096940
+4    0.8972285 -0.047096940
+5    1.0227230  0.009758023
+6    1.0052595  0.002278186
+7    0.9281260 -0.032393061
+8    0.8506890 -0.070229183
+9    1.0107800  0.004656640
+10   0.9281260 -0.032393061
+11   0.6657970 -0.176658166
+12   0.8722905 -0.059338857
+13   0.8702080 -0.060376928
+14   0.8026360 -0.095481365
+15   0.8109600 -0.091000567
+16   0.8096110 -0.091723600
+17   1.0496900  0.021061060
+18   0.8373015 -0.077118131
+19   0.8068030 -0.093232496
+20   0.7486330 -0.125731033
+21   0.4282130 -0.368340152
+22   0.8705260 -0.060218253
+23   0.4282130 -0.368340152
+24   1.1545250  0.062403342
+25   0.8285920 -0.081659264
+26   1.0227230  0.009758023
+27   0.9432830 -0.025357992
+28   1.0230790  0.009909170
+29   0.9320170 -0.030576166
+30   0.6809080 -0.166911563
+31   0.2965445 -0.527910126
+32   0.2965445 -0.527910126
+33   0.2965445 -0.527910126
+34   0.5678290 -0.245782431
+35   0.5678290 -0.245782431
+36   0.7939870 -0.100186608
+37   0.8630490 -0.063964546
+38   0.5678290 -0.245782431
+39   0.5413540 -0.266518650
+40   0.5413540 -0.266518650
+41   0.5413540 -0.266518650
+42   0.5283515 -0.277077055
+43   0.5283515 -0.277077055
+44   0.9634400 -0.016175327
+45   0.8357470 -0.077925174
+46   0.6731730 -0.171873311
+47   0.8096110 -0.091723600
+48   0.8096110 -0.091723600
+49   1.1537650  0.062117360
+50   0.8007040 -0.096528002
+51   0.0226932 -1.644104259
+52   1.0077900  0.003370045
+53   0.9131225 -0.039470956
+54   1.1259100  0.051503676
+55   0.6609975 -0.179800183
+56   0.8540805 -0.068501194
+57   0.9281260 -0.032393061
+58   0.8966900 -0.047357674
+59   0.8574720 -0.066780053
+60   0.9352975 -0.029050226
+61   0.7667845 -0.115326675
+62   0.8029620 -0.095305007
+63   0.3425910 -0.465224050
+64   0.8133930 -0.089699569
+65   0.5678290 -0.245782431
+66   0.2965445 -0.527910126
+67   0.8133930 -0.089699569
+68   0.6809080 -0.166911563
+69   0.6809080 -0.166911563
+70   0.9238610 -0.034393366
+71   0.3488435 -0.457369365
+72   0.6924075 -0.159638237
+73   0.5678290 -0.245782431
+74   0.7939870 -0.100186608
+75   0.8412725 -0.075063307
+76   0.8630490 -0.063964546
+77   0.9432830 -0.025357992
+78   0.6486270 -0.188004977
+79   0.7597185 -0.119347298
+80   0.8743730 -0.058303262
+81   1.1542400  0.062296121
+82   1.0227230  0.009758023
+83   0.9571560 -0.019017274
+84   0.6486270 -0.188004977
+85   0.7597185 -0.119347298
+86   0.8230125 -0.084593569
+87   1.1397900  0.056824842
+88   0.7816270 -0.107000447
+89   0.7741090 -0.111197883
+90   0.7563315 -0.121287812
+91   1.1726700  0.069175815
+92   1.1726700  0.069175815
+93   1.0077700  0.003361426
+94   1.0293400  0.012558850
+95   0.7625950 -0.117706047
+96   0.8916000 -0.049829940
+97   0.3292250 -0.482507194
+98   0.3292250 -0.482507194
+99   0.2965445 -0.527910126
+100  0.5429735 -0.265221366
+ [ reached 'max' / getOption("max.print") -- omitted 142 rows ]
+
+$DEHC
+  GO.Pathway.Gene.Set.Gene.ID GO.Level GO.Pathway.Gene.Set.Gene.Name All.Genes..Expression.Data.
+1                  GO:0005525        6                   GTP binding                         406
+2                  GO:0008270        7              zinc ion binding                         621
+3                  GO:0019001        6     guanyl nucleotide binding                         429
+4                  GO:0032561        6 guanyl ribonucleotide binding                         419
+5                  GO:0046872        5             metal ion binding                        3264
+6                  GO:0046914        6  transition metal ion binding                         853
+  Genes.That.Passed.All.Filters Fisher.s.Exact.Two.Tail Percentage BMD.Mean BMD.Median     logBMD
+1                             4               0.0079721       0.87 1.544537   1.510445 0.17910492
+2                             4               0.0345520       0.56 1.476412   1.480515 0.17041281
+3                             4               0.0096347       0.82 1.544537   1.510445 0.17910492
+4                             4               0.0088415       0.85 1.544537   1.510445 0.17910492
+5                            11               0.0397050       0.32 1.262139   1.257400 0.09947346
+6                             5               0.0246700       0.52 1.314861   1.257400 0.09947346
+
+$DEHP
+   GO.Pathway.Gene.Set.Gene.ID GO.Level                                      GO.Pathway.Gene.Set.Gene.Name
+1                   GO:0000976        6                        transcription cis-regulatory region binding
+2                   GO:0000987        7                cis-regulatory region sequence-specific DNA binding
+3                   GO:0001067        5               transcription regulatory region nucleic acid binding
+4                   GO:0002244        5                      hematopoietic progenitor cell differentiation
+5                   GO:0002253        6                                      activation of immune response
+6                   GO:0002429        7 immune response-activating cell surface receptor signaling pathway
+7                   GO:0002684        5                       positive regulation of immune system process
+8                   GO:0002757        6                     immune response-activating signal transduction
+9                   GO:0002764        5                       immune response-regulating signaling pathway
+10                  GO:0002768        6 immune response-regulating cell surface receptor signaling pathway
+11                  GO:0003779        5                                                      actin binding
+12                  GO:0004930        5                                G protein-coupled receptor activity
+13                  GO:0006874        9                                   cellular calcium ion homeostasis
+14                  GO:0006887        5                                                         exocytosis
+15                  GO:0006954        5                                              inflammatory response
+16                  GO:0007186        5                       G protein-coupled receptor signaling pathway
+17                  GO:0007204       11         positive regulation of cytosolic calcium ion concentration
+18                  GO:0008285        6               negative regulation of cell population proliferation
+19                  GO:0008528        5                        G protein-coupled peptide receptor activity
+20                  GO:0015291        5                secondary active transmembrane transporter activity
+21                  GO:0020037        5                                                       heme binding
+22                  GO:0022853        5                      active ion transmembrane transporter activity
+23                  GO:0032940        5                                                  secretion by cell
+24                  GO:0042127        5                        regulation of cell population proliferation
+25                  GO:0046903        5                                                          secretion
+26                  GO:0050776        5                                      regulation of immune response
+27                  GO:0050778        6                             positive regulation of immune response
+28                  GO:0050801        6                                                    ion homeostasis
+29                  GO:0051480       10                  regulation of cytosolic calcium ion concentration
+30                  GO:0055065        8                                              metal ion homeostasis
+31                  GO:0055074        9                                            calcium ion homeostasis
+32                  GO:0055080        7                                                 cation homeostasis
+33                  GO:0071310        5                             cellular response to organic substance
+34                  GO:0072503        8                     cellular divalent inorganic cation homeostasis
+35                  GO:0072507        8                              divalent inorganic cation homeostasis
+36                  GO:0098771        7                                          inorganic ion homeostasis
+37                  GO:1901701        5                    cellular response to oxygen-containing compound
+38                  GO:1990837        7                      sequence-specific double-stranded DNA binding
+   All.Genes..Expression.Data. Genes.That.Passed.All.Filters Fisher.s.Exact.Two.Tail Percentage  BMD.Mean
+1                         1116                             9               0.0396760       0.74 1.4425423
+2                          887                             8               0.0205910       0.84 1.6049574
+3                         1116                             9               0.0396760       0.74 1.4425423
+4                           83                             3               0.0041542       3.33 0.9788346
+5                           62                             3               0.0037768       3.45 1.6116567
+6                           27                             3               0.0005270       6.82 1.6116567
+7                          131                             3               0.0243070       1.73 1.6116567
+8                           29                             3               0.0006010       6.52 1.6116567
+9                           51                             3               0.0028758       3.80 1.6116567
+10                          31                             3               0.0006810       6.25 1.6116567
+11                         363                             4               0.0453490       1.07 0.5927835
+12                         357                             7               0.0131980       0.99 1.2764871
+13                         159                             3               0.0330040       1.54 1.1051360
+14                         108                             3               0.0078091       2.65 1.0526748
+15                         110                             4               0.0023354       2.58 1.2078130
+16                         518                             7               0.0417530       0.78 1.2764871
+17                          81                             3               0.0083896       2.59 1.1051360
+18                          78                             3               0.0039002       3.41 1.8429967
+19                          98                             3               0.0167440       2.00 1.4288433
+20                         209                             3               0.0471350       1.33 0.0355539
+21                         133                             3               0.0173400       1.97 1.0842040
+22                         195                             3               0.0397470       1.43 0.0355539
+23                         159                             3               0.0221830       1.80 1.0526748
+24                         264                             4               0.0215150       1.36 1.8308400
+25                         171                             3               0.0269190       1.67 1.0526748
+26                         133                             3               0.0257820       1.69 1.6116567
+27                          82                             3               0.0070734       2.75 1.6116567
+28                         330                             4               0.0453490       1.07 0.8297770
+29                         108                             3               0.0147520       2.10 1.1051360
+30                         265                             4               0.0242130       1.31 0.8297770
+31                         165                             3               0.0365190       1.48 1.1051360
+32                         306                             4               0.0363490       1.15 0.8297770
+33                         201                             4               0.0108520       1.67 1.3405105
+34                         170                             3               0.0378850       1.46 1.1051360
+35                         180                             3               0.0436080       1.38 1.1051360
+36                         316                             4               0.0396750       1.12 0.8297770
+37                          96                             3               0.0074358       2.70 1.3004506
+38                        1145                             9               0.0426300       0.72 1.4425423
+   BMD.Median      logBMD
+1  1.68283000  0.22604025
+2  1.73860000  0.24019968
+3  1.68283000  0.22604025
+4  0.89513200 -0.04811292
+5  1.62032000  0.20960079
+6  1.62032000  0.20960079
+7  1.62032000  0.20960079
+8  1.62032000  0.20960079
+9  1.62032000  0.20960079
+10 1.62032000  0.20960079
+11 0.01551021 -1.80938246
+12 1.32919000  0.12358707
+13 1.32919000  0.12358707
+14 1.45818000  0.16381114
+15 1.39494000  0.14455553
+16 1.32919000  0.12358707
+17 1.32919000  0.12358707
+18 1.62032000  0.20960079
+19 1.32919000  0.12358707
+20 0.03777790 -1.42276219
+21 0.92059600 -0.03593092
+22 0.03777790 -1.42276219
+23 1.45818000  0.16381114
+24 1.70734500  0.23232129
+25 1.45818000  0.16381114
+26 1.62032000  0.20960079
+27 1.62032000  0.20960079
+28 0.68348395 -0.16527168
+29 1.32919000  0.12358707
+30 0.68348395 -0.16527168
+31 1.32919000  0.12358707
+32 0.68348395 -0.16527168
+33 1.66033500  0.22019572
+34 1.32919000  0.12358707
+35 1.32919000  0.12358707
+36 0.68348395 -0.16527168
+37 1.85998000  0.26950827
+38 1.68283000  0.22604025
+
+$P1400
+   GO.Pathway.Gene.Set.Gene.ID GO.Level
+1                   GO:0000976        6
+2                   GO:0000977        7
+3                   GO:0000978        8
+4                   GO:0000987        7
+5                   GO:0001067        5
+6                   GO:0003677        5
+7                   GO:0003690        6
+8                   GO:0015291        5
+9                   GO:0015293        6
+10                  GO:0016042        5
+11                  GO:0032101        5
+12                  GO:0043565        6
+13                  GO:0045017        5
+14                  GO:0048732        5
+15                  GO:0048878        5
+16                  GO:0051093        5
+17                  GO:0071310        5
+18                  GO:0080134        5
+19                  GO:0080135        5
+20                  GO:1990837        7
+                                                     GO.Pathway.Gene.Set.Gene.Name All.Genes..Expression.Data.
+1                                      transcription cis-regulatory region binding                        1123
+2  RNA polymerase II transcription regulatory region sequence-specific DNA binding                        1076
+3            RNA polymerase II cis-regulatory region sequence-specific DNA binding                         877
+4                              cis-regulatory region sequence-specific DNA binding                         890
+5                             transcription regulatory region nucleic acid binding                        1123
+6                                                                      DNA binding                        1793
+7                                                      double-stranded DNA binding                        1201
+8                              secondary active transmembrane transporter activity                         208
+9                                                               symporter activity                         126
+10                                                         lipid catabolic process                         151
+11                                     regulation of response to external stimulus                         150
+12                                                   sequence-specific DNA binding                        1248
+13                                               glycerolipid biosynthetic process                         110
+14                                                               gland development                         180
+15                                                            chemical homeostasis                         411
+16                                    negative regulation of developmental process                         168
+17                                          cellular response to organic substance                         202
+18                                                regulation of response to stress                         215
+19                                       regulation of cellular response to stress                         137
+20                                   sequence-specific double-stranded DNA binding                        1152
+   Genes.That.Passed.All.Filters Fisher.s.Exact.Two.Tail Percentage  BMD.Mean BMD.Median      logBMD
+1                             11               0.0184860       0.91 1.3477569  1.3262100  0.12261230
+2                             10               0.0318540       0.86 1.2436096  1.3029850  0.11493942
+3                              9               0.0187990       0.96 1.2132484  1.2797600  0.10712853
+4                              9               0.0204780       0.94 1.2132484  1.2797600  0.10712853
+5                             11               0.0184860       0.91 1.3477569  1.3262100  0.12261230
+6                             15               0.0252130       0.77 1.3477771  1.2797600  0.10712853
+7                             12               0.0124250       0.92 1.3298797  1.3029850  0.11493942
+8                              4               0.0158020       1.78 0.7364740  0.8295490 -0.08115796
+9                              4               0.0027544       2.94 0.7364740  0.8295490 -0.08115796
+10                             3               0.0327240       1.84 1.1838227  1.6274200  0.21149965
+11                             3               0.0369180       1.75 1.5963100  1.6861100  0.22688590
+12                            11               0.0297440       0.82 1.3477569  1.3262100  0.12261230
+13                             3               0.0125750       2.65 1.5479733  1.3858000  0.14170056
+14                             3               0.0485470       1.57 1.5956133  1.7170200  0.23477535
+15                             5               0.0456650       1.10 1.2417516  1.2590400  0.10003953
+16                             4               0.0072794       2.23 0.6818984  0.6596790 -0.18066734
+17                             4               0.0195370       1.67 0.9186212  0.9769725 -0.01011766
+18                             4               0.0184920       1.69 1.0928400  1.3224200  0.12136941
+19                             3               0.0225660       2.13 0.8847800  1.2590400  0.10003953
+20                            11               0.0203880       0.89 1.3477569  1.3262100  0.12261230
+
+$SANT
+   GO.Pathway.Gene.Set.Gene.ID GO.Level                                  GO.Pathway.Gene.Set.Gene.Name
+1                   GO:0001667        5                                  ameboidal-type cell migration
+2                   GO:0003015        5                                                  heart process
+3                   GO:0003690        6                                    double-stranded DNA binding
+4                   GO:0004089        6                                 carbonate dehydratase activity
+5                   GO:0004983        7                               neuropeptide Y receptor activity
+6                   GO:0005216        5                                           ion channel activity
+7                   GO:0005244        5                             voltage-gated ion channel activity
+8                   GO:0005544        5                         calcium-dependent phospholipid binding
+9                   GO:0005634        6                                                        nucleus
+10                  GO:0005887        5                          integral component of plasma membrane
+11                  GO:0005923        7                                      bicellular tight junction
+12                  GO:0006355        7                     regulation of transcription, DNA-templated
+13                  GO:0006357        8               regulation of transcription by RNA polymerase II
+14                  GO:0006811        5                                                  ion transport
+15                  GO:0006812        6                                               cation transport
+16                  GO:0006814        8                                           sodium ion transport
+17                  GO:0006820        6                                                anion transport
+18                  GO:0006873        6                                       cellular ion homeostasis
+19                  GO:0006874        9                               cellular calcium ion homeostasis
+20                  GO:0006875        8                                 cellular metal ion homeostasis
+21                  GO:0007043        7                                    cell-cell junction assembly
+22                  GO:0008188        6                                 neuropeptide receptor activity
+23                  GO:0008324        5                      cation transmembrane transporter activity
+24                  GO:0008509        5                       anion transmembrane transporter activity
+25                  GO:0008528        5                    G protein-coupled peptide receptor activity
+26                  GO:0009889        5                             regulation of biosynthetic process
+27                  GO:0010038        5                                          response to metal ion
+28                  GO:0010468        6                                  regulation of gene expression
+29                  GO:0010556        6               regulation of macromolecule biosynthetic process
+30                  GO:0014706        6                             striated muscle tissue development
+31                  GO:0015020        6                               glucuronosyltransferase activity
+32                  GO:0015081        7                  sodium ion transmembrane transporter activity
+33                  GO:0015103        5             inorganic anion transmembrane transporter activity
+34                  GO:0015267        5                                               channel activity
+35                  GO:0015849        6                                         organic acid transport
+36                  GO:0016836        5                                           hydro-lyase activity
+37                  GO:0019219        6 regulation of nucleobase-containing compound metabolic process
+38                  GO:0022832        7                                 voltage-gated channel activity
+39                  GO:0022853        5                  active ion transmembrane transporter activity
+40                  GO:0022890        5            inorganic cation transmembrane transporter activity
+41                  GO:0030003        7                                    cellular cation homeostasis
+42                  GO:0030335        7                          positive regulation of cell migration
+43                  GO:0031326        6                    regulation of cellular biosynthetic process
+44                  GO:0031331        7              positive regulation of cellular catabolic process
+45                  GO:0032886        5                        regulation of microtubule-based process
+46                  GO:0035639        5                     purine ribonucleoside triphosphate binding
+47                  GO:0043231        5                       intracellular membrane-bounded organelle
+48                  GO:0043565        6                                  sequence-specific DNA binding
+49                  GO:0044057        5                                   regulation of system process
+50                  GO:0046872        5                                              metal ion binding
+51                  GO:0046873        6                   metal ion transmembrane transporter activity
+52                  GO:0048878        5                                           chemical homeostasis
+53                  GO:0050801        6                                                ion homeostasis
+54                  GO:0051480       10              regulation of cytosolic calcium ion concentration
+55                  GO:0051592        6                                        response to calcium ion
+56                  GO:0055065        8                                          metal ion homeostasis
+57                  GO:0055074        9                                        calcium ion homeostasis
+58                  GO:0055080        7                                             cation homeostasis
+59                  GO:0055082        5                                  cellular chemical homeostasis
+60                  GO:0060047        6                                              heart contraction
+61                  GO:0060537        5                                      muscle tissue development
+62                  GO:0070160        6                                                 tight junction
+63                  GO:0070372        8                            regulation of ERK1 and ERK2 cascade
+64                  GO:0070507        6            regulation of microtubule cytoskeleton organization
+65                  GO:0071241        5                       cellular response to inorganic substance
+66                  GO:0071248        6                                 cellular response to metal ion
+67                  GO:0071277        7                               cellular response to calcium ion
+68                  GO:0071526        6                            semaphorin-plexin signaling pathway
+69                  GO:0071900        8         regulation of protein serine/threonine kinase activity
+70                  GO:0072503        8                 cellular divalent inorganic cation homeostasis
+71                  GO:0072507        8                          divalent inorganic cation homeostasis
+72                  GO:0098771        7                                      inorganic ion homeostasis
+73                  GO:0120192        8                                        tight junction assembly
+74                  GO:0120193        7                                    tight junction organization
+75                  GO:1902911        6                                         protein kinase complex
+76                  GO:1903506        8             regulation of nucleic acid-templated transcription
+77                  GO:1903522        6                                regulation of blood circulation
+78                  GO:2000112        7      regulation of cellular macromolecule biosynthetic process
+79                  GO:2001141        7                         regulation of RNA biosynthetic process
+   All.Genes..Expression.Data. Genes.That.Passed.All.Filters Fisher.s.Exact.Two.Tail Percentage  BMD.Mean
+1                          214                             6               0.0150350       2.74 0.2716114
+2                           65                             3               0.0239460       4.41 0.6020938
+3                         1202                             5               0.0337270       0.38 0.6566803
+4                           17                             3               0.0005420      16.67 0.6964655
+5                            6                             3               0.0001520      25.00 0.2704964
+6                          398                             8               0.0326310       1.97 0.4348874
+7                          187                             5               0.0297720       2.63 0.2326950
+8                           55                             5               0.0001960       8.47 0.5765752
+9                         3739                            21               0.0034376       0.53 0.8224305
+10                         739                            17               0.0033577       1.91 0.7415989
+11                          76                             4               0.0063376       4.94 1.6396700
+12                        1975                            10               0.0207760       0.47 0.5873476
+13                        1536                             7               0.0285890       0.43 0.7203815
+14                         845                            15               0.0156030       1.73 0.8129831
+15                         555                            10               0.0399590       1.76 0.6324323
+16                         119                             4               0.0279250       3.17 1.0178947
+17                         246                             7               0.0088052       2.75 1.0188231
+18                         263                             8               0.0058443       2.69 0.7440452
+19                         163                             5               0.0327650       2.56 0.7757372
+20                         221                             6               0.0281590       2.37 0.7596409
+21                          70                             3               0.0297860       4.05 1.5467133
+22                          25                             4               0.0004640      10.00 0.3481823
+23                         571                            11               0.0232640       1.86 0.7003957
+24                         238                             6               0.0267730       2.40 0.8975253
+25                         103                             7               0.0004450       4.67 0.4105968
+26                        2213                            11               0.0143810       0.46 0.5340417
+27                          74                             5               0.0006380       6.58 0.4652930
+28                        2437                            15               0.0369190       0.56 0.5810250
+29                        2166                            11               0.0186730       0.47 0.5340417
+30                          78                             3               0.0363080       3.75 1.4006333
+31                          25                             3               0.0052829       7.69 1.2444337
+32                         115                             5               0.0053091       4.07 1.0748918
+33                         126                             5               0.0060693       3.94 1.0761988
+34                         448                             9               0.0400310       1.94 0.3983189
+35                         116                             4               0.0226210       3.39 0.7788289
+36                          52                             4               0.0014552       7.41 0.6921388
+37                        2202                            13               0.0487700       0.55 0.4523626
+38                         192                             5               0.0327650       2.56 0.2326950
+39                         195                             6               0.0124470       2.86 1.3689433
+40                         532                            10               0.0352180       1.81 0.7700195
+41                         258                             8               0.0051841       2.75 0.7440452
+42                          87                             3               0.0486630       3.33 0.5395960
+43                        2196                            11               0.0141920       0.47 0.5340417
+44                          86                             3               0.0473460       3.37 0.2590028
+45                          94                             4               0.0118090       4.12 0.7672080
+46                        1758                             9               0.0397340       0.47 0.7120710
+47                        6188                            45               0.0238120       0.69 0.9036236
+48                        1248                             5               0.0345760       0.37 0.6566803
+49                         121                             6               0.0011149       4.69 0.4092086
+50                        3281                            46               0.0072982       1.32 0.7112192
+51                         375                             9               0.0089806       2.33 0.7352561
+52                         414                            12               0.0009600       2.63 0.8887118
+53                         334                            12               0.0001630       3.21 0.8887118
+54                         112                             4               0.0414740       2.80 0.9673939
+55                          35                             4               0.0002750      11.43 0.4118265
+56                         270                             7               0.0219010       2.29 0.8241150
+57                         170                             5               0.0379320       2.46 0.7757372
+58                         311                             9               0.0045988       2.59 0.7959246
+59                         274                             8               0.0072188       2.60 0.7440452
+60                          62                             3               0.0212830       4.62 0.6020938
+61                          87                             3               0.0473460       3.37 1.4006333
+62                          76                             4               0.0063376       4.94 1.6396700
+63                          61                             3               0.0351740       3.80 0.8835147
+64                          65                             4               0.0032196       5.97 0.7672080
+65                          38                             4               0.0003800      10.53 0.4118265
+66                          37                             4               0.0003430      10.81 0.4118265
+67                          32                             4               0.0001930      12.50 0.4118265
+68                          42                             3               0.0065059       7.14 0.4752960
+69                          76                             3               0.0386320       3.66 0.8462580
+70                         174                             5               0.0399910       2.43 0.7757372
+71                         185                             6               0.0147310       2.75 0.8482744
+72                         320                            10               0.0016378       2.79 0.8288732
+73                          41                             3               0.0078841       6.67 1.5467133
+74                          41                             3               0.0078841       6.67 1.5467133
+75                          66                             3               0.0258160       4.29 1.0217730
+76                        1976                            10               0.0207710       0.47 0.5873476
+77                          76                             4               0.0063376       4.94 0.3672459
+78                        2159                            11               0.0185710       0.47 0.5340417
+79                        1978                            10               0.0207630       0.47 0.5873476
+   BMD.Median       logBMD
+1  0.00442399 -2.354185863
+2  0.02274250 -1.643161797
+3  0.81455800 -0.089077987
+4  1.00300000  0.001300933
+5  0.01820430 -1.739826016
+6  0.11230825 -0.949588340
+7  0.00736302 -2.132944020
+8  0.13413400 -0.872461124
+9  0.92045100 -0.035999326
+10 0.75851600 -0.120035254
+11 1.72666500  0.237208086
+12 0.47122000 -0.326776285
+13 0.92045100 -0.035999326
+14 1.08289000  0.034584343
+15 0.52680125 -0.278353203
+16 1.14402000  0.058433617
+17 1.25718000  0.099397463
+18 0.71883750 -0.143369275
+19 0.75851600 -0.120035254
+20 0.71883750 -0.143369275
+21 1.63669000  0.213966429
+22 0.29972215 -0.523281161
+23 1.03086000  0.013199688
+24 1.21414500  0.084270556
+25 0.14644000 -0.834340280
+26 0.12788200 -0.893190580
+27 0.13413400 -0.872461124
+28 0.12788200 -0.893190580
+29 0.12788200 -0.893190580
+30 1.30607000  0.115966454
+31 1.28161000  0.107755887
+32 1.25718000  0.099397463
+33 1.30288000  0.114904417
+34 0.10577100 -0.975633390
+35 0.65942395 -0.180835284
+36 0.84107950 -0.075162952
+37 0.00875867 -2.057561836
+38 0.00736302 -2.132944020
+39 1.33784500  0.126405800
+40 1.05687500  0.024023625
+41 0.71883750 -0.143369275
+42 0.19736400 -0.704732062
+43 0.12788200 -0.893190580
+44 0.01378070 -1.860728722
+45 0.71415638 -0.146206680
+46 0.15160300 -0.819292205
+47 1.06525000  0.027451543
+48 0.81455800 -0.089077987
+49 0.07777531 -1.109158249
+50 0.80693850 -0.093159563
+51 1.03086000  0.013199688
+52 1.06420500  0.027025295
+53 1.06420500  0.027025295
+54 1.04221300  0.017956486
+55 0.07021602 -1.153563822
+56 0.75851600 -0.120035254
+57 0.75851600 -0.120035254
+58 0.75851600 -0.120035254
+59 0.71883750 -0.143369275
+60 0.02274250 -1.643161797
+61 1.30607000  0.115966454
+62 1.72666500  0.237208086
+63 1.20413000  0.080673377
+64 0.71415638 -0.146206680
+65 0.07021602 -1.153563822
+66 0.07021602 -1.153563822
+67 0.07021602 -1.153563822
+68 0.00446412 -2.350264140
+69 0.85286000 -0.069122254
+70 0.75851600 -0.120035254
+71 0.98473800 -0.006679303
+72 0.94196300 -0.025966156
+73 1.63669000  0.213966429
+74 1.63669000  0.213966429
+75 0.85286000 -0.069122254
+76 0.47122000 -0.326776285
+77 0.07777531 -1.109158249
+78 0.12788200 -0.893190580
+79 0.47122000 -0.326776285
+
