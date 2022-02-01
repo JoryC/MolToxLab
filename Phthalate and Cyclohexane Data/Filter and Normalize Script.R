@@ -7,6 +7,7 @@ library(purrr)
 library(ggfortify)
 
 source("RNAseqFunctions.R")
+source("BMDExpressFunctions.R") # for multiplot
 
 
 #### IMPORT METADATA ####
@@ -67,7 +68,7 @@ nestData <- nestData %>%
 
 #### EXPORT NORM DATA ####
 
-if(TRUE){
+if(FALSE){   #switch to TRUE if you want to save the output files
   apply(nestData, 1, FUN = function(x){
     
     outData <- x$normData %>%
@@ -86,18 +87,22 @@ if(TRUE){
 }
 
 
+#### PCA ####
+# PCA of using prcomp and plotted using autoplot
 
+nestData <- nestData %>%
+  mutate(PCAplots = map(normData, function(x){
+    x %>%
+      select(-sample, -dose) %>%
+      prcomp(center=TRUE, scale.=TRUE) %>%
+      autoplot(data=x, colour="dose", size = 3) +
+        theme_bw()
+  }))
 
+# single plot
+nestData$PCAplots[[1]]
 
-####PCA####  haven't updated this yet -Jason
-
-#temp1 <- as.data.frame(t(norm_combined_data))
-#chemgroupsfactor <- as.factor(newchemgroups)
-#grouped_norm_data <- data.frame(chemgroupsfactor,temp1)
-#rm(temp1)
-#pca_model <- prcomp(grouped_norm_data[,-1])
-#autoplot(pca_model, colour = 'chemgroupsfactor', data = grouped_norm_data, label = TRUE)
-
-
+# multiplot
+multiplot(plotlist=nestData$PCAplots, cols=3)
 
 
