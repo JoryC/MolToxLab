@@ -29,6 +29,15 @@ BMDfiltering <- function(x,
       )
 }
 
+#Get list of BMDs based on lowest median values
+BMD_list_extraction <- function(x){
+  temp <- x %>% 
+    filter(logBMD == min(x[,"logBMD"])) %>%
+    select(BMD.List)
+  temp2 <- strsplit(temp[,1],";") %>% lapply(as.numeric)
+}
+
+
 ####REACTOME Functions####
 #Clean up columns during import
 cleanupcolumns_reactome <- function(x){
@@ -40,7 +49,8 @@ cleanupcolumns_reactome <- function(x){
            Fisher.s.Exact.Two.Tail,
            Percentage,
            BMD.Mean,
-           BMD.Median
+           BMD.Median,
+           BMD.List
            )
 }
 
@@ -121,7 +131,8 @@ cleanupcolumns_goterm <- function(x){
            Fisher.s.Exact.Two.Tail,
            Percentage,
            BMD.Mean,
-           BMD.Median
+           BMD.Median,
+           BMD.List
     )
 }
 
@@ -139,3 +150,6 @@ goterm_filtering <- function(x,
     )
 
 }
+
+
+
