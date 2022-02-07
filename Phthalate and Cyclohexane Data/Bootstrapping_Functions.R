@@ -1,6 +1,15 @@
 ####Libraries####
 library(tidyverse)
-source("mode_antimode.R")
+
+logBMDvalues <- readRDS("all_BMD_list_logtransformed.RDS")
+
+metadata <- read.csv("RNAseqData/metadata_nocontrol.csv")
+chemnames <- unique(metadata$chemical)
+lowestdoses <- unique(metadata[, c("chemical", "dose")]) %>%
+  group_by(chemical) %>%
+  filter(dose > 0) %>%
+  summarise_all(min)
+
 
 ####nth Gene Bootstrap####
 nth_gene_bootstrap <- function(x,
@@ -10,7 +19,7 @@ nth_gene_bootstrap <- function(x,
   set.seed(seed)
   boot_nth_gene <- vector()
   for(i in 1:repeats){
-    sampleData <- sample(x, length(x), replace = TRUE)
+    sampleData <- sample(unlist(x), length(unlist(x)), replace = TRUE)
     s <- sampleData[order(sampleData)][nth_gene]
     boot_nth_gene <- c(boot_nth_gene, s)
   }
@@ -27,7 +36,7 @@ nth_percent_bootstrap <- function(x,
   set.seed(seed)
   boot_nth_percent <- vector()
   for(i in 1:repeats){
-    sampleData <- sample(x, length(x), replace = TRUE)
+    sampleData <- sample(unlist(x), length(unlist(x)), replace = TRUE)
     s <- quantile(sampleData[order(sampleData)], probs = (nth_percent/100))
     boot_nth_percent <- c(boot_nth_percent, s)
   }
@@ -37,33 +46,120 @@ nth_percent_bootstrap <- function(x,
 ####First Mode Bootstrap####
 mode_bootstrap <- function(x,
                            seed = 1,
-                           repeats = 2000,
-                           minsize = 0.6,
-                           
-                           ) {
-  
+                           repeats = 2000) {
+  source("mode_antimode.R")
   set.seed(seed)
   boot_mode <- vector()
+  for(i in 1:repeats){
+    sampleData<-sample(unlist(x), length(unlist(x)), replace=TRUE)
+    dataMode<-mode.antimode(sampleData, min.size=0.06, bw="SJ", min.bw=0.15)
+    s<-dataMode$modes[[1]]
+    boot_mode <- c(boot_mode, s)
+  }
+  return(quantile(boot_mode, probs=c(0.025,0.5, 0.975)))
 }
 
 
+####Testing####
 
+nthgenelist <- lapply(logBMDvalues, nth_gene_bootstrap)
 
+nthpercentlist <- lapply(logBMDvalues, nth_percent_bootstrap)
 
+modelist <- lapply(logBMDvalues, mode_bootstrap)
 
+####Pathway Bootstrap####
+pathway_bootstrap <- function(x,
+                              seed = 1,
+                              repeats = 2000) {
+  set.seed(seed)
+  boot_pathway <- vector()
+  for (i in 1:repeats) {
+    sampleData <- sample(unlist(x), length(unlist(x)), replace = TRUE)
+    s <- median(sampleData)
+    boot_pathway <- c(boot_pathway, s)
+  }
+  return(quantile(boot_pathway, probs = c(0.025, 0.5, 0.975)))
+}
 
+####Average CI values####
+averageCI <- function(x){
+  lowerCIvalues <- vector()
+  medianvalues <- vector()
+  upperCIvalues <- vector()
+  for(i in 1:length(x)){
+    if(length(x) > 0){
+      templow <- x[[i]][[1]]
+      lowerCIvalues <- c(lowerCIvalues, templow)
+      tempmed <- x[[i]][[2]]
+      medianvalues <- c(medianvalues, tempmed)
+      tempup <- x[[i]][[3]]
+      upperCIvalues <- c(upperCIvalues, tempup)
+    } else {
+      lowerCIvalues = NA
+      medianvalues = NA
+      upperCIvalues = NA
+    }
+  }
+  meanlowerCI <- mean(lowerCIvalues)
+  meanmedianvalue <- mean(medianvalues)
+  meanupperCI <- mean(upperCIvalues)
+  meanvalues <- c(meanlowerCI, meanmedianvalue, meanupperCI)
+  names(meanvalues) <- c("2.5%", "50%", "97.5%")
+  return(meanvalues)
+}
 
-logBMDvalues <- readRDS("all_BMD_list_logtransformed.RDS")
+goBMDvalues <- readRDS("go_BMD_list_logtransformed.RDS")
 
-metadata <- read.csv("RNAseqData/metadata_nocontrol.csv")
-chemnames <- unique(metadata$chemical)
-lowestdoses <- unique(metadata[, c("chemical", "dose")]) %>%
-  group_by(chemical) %>%
-  filter(dose > 0) %>%
-  summarise_all(min)
-
-testlist <- list()
-
+gotemplist <- list()
 for(i in chemnames){
-  testlist[[i]] <- nth_percent_bootstrap(unlist(logBMDvalues[[i]]))
+  for(j in 1:length(goBMDvalues[[i]])){
+    if(length(goBMDvalues[[i]]) > 0){
+      gotemplist[[i]][[j]] <- pathway_bootstrap(goBMDvalues[[i]][j])
+    } else {
+      gotemplist[[i]] <- list
+      print(paste("Missing values in", i))
+    }
+  }
 }
+
+gotermlist <- lapply(gotemplist, averageCI)
+remove(gotemplist)
+
+reactomeBMDvalues <- readRDS("reactome_BMD_list_logtransformed.RDS")
+
+reactometemplist <- list()
+for(i in chemnames){
+  for(j in 1:length(reactomeBMDvalues[[i]])){
+    if(length(reactomeBMDvalues[[i]]) > 0){
+      reactometemplist[[i]][[j]] <- pathway_bootstrap(reactomeBMDvalues[[i]][j])
+    } else {
+      reactometemplist[[i]] <- list()
+      print(paste("Missing values in", i))
+    }
+  }
+}
+
+reactomelist <- lapply(reactometemplist, averageCI)
+remove(reactometemplist)
+
+endpointnames <- c("nthgene", "nthpercent", "mode", "goterm", "reactome")
+
+bigolduglylist <-list(nthgenelist, nthpercentlist, modelist, gotermlist, reactomelist)
+names(bigolduglylist) <- endpointnames
+
+testtibble2 <- tibble(bigolduglylist)
+
+testtibble <- tibble(chemical = chemnames[1], 
+                     endpoints = endpointnames,
+                     lowerCI = for(i in endpointnames){
+                       
+                     }
+                     )
+
+
+
+
+
+
+
