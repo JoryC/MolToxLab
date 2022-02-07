@@ -62,11 +62,31 @@ mode_bootstrap <- function(x,
 
 ####Testing####
 
-nthgenelist <- lapply(logBMDvalues, nth_gene_bootstrap)
+nthgenelist <- sapply(logBMDvalues, nth_gene_bootstrap) %>% 
+  t() %>% 
+  as.data.frame %>%
+  mutate(endpoint = "nthgene") %>%
+  rownames_to_column("chemical") %>%
+  tibble() %>%
+  relocate(chemical, endpoint)
 
-nthpercentlist <- lapply(logBMDvalues, nth_percent_bootstrap)
 
-modelist <- lapply(logBMDvalues, mode_bootstrap)
+nthpercentlist <- sapply(logBMDvalues, nth_percent_bootstrap) %>%
+  t() %>% 
+  as.data.frame %>%
+  mutate(endpoint = "nthpercent") %>%
+  rownames_to_column("chemical") %>%
+  tibble() %>%
+  relocate(chemical, endpoint)
+
+modelist <- sapply(logBMDvalues, mode_bootstrap) %>%
+  t() %>% 
+  as.data.frame %>%
+  mutate(endpoint = "mode") %>%
+  rownames_to_column("chemical") %>%
+  tibble() %>%
+  relocate(chemical, endpoint)
+
 
 ####Pathway Bootstrap####
 pathway_bootstrap <- function(x,
@@ -123,7 +143,14 @@ for(i in chemnames){
   }
 }
 
-gotermlist <- lapply(gotemplist, averageCI)
+gotermlist <- sapply(gotemplist, averageCI) %>%  
+  t() %>% 
+  as.data.frame %>%
+  mutate(endpoint = "goterm") %>%
+  rownames_to_column("chemical") %>%
+  tibble() %>%
+  relocate(chemical, endpoint)
+  
 remove(gotemplist)
 
 reactomeBMDvalues <- readRDS("reactome_BMD_list_logtransformed.RDS")
@@ -140,24 +167,21 @@ for(i in chemnames){
   }
 }
 
-reactomelist <- lapply(reactometemplist, averageCI)
+reactomelist <- sapply(reactometemplist, averageCI) %>%
+  t() %>% 
+  as.data.frame %>%
+  mutate(endpoint = "reactome") %>%
+  rownames_to_column("chemical") %>%
+  tibble() %>%
+  relocate(chemical, endpoint)
+
 remove(reactometemplist)
 
-endpointnames <- c("nthgene", "nthpercent", "mode", "goterm", "reactome")
+bigtibble <- bind_rows(nthgenelist, nthpercentlist, modelist, gotermlist, reactomelist)
 
-bigolduglylist <-list(nthgenelist, nthpercentlist, modelist, gotermlist, reactomelist)
-names(bigolduglylist) <- endpointnames
+bigtibble %>% filter(chemical == "DEHC") %>% ggplot()
 
-testtibble2 <- tibble(bigolduglylist)
-
-testtibble <- tibble(chemical = chemnames[1], 
-                     endpoints = endpointnames,
-                     lowerCI = for(i in endpointnames){
-                       
-                     }
-                     )
-
-
+testvector <- vector()
 
 
 
