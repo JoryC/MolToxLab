@@ -188,9 +188,9 @@ BoxPlotData %>%
 #Dose Variance 
 #Columns = mean of all values in dose group 
 #points = raw values coloured by replicate group w/ 75% IQR outliers removed
-Tidy_Data %>%
+BoxPlotData %>%
   group_by(Chemical, `Dose(mg/L)`) %>%
-  summarise(Fluorescence = mean(Fluorescence, na.rm = TRUE)) %>%
+  summarise(SD = sd(Fluorescence, na.rm = TRUE), Fluorescence = mean(Fluorescence, na.rm = TRUE)) %>%
   ggplot(aes(x = as.factor(`Dose(mg/L)`), y = Fluorescence)) +
   geom_col() +
   facet_wrap(~Chemical, scales = "free") +
@@ -202,4 +202,5 @@ Tidy_Data %>%
              aes(x = as.factor(`Dose(mg/L)`), 
                  y = Fluorescence, 
                  colour = Group), 
-             na.rm = TRUE)
+             na.rm = TRUE) +
+  geom_errorbar(aes(ymin = Fluorescence - SD, ymax = Fluorescence + SD))
