@@ -1,16 +1,6 @@
 ####Libraries####
 library(tidyverse)
 
-logBMDvalues <- readRDS("all_BMD_list_logtransformed.RDS")
-
-metadata <- read.csv("RNAseqData/metadata_nocontrol.csv")
-chemnames <- unique(metadata$chemical)
-lowestdoses <- unique(metadata[, c("chemical", "dose")]) %>%
-  group_by(chemical) %>%
-  filter(dose > 0) %>%
-  summarise_all(min)
-
-
 ####nth Gene Bootstrap####
 nth_gene_bootstrap <- function(x,
                                seed = 1,
@@ -59,35 +49,6 @@ mode_bootstrap <- function(x,
   return(quantile(boot_mode, probs=c(0.025,0.5, 0.975)))
 }
 
-
-####Testing####
-
-nthgenelist <- sapply(logBMDvalues, nth_gene_bootstrap) %>% 
-  t() %>% 
-  as.data.frame %>%
-  mutate(endpoint = "nthgene") %>%
-  rownames_to_column("chemical") %>%
-  tibble() %>%
-  relocate(chemical, endpoint)
-
-
-nthpercentlist <- sapply(logBMDvalues, nth_percent_bootstrap) %>%
-  t() %>% 
-  as.data.frame %>%
-  mutate(endpoint = "nthpercent") %>%
-  rownames_to_column("chemical") %>%
-  tibble() %>%
-  relocate(chemical, endpoint)
-
-modelist <- sapply(logBMDvalues, mode_bootstrap) %>%
-  t() %>% 
-  as.data.frame %>%
-  mutate(endpoint = "mode") %>%
-  rownames_to_column("chemical") %>%
-  tibble() %>%
-  relocate(chemical, endpoint)
-
-
 ####Pathway Bootstrap####
 pathway_bootstrap <- function(x,
                               seed = 1,
@@ -128,62 +89,6 @@ averageCI <- function(x){
   names(meanvalues) <- c("2.5%", "50%", "97.5%")
   return(meanvalues)
 }
-
-goBMDvalues <- readRDS("go_BMD_list_logtransformed.RDS")
-
-gotemplist <- list()
-for(i in chemnames){
-  for(j in 1:length(goBMDvalues[[i]])){
-    if(length(goBMDvalues[[i]]) > 0){
-      gotemplist[[i]][[j]] <- pathway_bootstrap(goBMDvalues[[i]][j])
-    } else {
-      gotemplist[[i]] <- list
-      print(paste("Missing values in", i))
-    }
-  }
-}
-
-gotermlist <- sapply(gotemplist, averageCI) %>%  
-  t() %>% 
-  as.data.frame %>%
-  mutate(endpoint = "goterm") %>%
-  rownames_to_column("chemical") %>%
-  tibble() %>%
-  relocate(chemical, endpoint)
-  
-remove(gotemplist)
-
-reactomeBMDvalues <- readRDS("reactome_BMD_list_logtransformed.RDS")
-
-reactometemplist <- list()
-for(i in chemnames){
-  for(j in 1:length(reactomeBMDvalues[[i]])){
-    if(length(reactomeBMDvalues[[i]]) > 0){
-      reactometemplist[[i]][[j]] <- pathway_bootstrap(reactomeBMDvalues[[i]][j])
-    } else {
-      reactometemplist[[i]] <- list()
-      print(paste("Missing values in", i))
-    }
-  }
-}
-
-reactomelist <- sapply(reactometemplist, averageCI) %>%
-  t() %>% 
-  as.data.frame %>%
-  mutate(endpoint = "reactome") %>%
-  rownames_to_column("chemical") %>%
-  tibble() %>%
-  relocate(chemical, endpoint)
-
-remove(reactometemplist)
-
-bigtibble <- bind_rows(nthgenelist, nthpercentlist, modelist, gotermlist, reactomelist)
-
-bigtibble %>% filter(chemical == "DEHC") %>% ggplot()
-
-testvector <- vector()
-
-
 
 
 
