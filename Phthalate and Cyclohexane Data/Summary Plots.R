@@ -2,6 +2,7 @@
 library(tidyverse)
 source("Bootstrapping_Functions.R")
 source("mode_antimode.R")
+source("BMDExpressFunctions.R")
 
 ####Data Import####
 
@@ -27,7 +28,7 @@ apicallist <- read.csv("apical_endpoints.csv")
 nthgenelist <- sapply(logBMDvalues, nth_gene_bootstrap) %>% 
   t() %>% 
   as.data.frame %>%
-  mutate(endpoint = "nthgene") %>%
+  mutate(endpoint = "20th gene") %>%
   rownames_to_column("chemical") %>%
   tibble() %>%
   relocate(chemical, endpoint)
@@ -36,7 +37,7 @@ nthgenelist <- sapply(logBMDvalues, nth_gene_bootstrap) %>%
 nthpercentlist <- sapply(logBMDvalues, nth_percent_bootstrap) %>%
   t() %>% 
   as.data.frame %>%
-  mutate(endpoint = "nthpercent") %>%
+  mutate(endpoint = "10th pct") %>%
   rownames_to_column("chemical") %>%
   tibble() %>%
   relocate(chemical, endpoint)
@@ -45,7 +46,7 @@ nthpercentlist <- sapply(logBMDvalues, nth_percent_bootstrap) %>%
 modelist <- sapply(logBMDvalues, mode_bootstrap) %>%
   t() %>% 
   as.data.frame %>%
-  mutate(endpoint = "mode") %>%
+  mutate(endpoint = "1st Mode") %>%
   rownames_to_column("chemical") %>%
   tibble() %>%
   relocate(chemical, endpoint)
@@ -68,7 +69,7 @@ for(i in chemnames){
 gotermlist <- sapply(gotemplist, averageCI) %>%  
   t() %>% 
   as.data.frame %>%
-  mutate(endpoint = "goterm") %>%
+  mutate(endpoint = "Go Term") %>%
   rownames_to_column("chemical") %>%
   tibble() %>%
   relocate(chemical, endpoint)
@@ -92,42 +93,41 @@ for(i in chemnames){
 reactomelist <- sapply(reactometemplist, averageCI) %>%
   t() %>% 
   as.data.frame %>%
-  mutate(endpoint = "reactome") %>%
+  mutate(endpoint = "Reactome") %>%
   rownames_to_column("chemical") %>%
   tibble() %>%
   relocate(chemical, endpoint)
 
 remove(reactometemplist)
 
-
-
-
 ####Summary####
-
-
 
 bigtibble <- bind_rows(nthgenelist, nthpercentlist, modelist, gotermlist, reactomelist) %>%
   rename(lowerCI = "2.5%", median = "50%", upperCI = "97.5%") %>%
-  bind_rows(apicallist)
+  bind_rows(apicallist) %>% 
+  mutate(missingvalues = if_else(is.na(median), "ND", "")) %>%
+  mutate(endpoint = factor(endpoint, levels = c("aPOD", "Behaviour", "1st Mode", "20th gene", "10th pct", "GO Term", "Reactome")))
+  
+  
 
 summaryplots <- list()
 
-i <- "DBP"
+# i <- "DBP"
 
-# for(i in chemnames){
-#   summaryplots[[i]] <-
+for(i in chemnames){
+  summaryplots[[i]] <-
     bigtibble %>%
     filter(chemical == i) %>%
     ggplot(aes(x=median, y=endpoint)) +
-    xlim(-5,1) + 
-    geom_point(size = 3, aes(colour = factor(endpoint)), show.legend = FALSE) +
-    geom_errorbarh(aes(xmin=lowerCI, xmax=upperCI, colour = factor(endpoint)), height = .2, size = 0.5, show.legend = FALSE) +
+    xlim(-5,3) +
+    # scale_x_continuous(limit = c(-5, 2), oob = function(x, limits) x) +
+    geom_point(size = 3, aes(colour = endpoint), show.legend = FALSE) +
+    geom_errorbarh(aes(xmin=lowerCI, xmax=upperCI, colour = endpoint), height = .2, size = 0.5, show.legend = FALSE) +
     # geom_pointrange(aes(xmin = lowerCI, xmax = upperCI), size=0.5) +
+    geom_text(aes(x = -1, label = missingvalues)) +
     labs(title = paste0(i," (n=",length(logBMDvalues[[i]][[1]]), " genes)"), x = "logBMD", y = "Endpoint") +
     theme(plot.title = element_text(hjust = 0.5, size=12)) +
     theme_classic()
-# }
-
-source("BMDExpressFunctions.R")
+}
 
 multiplot(plotlist = summaryplots, cols = 3 )

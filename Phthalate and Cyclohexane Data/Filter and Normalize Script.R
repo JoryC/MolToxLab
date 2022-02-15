@@ -3,7 +3,7 @@ library(tidyverse)
 library(edgeR)
 library(preprocessCore) # for quantile normalization
 library(PMCMRplus)  # for Williams Trend Test
-library(purrr)
+# library(purrr)
 library(ggfortify)
 
 source("RNAseqFunctions.R")
@@ -96,11 +96,12 @@ nestData <- nestData %>%
       select(-sample, -dose) %>%
       prcomp(center=TRUE, scale.=TRUE) %>%
       autoplot(data=x, colour="dose", size = 3) +
-        theme_bw()
+        theme_bw() +
+      labs(title = paste(chemical))
   }))
 
 # single plot
-nestData$PCAplots[[1]]
+# nestData$PCAplots[[1]]
 
 # multiplot
 multiplot(plotlist=nestData$PCAplots, cols=3)
