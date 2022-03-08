@@ -12,29 +12,22 @@ source("BMDExpressFunctions.R") # for multiplot
 
 #### IMPORT METADATA ####
 
-metadata <- read.csv("RNAseqData/metadata_nocontrol.csv", header = TRUE) %>%
+metadata <- read.csv("RNAseqData/metadata.csv", header = TRUE) %>%
   arrange(chemical, dose)
-
-# metadata <- read.csv("RNAseqData/Control_Archive/metadata2.csv", header = TRUE) %>%
-#   arrange(chemical, dose)
 
 #### IMPORT SEQ DATA ####
 # folders containing ONLY raw data
 
 dataFolders <- paste0("RNAseqData/RawData/",dir("RNAseqData/RawData"))
 
-# dataFolders <- paste0("RNAseqData/Control_Archive/RawData/",dir("RNAseqData/Control_Archive/RawData"))
-
 # load data into a list
 loadRaw<-list()
 for(i in dataFolders){
   fileNames <- list.files(paste0(i))
   for(j in fileNames){
-    loadRaw[[j]] <- read.table(paste0(i,"/",j),
-                         header = FALSE,
-                         stringsAsFactors = FALSE,
-                         sep = "\t",
-                         strip.white = TRUE) [-c(1:4),-c(2:3)]
+    loadRaw[[j]] <- read.csv(paste0(i,"/",j),
+                         header = TRUE,
+                         stringsAsFactors = FALSE)
     colnames(loadRaw[[j]])<-c("gene", j)
   }
 }
