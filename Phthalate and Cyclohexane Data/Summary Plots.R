@@ -112,7 +112,8 @@ bigtibble <- bind_rows(nthgenelist, nthpercentlist, modelist, gotermlist, reacto
                                                 "20th gene",
                                                 "1st Mode",
                                                 "Behaviour",
-                                                "aPOD")))
+                                                "EC50",
+                                                "LC50")))
 
 summaryplots <- list()
 
