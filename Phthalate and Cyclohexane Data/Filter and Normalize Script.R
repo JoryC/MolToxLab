@@ -3,20 +3,27 @@ library(tidyverse)
 library(edgeR)
 library(preprocessCore) # for quantile normalization
 library(PMCMRplus)  # for Williams Trend Test
-library(purrr)
+# library(purrr)
 library(ggfortify)
 
 source("RNAseqFunctions.R")
+source("BMDExpressFunctions.R") # for multiplot
 
 
 #### IMPORT METADATA ####
-metadata <- read.csv("RNAseqData/metadata2.csv", header = TRUE) %>%
+
+metadata <- read.csv("RNAseqData/metadata_nocontrol.csv", header = TRUE) %>%
   arrange(chemical, dose)
 
+# metadata <- read.csv("RNAseqData/Control_Archive/metadata2.csv", header = TRUE) %>%
+#   arrange(chemical, dose)
 
 #### IMPORT SEQ DATA ####
 # folders containing ONLY raw data
+
 dataFolders <- paste0("RNAseqData/RawData/",dir("RNAseqData/RawData"))
+
+# dataFolders <- paste0("RNAseqData/Control_Archive/RawData/",dir("RNAseqData/Control_Archive/RawData"))
 
 # load data into a list
 loadRaw<-list()
@@ -67,7 +74,7 @@ nestData <- nestData %>%
 
 #### EXPORT NORM DATA ####
 
-if(FALSE){
+if(FALSE){   #switch to TRUE if you want to save the output files
   apply(nestData, 1, FUN = function(x){
     
     outData <- x$normData %>%
@@ -86,18 +93,30 @@ if(FALSE){
 }
 
 
+#### PCA ####
+# PCA of using prcomp and plotted using autoplot
 
+nestData <- nestData %>%
+  mutate(PCAplots = map(normData, function(x){
+    x <- x %>% mutate(controlcol = ifelse(dose == 0, "Control", "Treated"))
+    x %>%
+      select(-sample, -dose, -controlcol) %>%
+      prcomp(center=TRUE, scale.=TRUE) %>%
+      autoplot(data=x, 
+               colour="dose", 
+               # shape = "controlcol",
+               size = 3) +
+      theme_bw() +
+      scale_shape_manual(values = c(15, 16)) +
+      labs(title = paste(chemical), colour = "Dose(??M)", shape = "") +
+      guides(shape = FALSE) +
+      theme(plot.title = element_text(hjust = 0.5))
+  }))
 
+# single plot
+# nestData$PCAplots[[1]]
 
-####PCA####  haven't updated this yet -Jason
-
-#temp1 <- as.data.frame(t(norm_combined_data))
-#chemgroupsfactor <- as.factor(newchemgroups)
-#grouped_norm_data <- data.frame(chemgroupsfactor,temp1)
-#rm(temp1)
-#pca_model <- prcomp(grouped_norm_data[,-1])
-#autoplot(pca_model, colour = 'chemgroupsfactor', data = grouped_norm_data, label = TRUE)
-
-
+# multiplot
+multiplot(plotlist=nestData$PCAplots, cols=3)
 
 
