@@ -31,19 +31,19 @@ remove(temp1)
 patd <- readRDS(paste0(ChemicalName,"/",ChemicalName,".rds"))
 ```
 
-## all plates , cols = embryo_id + plate_id + is_VC + time_end + value
-#```{r}
-patd <- patd %>% 
-  unite(embryo_id, row_id, column_id) %>%
-  rename(
-    value = total_distance_moved,
-    is_VC = is_vehicle_control
-  ) %>%
-  filter(
-    is.na(well_comment) #remove all malformed/dead
-  ) %>%
-  select(plate_id, embryo_id, is_VC, time_end, value)
-#```
+<!-- ## all plates , cols = embryo_id + plate_id + is_VC + time_end + value -->
+<!-- #```{r} -->
+<!-- patd <- patd %>% -->
+<!--   unite(embryo_id, row_id, column_id) %>% -->
+<!--   rename( -->
+<!--     value = total_distance_moved, -->
+<!--     is_VC = is_vehicle_control -->
+<!--   ) %>% -->
+<!--   filter( -->
+<!--     is.na(well_comment) #remove all malformed/dead -->
+<!--   ) %>% -->
+<!--   select(plate_id, embryo_id, is_VC, time_end, value) -->
+<!-- #``` -->
 
 ## just one plate
 ```{r}
@@ -53,7 +53,15 @@ patd_one <- patd %>%
 
 ## calculate quantity (AUC) endpoints
 ```{r}
-auc_endps <- list(a = seq(1, 5, by = 1), b = seq(6, 10, by = 1), c = seq(11, 15, by = 1), d = seq(16, 20, by = 1), e = seq(21, 25, by = 1), f = seq(26, 30, by = 1) )
+auc_endps <-
+  list(
+    a = seq(1, 5, by = 1),
+    b = seq(6, 10, by = 1),
+    c = seq(11, 15, by = 1),
+    d = seq(16, 20, by = 1),
+    e = seq(21, 25, by = 1),
+    f = seq(26, 30, by = 1)
+  )
 auc_one <- create_auc_endpoints(patd_one, segments = auc_endps)
 auc_all <- create_auc_endpoints(patd, segments = auc_endps)
 ```
@@ -100,8 +108,10 @@ auc_norm<- bind_rows(auc_list) %>%
   rename(endpoint_value_norm = endpoint_value_norm2)
 
 auc_plot <- auc_norm %>%
+  
   ggplot(aes(x = dose, y = endpoint_value_norm)) +
-  geom_boxplot()
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.1, height = 0, aes(color = endpoint))
 print(auc_plot)
 
 ## normalize similarity scores - "(Vchemical/Vvehicle control) * 100 – 100"
@@ -114,7 +124,8 @@ simi_norm <- simi_norm %>%
 
 simi_plot <- simi_norm %>%
   ggplot(aes(x = dose, y = endpoint_value_norm)) +
-  geom_boxplot()
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.1, height = 0, colour = "blue")
 print(simi_plot)
 
 write.table(auc_norm, file = paste0(ChemicalName,"/",ChemicalName,"_auc_norm.txt"))
