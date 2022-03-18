@@ -17,7 +17,7 @@ source("cal_auc_simi_endpoints.R")
 ## to change chemical, change ChemicalName and update HighDose. Create a folder for each chemical!
 
 ```{r}
-ChemicalName <- "TGSH"
+ChemicalName <- "BPAF"
 #Log10, ug/L
 HighDose <- 3
 LowDose <- HighDose-4
@@ -91,12 +91,12 @@ auc_norm <- auc_norm %>%
   mutate(endpoint_value_norm = log10(endpoint_value + 1)) %>%
   select(-endpoint_value) %>%
   mutate(dose = substr(embryo_id, 1, nchar(embryo_id)-2)) %>%
-  select(-embryo_id)
+  mutate(embryo_id = substr(embryo_id, nchar(embryo_id)-1+1, nchar(embryo_id)))
 
 ## must separate out each light/dark phase and generate a median for each phase
 auc_list <- split(auc_norm, auc_norm$endpoint)
 for(i in 1:length(auc_list)) {
-  temp1 <- auc_list[[i]][1:9, 4] %>% unlist() %>% median()
+  temp1 <- auc_list[[i]][1:9, 5] %>% unlist() %>% median()
   auc_list[[i]]$control_median = temp1
   remove(temp1)
 }
@@ -108,10 +108,10 @@ auc_norm<- bind_rows(auc_list) %>%
   rename(endpoint_value_norm = endpoint_value_norm2)
 
 auc_plot <- auc_norm %>%
-  
+  mutate(phase = if_else(endpoint %in% c("a", "c", "e"), "Dark", "Light")) %>%
   ggplot(aes(x = dose, y = endpoint_value_norm)) +
   geom_boxplot(outlier.shape = NA) +
-  geom_jitter(width = 0.1, height = 0, aes(color = endpoint))
+  geom_jitter(width = 0.1, height = 0, aes(color = embryo_id, shape = phase))
 print(auc_plot)
 
 ## normalize similarity scores - "(Vchemical/Vvehicle control) * 100 – 100"
@@ -136,7 +136,7 @@ write.table(simi_norm, file = paste0(ChemicalName,"/",ChemicalName,"_simi_norm.t
 ```{r}
 auc_prep <- auc_norm %>%
   filter(is_VC == FALSE) %>%
-  mutate(conc = rep(c(HighDose:LowDose), each=9, length.out = 270)) %>%
+  mutate(conc = rep(c(10^(c(HighDose:LowDose))), each=9, length.out = 270)) %>%
   mutate(totaldist = "_totaldist") %>%
   mutate(endpoint2 = paste(endpoint, totaldist)) %>%
   select(
@@ -145,6 +145,7 @@ auc_prep <- auc_norm %>%
     -dose,
     -control_median,
     -totaldist,
+    -embryo_id
   ) %>%
   rename(
     resp = endpoint_value_norm,
@@ -158,19 +159,35 @@ simi_prep <- simi_norm %>%
     chemical = plate_id,
   ) %>%
   filter(is_VC == 0) %>%
-  mutate(conc = rep(c(HighDose:LowDose), each=9)) %>%
+  mutate(conc = rep(c(10^(c(HighDose:LowDose))), each=9)) %>%
   select(-dose, -is_VC)
 
 combined_data <- bind_rows(auc_prep, simi_prep)
 write.table(combined_data, file = paste0(ChemicalName,"/","combined_data_",ChemicalName,".txt"))
 ```
 
+```{r}
+# out_curvep <- combi_run_rcurvep(combined_data, TRSH = 30, keep_sets = "act_set", n_samples = 1)  # using Curvep with BMR = 30
+# out_fit <- run_fit(combined_data) 
 
-out_curvep <- combi_run_rcurvep(combined_data, TRSH = 30, keep_sets = "act_set", n_samples = 1)  # using Curvep with BMR = 30
-out_fit <- run_fit(combined_data) 
+test <- estimate_dataset_bmr(combi_run_rcurvep(
+  combined_data, 
+  n_samples = 100, 
+  keep_sets = c("act_set"), 
+  TRSH = seq(5, 95, by = 5) # test all candidates, 5 to 95
+), plot = TRUE)
 
 
+# out_curvep_2 <-
+#   combi_run_rcurvep(
+#     combined_data,
+#     TRSH = seq(5, 95, by = 5),
+#     n_samples = 5
+#   )
+# 
+# out_bmr <- estimate_dataset_bmr(out_curvep_2)
 
+```
 
 
 
