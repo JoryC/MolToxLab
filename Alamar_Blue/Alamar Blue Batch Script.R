@@ -10,6 +10,9 @@ library(broom)
 library(naniar)
 library(ggplot2)
 
+#### Options ####
+options(scipen = 9)
+
 ####Directory####
 getwd() #Output should be "/*/*/MoltToxLab/Alamar_Blue" or something similar
 folderNames <- list.files("Data/Sub/")#Character list of all folders in /Data/Sub/
@@ -41,10 +44,15 @@ Baseline_1 <- c(seq(from = 3, to = 104, by = 4)) #WARNING: seq() to argument is 
 Baseline_2 <- c(seq(from = 4, to = 104, by = 4))
 h24_1 <- c(seq(from = 1, to = 104, by = 4)) #leading h because object can't start with numeric
 h24_2 <- c(seq(from = 2, to = 104, by = 4))
+#These objects represent the numnber in 1:4 that corresponds to the 24h and baseline plates... so we have 1-4 replicated 26 times (because we have 26 chemicals in the data frame)... 4*26=104
 #Create your 4 dataframes to prepare for creating average data sets
-Base_1_dfl <- rbindlist(list[Baseline_1])
+list[Baseline_1] #Check and see that the output is Baseline_1.txt files
+Base_1_dfl <- rbindlist(list[Baseline_1]) #Here we are subsetting the list object which contains data from each plate (replicated twice to control for instrument reading errors). Each subset contains data for different replicates (2) and two time points (baseline and 24h) = 4 different data frames
+list[Baseline_2]
 Base_2_dfl <- rbindlist(list[Baseline_2])
+list[h24_1]
 h24_1_dfl <- rbindlist(list[h24_1])
+list[h24_2]
 h24_2_dfl <- rbindlist(list[h24_2])
 #Simple average of the two data sets (Day 0 - Baseline, and Day 1 - 24h)
 Baseline_avg <- as.data.frame(
@@ -52,22 +60,57 @@ Baseline_avg <- as.data.frame(
     abind(Base_1_dfl, Base_2_dfl, along = 3), #Along '3rd dimension'... not row or column
     dims=2 
     )
-  ) 
+  ) #what we are doing here is just taking the average of the two replicates from each plate (26 plates - 26 chemicals -- each read twice for each time point in the flurometer) and making a single data frame
 h24_avg <- as.data.frame(
   rowMeans(
     abind(h24_1_dfl, h24_2_dfl, along = 3), 
     dims=2
     )
   )
-rm(Base_1_dfl, Base_2_dfl, h24_1_dfl, h24_2_dfl, Baseline_1, Baseline_2, h24_1, h24_2, list)
+Baseline_avg #Combined data frame for every chemical (including blank wells)
+h24_avg #Combine data frame
+
+rm(Base_1_dfl, Base_2_dfl, h24_1_dfl, h24_2_dfl, Baseline_1, Baseline_2, h24_1, h24_2) #Cleaning up the work environment
+
 #Subset the control data (First 4 cells by column of every 7th row)
+
+#testing and manually verifying with raw data
+# test <- Baseline_avg[c(seq(from = 7, to = 182, by = 7)),]
+# row.names(test) <- folderNames
+# test
+
+#Baseline avg blank well
 Base_control <- Baseline_avg[c(seq(from = 7, to = 182, by = 7)),c(1:4)] #WARNING: seq() to argument is dynamic... will change with more data
-row.names(Base_control) <- folderNames
+#We want the 7th row from every plate and since the data frame is a collection of every single plate into one big data frame... I use a sequence of 7 by 7 (i.e. 7, 14, 21, 28...) repeating all the way to 182... 7*26=182... These are the rows that are going to be pulled out of the data frame
+row.names(Base_control) <- folderNames #naming each row
+Base_control
+
+#24h avg blank well
 h24_control <- h24_avg[c(seq(from = 7, to = 182, by = 7)),c(1:4)]
 row.names(h24_control) <- folderNames
+h24_control
+
 #Remove the control row of the *_avg dfs
 Baseline_avg <- Baseline_avg[-c(seq(from = 7, to = 182, by = 7)),] #WARNING
+#Again, same sequence as we saw above
 h24_avg <- h24_avg[-c(seq(from = 7, to = 182, by = 7)),]
+
+# #Testing adding Dose and Chemicals to both baseline and 24h dfs
+# #Baseline
+# Baseline_avg <- Baseline_avg %>%
+#   mutate(Dose = rep(c("Dose_1", "Dose_2", "Dose_3", "Dose_4", "Dose_5", "Dose_6"), times = 26), 
+#          Chemical = rep(folderNames, times = 1, each = 6)) %>%
+#   group_by(Chemical) %>%
+#   select(Chemical, Dose, everything())
+# 
+# #24H
+# h24_avg <- h24_avg %>%
+#   mutate(Dose = rep(c("Dose_1", "Dose_2", "Dose_3", "Dose_4", "Dose_5", "Dose_6"), times = 26), 
+#          Chemical = rep(folderNames, times = 1, each = 6)) %>%
+#   group_by(Chemical) %>%
+#   select(Chemical, Dose, everything())
+
+
 #Calculate the Delta of the Day 0 vs Day 1
 Delta <- h24_avg - Baseline_avg
 colnames(Delta) <- c("A_1", "A_2", "A_3", "B_1", "B_2", "B_3", "C_1", "C_2", "C_3")
@@ -75,15 +118,15 @@ colnames(Delta) <- c("A_1", "A_2", "A_3", "B_1", "B_2", "B_3", "C_1", "C_2", "C_
 #Assign dose names to all corresponding chemicals
 Delta_1 <- Delta %>%
   mutate(Dose = rep(c("Dose_1", "Dose_2", "Dose_3", "Dose_4", "Dose_5", "Dose_6"), times = 26), 
-         Chemical = rep(folderNames, times = 1, each  = 6)) %>%
+         Chemical = rep(folderNames, times = 1, each = 6)) %>%
   group_by(Chemical) %>%
   select(Chemical, everything())
 
 #Tidy up the data
 Delta_2 <- Delta_1 %>%
   gather(key = "Replicate", value = "Fluorescence", A_1:C_3, factor_key = TRUE)  %>%
-  separate(Replicate, into = c("Group", "Replicate"), convert = TRUE) %>%
-  arrange(Chemical)
+  separate(Replicate, into = c("Group", "Replicate"), convert = TRUE)
+Delta_2
 
 #Assign Dose Values
 AllDoses <- read.csv(file = "Highest_Dose_Aug.csv", skip = 1,  header = TRUE)
@@ -93,24 +136,30 @@ AllDoses_2 <- AllDoses %>%
 #Final Data Frame
 Tidy_Data <- Delta_2 %>%
   inner_join(AllDoses_2) %>%
-  select(Chemical, Group, Replicate, 'Dose(mg/L)', Fluorescence)
-#Separate Date From Chemical Name
-Tidy_Data <- Tidy_Data %>%
+  arrange(Chemical) %>%
   separate(Chemical, into = c("Chemical", "Date"), sep = "_") %>% #Seperating chemical and date variable
-  mutate(Date = NULL) %>% #Getting rid of date variable
-  mutate(Animal = rep(1:54, times = length(folderNames)))
+  mutate(Date = NULL, Dose = NULL) %>% #Getting rid of date variable
+  mutate(Animal = rep(1:54, times = length(folderNames))) %>%
+  select(Chemical, `Dose(mg/L)`, Animal, everything())
 #Ignore warning message... it shous up because separate finds 3 different chunks (because year, month, date are also separated by an undercore... We are discarding the variable anyway)
-
-rm(Baseline_avg, h24_avg, Delta, Delta_1, Delta_2, AllDoses, AllDoses_2)
 
 #Outliers
 outlierTest <- outlierTest(lm(Fluorescence ~ as.factor(`Dose(mg/L)`) + as.factor(Group), data = Tidy_Data))
 #Outlier test object identified these outliers
 outliers <- Tidy_Data[c(1268, 771, 799, 115), "Fluorescence"]
+
+#Data Frame to export
 Tidy_Data <- replace_with_na(Tidy_Data, outliers)
-rm(outliers, outlierTest)
+
+#Subsetting Tyler's Data
+Tylers_Data <- Tidy_Data %>%
+  filter(Chemical %in% c("BPA", "BPAF", "DES", "EE2", "TGSH"))
+
 
 write_csv(x = Tidy_Data, file = "Data/Alamar_Blue_Tidy_Data_26chems.csv")
+write_csv()
+
+rm(Baseline_avg, h24_avg, Delta, Delta_1, Delta_2, AllDoses, AllDoses_2, outliers, outlierTest)
 
 ####Analysis Bit####
 
