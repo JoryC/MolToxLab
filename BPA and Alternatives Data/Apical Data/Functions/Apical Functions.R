@@ -1,14 +1,37 @@
 ####combinedanova function####
 #calculate anova in list
-combinedanova <- function(x){
-  aov(Survival.Rate ~ Dose, data = x) %>% 
-    summary()
+combinedanova <- function(x, type){
+  if(type == "lethal"){
+    aov(Survival.Rate ~ Dose, data = x) %>% 
+      summary()
+  } else if (type == "deform"){
+    aov(Deformity.Rate ~ Dose, data = x) %>% 
+      summary()
+  } else {
+    print("Select `lethal` or `deform` as the type")
+  }
 }
 
 ####combineddunnett funtion####
 #perform dunnnett's test in list
-combineddunnett <- function(df){
+combineddunnett <- function(df, type){
+  if(type == "lethal"){
+    DunnettTest(x = df$Survival.Rate, g = df$Dose)
+  } else if (type == "deform"){
+    DunnettTest(x = df$Deformity.Rate, g = df$Dose)
+  } else {
+    print("Select `lethal` or `deform` as the type")
+  }
+}
+
+
+
+lethal_combineddunnett <- function(df){
   DunnettTest(x = df$Survival.Rate, g = df$Dose)
+}
+
+deform_combineddunnett <- function(df){
+  DunnettTest(x = df$Deformity.Rate, g = df$Dose)
 }
 
 ####summarystats function####
@@ -18,7 +41,9 @@ summarystats <- function(x, grouping = "Dose", values = "Survival.Rate"){
     summarise(
       count = n(),
       Survival_Rate = mean(Survival.Rate, na.rm = TRUE),
-      StdDev = sd(Survival.Rate, na.rm = TRUE)
+      Survival_StdDev = sd(Survival.Rate, na.rm = TRUE),
+      Deform_Rate = mean(Deformity.Rate, na.rm = T),
+      Deform_StdDev = sd(Deformity.Rate, na.rm = T)
     )
 }
 

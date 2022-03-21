@@ -1,4 +1,4 @@
-Dose (µg/L),Replicate,Alive,Dead,Total Dead (to date),Deformities,Total Deform (to date),Hatched,Notes,Survival Rate,Deformity Rate,Hatch Rate
+Dose (mg/L),Replicate,Alive,Dead,Total Dead (to date),Deformities,Total Deform (to date),Hatched,Notes,Survival Rate,Deformity Rate,Hatch Rate
 1000,A,15,0,5,0,0,15,,0.75,0,1
 1000,B,17,0,3,0,0,17,,0.85,0,1
 1000,C,16,0,4,0,0,16,,0.8,0,1
