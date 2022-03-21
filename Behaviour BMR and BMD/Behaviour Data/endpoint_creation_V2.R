@@ -3,6 +3,7 @@ library(here)
 library(tidyverse)
 library(rlang)
 library(Rcurvep)
+library(DescTools)
 source("Functions/cal_auc_simi_endpoints.R")
 source("Functions/behavioural_endpoint_calc.R")
 
@@ -36,9 +37,17 @@ for(i in chemnames){
 }
 
 ####ANOVA####
+for(i in chemnames){
+  simi_norm[[i]]$dose <- as.factor(simi_norm[[i]]$dose)
+}
+
 summarystats_list <- lapply(simi_norm, summarystats)
 
 anova_list <- sapply(simi_norm, combinedanova)
+print(anova_list)
+
+dunnett_list <- sapply(simi_norm, combineddunnett)
+print(dunnett_list)
 
 ####Export Data####
 for(i in chemnames){
@@ -47,7 +56,9 @@ for(i in chemnames){
 for(i in chemnames){
   write.csv(anova_list[[i]], file = paste0("Output/", i,"/",i,"_anova.csv"))
 }
-
+for(i in chemnames){
+  write.csv(dunnett_list[[i]], file = paste0("Output/", i,"/",i,"_dunnett.csv"))
+}
 ####Plotting####
 behaviourplots <- list()
 

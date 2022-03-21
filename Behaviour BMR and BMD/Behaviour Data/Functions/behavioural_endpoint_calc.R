@@ -42,6 +42,11 @@ combinedanova <- function(x){
     summary()
 }
 
+####combineddunnett funtion
+#perform dunnnett's test in list
+combineddunnett <- function(df){
+  DunnettTest(x = df$endpoint_value_norm, g = df$dose)
+}
 
 ####Multiple plot function####
 #
