@@ -1,51 +1,25 @@
-####Behavioural Data Scripts####
-
-####simi_normalize function####
-#normalize data
-simi_normalize <- function(x){
-  x %>%
-    mutate(control_median = unname(tapply(x$endpoint_value, x$is_VC, median)["TRUE"])) %>%
-    mutate(endpoint_value_norm = (endpoint_value/control_median)*100-100) %>%
-    select(-c(endpoint_value, control_median)) %>%
-    mutate(dose = substr(embryo_id, 1, nchar(embryo_id)-2)) %>%
-    select(-embryo_id)
-  # mutate(embryo_id = substr(embryo_id, nchar(embryo_id), nchar(embryo_id)))
+####combinedanova function####
+#calculate anova in list
+combinedanova <- function(x){
+  aov(Survival.Rate ~ Dose, data = x) %>% 
+    summary()
 }
 
-####dose_replacement function####
-#turn dose1-x into actual doses based on metadata
-dose_replacement <- function(x, Highdose, foldchange = 10){
-  ndosegroups <- 1:(length(unique(x$dose))-1)
-  for(i in ndosegroups){
-    x$dose[x$dose == paste0("Dose", i)] <- Highdose/foldchange^(i-1)
-  }
-  x$dose[x$dose == "Control"] <- 0
-  x$dose <- as.numeric(x$dose)
-  return(x)
+####combineddunnett funtion####
+#perform dunnnett's test in list
+combineddunnett <- function(df){
+  DunnettTest(x = df$Survival.Rate, g = df$Dose)
 }
 
 ####summarystats function####
 #calculate the mean, counts and SD
-summarystats <- function(x, grouping = "dose", values = "endpoint_value_norm"){
-  group_by(x, dose) %>%
+summarystats <- function(x, grouping = "Dose", values = "Survival.Rate"){
+  group_by(x, Dose) %>%
     summarise(
       count = n(),
-      mean = mean(endpoint_value_norm, na.rm = TRUE),
-      sd = sd(endpoint_value_norm, na.rm = TRUE)
+      Survival_Rate = mean(Survival.Rate, na.rm = TRUE),
+      StdDev = sd(Survival.Rate, na.rm = TRUE)
     )
-}
-
-####combinedanova function####
-#calculate anova in list
-combinedanova <- function(x){
-  aov(endpoint_value_norm ~ dose, data = x) %>% 
-    summary()
-}
-
-####combineddunnett function####
-#perform dunnnett's test in list
-combineddunnett <- function(df){
-  DunnettTest(x = df$endpoint_value_norm, g = df$dose)
 }
 
 ####Multiple plot function####
@@ -95,3 +69,4 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
     }
   }
 }
+

@@ -1,4 +1,4 @@
-Dose (mg/L),Replicate,Alive,Survival Rate
+Dose (µg/L),Replicate,Alive,Survival Rate
 1000,A,20,1
 1000,B,19,0.95
 1000,C,19,0.95
