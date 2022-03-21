@@ -1,4 +1,4 @@
-Dose (µg/L),Replicate,Alive,Dead,Total Dead (to date),Deformities,Total Deform (to date),Hatched,Notes,Survival Rate,Deformity Rate,Hatch Rate
+Dose (mg/L),Replicate,Alive,Dead,Total Dead (to date),Deformities,Total Deform (to date),Hatched,Notes,Survival Rate,Deformity Rate,Hatch Rate
 100,A,16,1,4,1,2,16,"1 stunted dev, 1 curved tail",0.8,0.05,1
 100,B,16,1,4,0,1,16,"1 stunted dev, 1 curved tail",0.8,0,1
 100,C,15,1,5,0,1,15,"1 stunted dev, 1 curved tail",0.75,0,1
@@ -17,3 +17,12 @@ Dose (µg/L),Replicate,Alive,Dead,Total Dead (to date),Deformities,Total Deform (
 0,A,18,0,2,1,1,18,curved pine and tail,0.9,0.05,1
 0,B,13,0,7,0,0,13,,0.65,0,1
 0,C,14,1,6,1,1,14,curved spine and tail,0.7,0.05,1
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,1,,,,
