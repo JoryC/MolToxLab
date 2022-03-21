@@ -56,13 +56,38 @@ for(i in chemnames){
     group_by(dose)
 }
 
+####ANOVA####
+summarystats <- function(x, grouping = "dose", values = "endpoint_value_norm"){
+  group_by(x, dose) %>%
+    summarise(
+      count = n(),
+      mean = mean(endpoint_value_norm, na.rm = TRUE),
+      sd = sd(endpoint_value_norm, na.rm = TRUE)
+    )
+}
+
+summarystats_list <- lapply(simi_norm, summarystats)
+
+combinedanova <- function(x){
+  aov(endpoint_value_norm ~ dose, data = x) %>% 
+    summary()
+}
+
+anova_list <- lapply(simi_norm, combinedanova)
+
+for(i in chemnames){
+  write.table(simi_norm[[i]], file = paste0(i,"/",i,"_simi_norm.txt"))
+}
+
+
+
+####Plotting####
 behaviourplots <- list()
 
 for(i in chemnames) {
   behaviourplots[[i]] <-
     simi_norm[[i]] %>%
-    ggplot(aes(x = dose, y = endpoint_value_norm, group = dose)) +
-    scale_x_log10() +
+    ggplot(aes(x = as.character(dose), y = endpoint_value_norm, group = dose)) +
     geom_boxplot(outlier.shape = NA, width = 0.5) +
     geom_jitter(width = 0.2,
                 height = 0,
@@ -121,7 +146,15 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
   }
 }
 
-multiplot(plotlist = behaviourplots, cols = 1 )
+multiplot(plotlist = behaviourplots, cols = 2 )
+
+
+
+
+
+
+
+
 
 ####Setup Data for RCurvep####
 #pre_rcurvep function - to be moved later
@@ -136,12 +169,13 @@ pre_rcurvep <- function(x){
     select(-dose, -is_VC)
 }
 
-simi_prercurvep <- lapply(simi_norm, pre_rcurvep)
+simi_prercurvep <- lapply(simi_norm, ungroup)
+simi_prercurvep <- lapply(simi_prercurvep, pre_rcurvep)
 simi_combined <- bind_rows(simi_prercurvep)
 
 test <- estimate_dataset_bmr(combi_run_rcurvep(
   simi_combined, 
-  n_samples = 100, 
+  n_samples = 10, 
   keep_sets = c("act_set"), 
   TRSH = seq(5, 95, by = 5) # test all candidates, 5 to 95
 ), plot = TRUE)
