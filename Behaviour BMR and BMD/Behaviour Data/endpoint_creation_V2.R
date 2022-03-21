@@ -8,14 +8,14 @@ source("Functions/cal_auc_simi_endpoints.R")
 source("Functions/behavioural_endpoint_calc.R")
 
 ####Metadata and Import####
-metadata <- read.csv("Raw Data/meta_data_behaviour.csv")
+metadata <- read.csv("RawData/meta_data_behaviour.csv")
 filenames <- metadata[,1]
 chemnames <- substr(filenames, 1, nchar(filenames)-4)
 HighDose <- setNames(metadata[,2], chemnames)
 LowDose <- setNames(metadata[,3],chemnames)
 raw_data <- list()
 for(i in chemnames){
-  raw_data[[i]] <- read.table(paste0("Raw Data/", i, "/", i, ".txt"),
+  raw_data[[i]] <- read.table(paste0("RawData/", i, "/", i, ".txt"),
                               header = TRUE)
 }
 

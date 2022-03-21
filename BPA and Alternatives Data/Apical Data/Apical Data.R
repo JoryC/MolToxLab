@@ -3,11 +3,11 @@ library(DescTools)
 source("Functions/Apical Functions.R")
 options(scipen = 9) #prevent scientific notation... annoying while graphing
 ### FOLDERS, FILES AND FUNCTIONS
-raw_files <- list.files(path = "Raw Data/", pattern = ".csv")
+raw_files <- list.files(path = "RawData/", pattern = ".csv")
 chemnames <- substr(raw_files, start = 1, stop = nchar(raw_files)-4)
 apicaldata <- list()
 for(i in chemnames){
-  apicaldata[[i]] <- read.csv(paste0("Raw Data/", i, ".csv")) %>%
+  apicaldata[[i]] <- read.csv(paste0("RawData/", i, ".csv")) %>%
     rename(Dose = Dose..µg.L.)
 }
 
@@ -40,7 +40,7 @@ for(i in chemnames){
     theme_classic() +
     xlab("Dose (µg/L)") +
     ylab("Survival Rate") +
-    scale_y_continuous(limits = c(0,1)) +
+    scale_y_continuous(limits = c(0,1.1), breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1)) +
     labs(title = i)
 }
 
