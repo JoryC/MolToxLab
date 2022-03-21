@@ -94,8 +94,16 @@ AllDoses_2 <- AllDoses %>%
 Tidy_Data <- Delta_2 %>%
   inner_join(AllDoses_2) %>%
   select(Chemical, Group, Replicate, 'Dose(mg/L)', Fluorescence)
+#Separate Date From Chemical Name
+Tidy_Data <- Tidy_Data %>%
+  separate(Chemical, into = c("Chemical", "Date"), sep = "_") %>% #Seperating chemical and date variable
+  mutate(Date = NULL) %>% #Getting rid of date variable
+  mutate(Animal = rep(1:54, times = length(folderNames)))
+#Ignore warning message... it shous up because separate finds 3 different chunks (because year, month, date are also separated by an undercore... We are discarding the variable anyway)
 
 rm(Baseline_avg, h24_avg, Delta, Delta_1, Delta_2, AllDoses, AllDoses_2)
+
+write_csv(x = Tidy_Data, file = "Data/Alamar_Blue_Tidy_Data_26chems.csv")
 
 ####Analysis Bit####
 
