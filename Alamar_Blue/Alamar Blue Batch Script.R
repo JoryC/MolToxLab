@@ -103,16 +103,16 @@ Tidy_Data <- Tidy_Data %>%
 
 rm(Baseline_avg, h24_avg, Delta, Delta_1, Delta_2, AllDoses, AllDoses_2)
 
-write_csv(x = Tidy_Data, file = "Data/Alamar_Blue_Tidy_Data_26chems.csv")
-
-####Analysis Bit####
-
 #Outliers
 outlierTest <- outlierTest(lm(Fluorescence ~ as.factor(`Dose(mg/L)`) + as.factor(Group), data = Tidy_Data))
 #Outlier test object identified these outliers
 outliers <- Tidy_Data[c(1268, 771, 799, 115), "Fluorescence"]
 Tidy_Data <- replace_with_na(Tidy_Data, outliers)
 rm(outliers, outlierTest)
+
+write_csv(x = Tidy_Data, file = "Data/Alamar_Blue_Tidy_Data_26chems.csv")
+
+####Analysis Bit####
 
 #Mean and StDev of Delta of each Dose
 DoseSummary <- Tidy_Data %>%
