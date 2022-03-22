@@ -1,14 +1,17 @@
 ####Libraries####
+library(plyr)
 library(data.table)
 library(abind)
-library(dplyr)
-library(tidyr)
-library(readr)
+#library(dplyr)
+#library(tidyr)
+#library(readr)
 library(car)
-library(purrr)
+#library(purrr)
 library(broom)
 library(naniar)
-library(ggplot2)
+#library(ggplot2)
+library(DescTools)
+library(tidyverse)
 
 #### Options ####
 options(scipen = 9)
@@ -20,6 +23,12 @@ folder <- folderNames
 files_in_folder <- list.files(paste0("Data/Sub/", folder)) #Character list of all files in each folder (alphabetical order)
 
 ####Import the Data####
+
+#Easy way to import the data is to just read my final .csv tables...
+Tidy_Data <- read_csv(file = "Data/Alamar_Blue_Tidy_Data_26chems.csv")
+
+
+#How I produced the final .csv tables...
 list <- list() #Create an empty list
 for (k in 1:length(files_in_folder)) {
     list[[k]] <- fread(file = paste0("Data/All/", files_in_folder[[k]]), 
@@ -148,7 +157,7 @@ outlierTest <- outlierTest(lm(Fluorescence ~ as.factor(`Dose(mg/L)`) + as.factor
 #Outlier test object identified these outliers
 outliers <- Tidy_Data[c(1268, 771, 799, 115), "Fluorescence"]
 
-#Data Frame to export
+#Data Frame to export with removed outliers
 Tidy_Data <- replace_with_na(Tidy_Data, outliers)
 
 #Subsetting Tyler's Data
@@ -157,7 +166,7 @@ Tylers_Data <- Tidy_Data %>%
 
 
 write_csv(x = Tidy_Data, file = "Data/Alamar_Blue_Tidy_Data_26chems.csv")
-write_csv()
+write_csv(x = Tylers_Data, file = "Alamar_Blue_Tylers_Data.csv")
 
 rm(Baseline_avg, h24_avg, Delta, Delta_1, Delta_2, AllDoses, AllDoses_2, outliers, outlierTest)
 
@@ -171,6 +180,7 @@ DoseSummary <- Tidy_Data %>%
     Mean = mean(Fluorescence, na.rm = TRUE),
     .groups = "keep"
   )
+DoseSummary
 
 #Homogeneity of Variance
 LeveneResults <- Tidy_Data %>%
@@ -185,36 +195,113 @@ VarianceCheck <- if (any(LeveneResults$`Pr(>F)` < 0.05, na.rm = TRUE)) {
  } else {
     print("Equal")
  }
-rm(VarianceCheck)
+#LeveneResults[which(LeveneResults$`Pr(>F)`[] < 0.05),]
+
+#Adding an is.significant column to easily parse significant values in a spreadsheet
+LeveneResults <- LeveneResults %>%
+  na.omit() %>%
+  mutate(is.significant = if_else(condition = `Pr(>F)` < 0.05, true = TRUE, false = FALSE))
+LeveneResults
+
+write_csv(x = LeveneResults, file = "Output/Levene_Test_Results.csv")
+
+#rm(VarianceCheck)
+
+
 
 #ANCOVA
 ANCOVA <- Tidy_Data %>%
   group_by(Chemical) %>%
   nest() %>%
-  mutate(model = map(data, ~aov(Fluorescence ~ as.factor(`Dose(mg/L)`) + as.factor(Group), data = .))) %>%
+  mutate(model = map(data, ~aov(Fluorescence ~ as.factor(`Dose(mg/L)`) + as.factor(Group), data = .))) %>% #Where 'Group' is the dose group replicate... group A B or C for one of 3 petri dishes in the dose group... This tells us if there were human error in making sure each replicate got the same dose
   select(-data) 
 
 ANCOVACheck <- ANCOVA %>%
   mutate(model_tidy = map(model, tidy)) %>%
   unnest(model_tidy)
 
-VarianceCheck_2 <- 
-  if (any(ANCOVACheck$p.value < 0.05, na.rm = TRUE)) {
-  print("Significant")
-  print(ANCOVACheck$Chemical[c(which(ANCOVACheck$p.value[] < 0.05))])
-} else {
-  print("None Significant")
-}
-rm(ANCOVACheck, VarianceCheck_2)
+# VarianceCheck_2 <- 
+#   if (any(ANCOVACheck$p.value < 0.05, na.rm = TRUE)) {
+#   print("Significant")
+#   print(ANCOVACheck$Chemical[c(which(ANCOVACheck$p.value[] < 0.05))])
+# } else {
+#   print("None Significant")
+# }
+
+ANCOVACheck <- ANCOVACheck %>%
+  na.omit() %>%
+  mutate(is.significant = if_else(condition = p.value <= 0.05, true = TRUE, false = FALSE))
+ANCOVACheck
+
+ANCOVA_Sig_Results <- ANCOVACheck[which(ANCOVACheck$p.value[] <= 0.05),]
+ANCOVA_Sig_Results
 
 #ANOVA
-ANOVA <- list()
-for (i in 1:length(folderNames)) {
-  ANOVA[[i]] <- Anova(ANCOVA$model[[i]], type = "3")
-}
-names(ANOVA) <- folderNames
+ANOVA_Data <- Tidy_Data %>%
+  group_by(Chemical) %>%
+  nest() %>%
+  mutate(model = map(data, ~aov(Fluorescence ~ as.factor(`Dose(mg/L)`), data = .)))
 
-VarianceCheck_3 <- #Not done
+ANOVA_Check <- ANOVA_Data %>%
+  mutate(model_tidy = map(model, tidy)) %>%
+  unnest(model_tidy)
+
+VarianceCheck_3 <- 
+  if (any(ANOVA_Check$p.value < 0.05, na.rm = TRUE)) {
+    print("Significant")
+    print(ANOVA_Check$Chemical[c(which(ANOVA_Check$p.value[] < 0.05))])
+  } else {
+    print("None Significant")
+  }
+
+ANOVA_Check <- ANOVA_Check %>%
+  na.omit() %>%
+  mutate(is.significant = if_else(condition = p.value < 0.05, true = TRUE, false = FALSE))
+
+ANOVA_Sig_Results <- ANOVA_Check[which(ANOVA_Check$p.value[] <= 0.05),]
+ANOVA_Sig_Results
+
+
+#Saving the ANCOVA and ANOVA Results
+write_csv(x = ANCOVACheck, file = "Output/ANCOVA_Results.csv") #ANCOVA
+write_csv(x = ANOVA_Check, file = "Output/ANOVA_Results.csv") #ANOVA
+
+
+#PostHoc tests
+
+#Dunnett's Test
+Dunnett_results <- Tidy_Data %>%
+  group_by(Chemical) %>%
+  nest() %>%
+  mutate(model = map(data, ~DunnettTest(x = .$Fluorescence, g = .$`Dose(mg/L)`), data = .)) #Performing the Dunnett's test and saving it is a variable
+
+#Creating list of summaries
+#Since the PostHocTest object cannot be coerced to a tidy tibble using tidy()... we got creative
+Dunnett_list <- list() #What we are trying to do is index the results and see what the significant results were... so we are using a list which can be later coerced into a tibble to easily index...
+for (i in 1:length(unique(Tidy_Data$Chemical))) {
+  Dunnett_list[[Dunnett_results$Chemical[i]]] <- Dunnett_results$model[[i]][["0"]] %>% #Take Dunnett's test results without any of the fancy summary information and shove it into a named list
+    as.data.frame() %>% #Coerce to a data frame temporarily so what we can take the row names of the reults and turn them into a variable with rownames_to_column
+    rownames_to_column(var = "dose")
+}
+Dunnett_comb <- ldply(Dunnett_list) #this function combines all of the lists together and gives them a variable name according to the chemical
+Dunnett_comb$dose = substr(Dunnett_comb$dose, start = 1, stop = nchar(Dunnett_comb$dose)-2) %>%
+  as.numeric() #Here we are fixing the dose column... the dose column has the test dose related to the control... but we just want to see what the test dose is without it giving us redundant information about the comparison to the control for every observation...
+Dunnett_comb <- as_tibble(Dunnett_comb) #Coerce to a tidy tibble
+Dunnett_comb #Great, a nice tibble that we can export
+
+#Now just to add one more column
+Dunnett_comb <- Dunnett_comb %>%
+  na.omit() %>%
+  mutate(is.significant = if_else(condition = pval < 0.05, true = TRUE, false = FALSE))
+Dunnett_comb
+
+write_csv(Dunnett_comb, file = "Output/Dunnett_test_results.csv")
+
+#indexing what the significant results were...
+Dunnett_Sig_Results <- Dunnett_comb[which(Dunnett_comb$pval <= 0.05),]
+Dunnett_Sig_Results
+#Cool!
+
   
 ####Plots and Visuals####
 #Group Variance
