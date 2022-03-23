@@ -2,25 +2,26 @@
 library(here)
 library(tidyverse)
 library(rlang)
-library(Rcurvep)
-library(DescTools)
+library(Rcurvep) #For BMR/BMC 
+library(DescTools) #For Dunnett
+library(scales) #For pseudo log 10
 source("Functions/cal_auc_simi_endpoints.R")
 source("Functions/behavioural_endpoint_calc.R")
-options(scipen = 9) #prevent scientific notation... annoying while graphing
+options(scipen = 9)
 ####Metadata and Import####
-metadata <- read.csv("Raw Data/meta_data_behaviour.csv")
+metadata <- read.csv("RawData/meta_data_behaviour.csv")
 filenames <- metadata[,1]
 chemnames <- substr(filenames, 1, nchar(filenames)-4)
 HighDose <- setNames(metadata[,2], chemnames)
 LowDose <- setNames(metadata[,3],chemnames)
 raw_data <- list()
 for(i in chemnames){
-  raw_data[[i]] <- read.table(paste0("Raw Data/", i, "/", i, ".txt"),
+  raw_data[[i]] <- read.table(paste0("RawData/", i, "/", i, ".txt"),
                               header = TRUE)
 }
 
 ####Calculate Similarity Endpoints####
-simi_endps <- list("ld_pearson" = seq(1, 20, by = 1))
+simi_endps <- list("ld_pearson" = seq(1, 30, by = 1))
 simi_endpoints <- list()
 for(i in chemnames){
   temp <- create_simi_endpoints(raw_data[[i]], segments = simi_endps, metric = "pearson")
@@ -46,7 +47,9 @@ summarystats_list <- lapply(simi_norm, summarystats)
 anova_list <- sapply(simi_norm, combinedanova)
 print(anova_list)
 
-dunnett_list <- sapply(simi_norm, combineddunnett)
+dunnett_list <- sapply(simi_norm, combineddunnett) %>% 
+  setNames(., chemnames) %>%
+  as.array()
 print(dunnett_list)
 
 ####Export Data####
@@ -59,7 +62,9 @@ for(i in chemnames){
 for(i in chemnames){
   write.csv(dunnett_list[[i]], file = paste0("Output/", i,"/",i,"_dunnett.csv"))
 }
+
 ####Plotting####
+
 behaviourplots <- list()
 
 for(i in chemnames) {
@@ -67,14 +72,13 @@ for(i in chemnames) {
     simi_norm[[i]] %>%
     ggplot(aes(x = as.character(dose), y = endpoint_value_norm, group = dose)) +
     geom_boxplot(outlier.shape = NA, width = 0.5) +
-    geom_jitter(width = 0.2,
-                height = 0,
+    geom_jitter(position = position_jitter(width = 0.2, height = 0, seed = 42069),
                 colour = "black") +
     labs(title = paste0(i), x = "Dose (µg/L)", y = "Response") +
     theme_classic()
 }
 
-print(behaviourplots[[1]])
+# print(behaviourplots[[1]])
 
 multiplot(plotlist = behaviourplots, cols = 2 )
 
