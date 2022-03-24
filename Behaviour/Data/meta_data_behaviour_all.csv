@@ -1,0 +1,27 @@
+Chemical,Highest Dose,Lowest Dose
+17beta_estradiol.csv,100,0.01
+1decanol.csv,1000,0.1
+1octanol.csv,10000,1
+24DMP.csv,1000,0.1
+24DNP.csv,10000,1
+34DCA.csv,1000,0.1
+4TOP.csv,100,0.01
+4TPP.csv,1000,0.1
+Analine.csv,10000,1
+BPA.csv,1000,0.1
+BPAF.csv,1000,0.1
+Clofibric Acid.csv,10000,1
+DES.csv,100,0.01
+Dimethylformamide.csv,1000000,100
+DMSO.csv,10000,1
+EE2.csv,1,1e-4
+Fadrozole.csv,1000,0.1
+Fenitrothione.csv,1000,0.1
+Fluoxetine.csv,100,0.01
+Flutamide.csv,1000,0.1
+Glyphosate.csv,1000,0.1
+Prochloraz.csv,1000,0.1
+SDS.csv,100,0.01
+TEG.csv,1000000,100
+TGSH.csv,1000,0.1
+Vinclozilin.csv,1000,0.1

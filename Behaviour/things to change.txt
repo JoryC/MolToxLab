@@ -1,0 +1,5 @@
+To convert to final format:
+
+1- Remove the first 20 minutes.
+2- Convert from seconds to minutes (new col, /60) and make sure you adjust the new start time.
+3- is_VC column

@@ -80,7 +80,7 @@ data2 <- data %>%
   separate(col = Treatment, into = c('Dose', 'Group'), convert = TRUE)
 
 #Import Dose list
-AllDoses <- read.csv(file  = "Highest_Dose_Aug_1.csv", skip = 1, header = TRUE)
+AllDoses <- read.csv(file  = "Data/Highest_Dose_Aug_1.csv", skip = 1, header = TRUE)
 AllDoses2 <- AllDoses %>%
   gather(key = Dose, value = "Dose(mg/L)", Dose1:Dose6)
 
@@ -97,7 +97,7 @@ FinalData <- data2 %>%
 rm(AllDoses, data, data2)
 
 #Write the finished data frame as a .csv for others to easily import
-write.csv(FinalData, "~/MolToxLab/Behaviour/FinalData.csv")
+write.csv(FinalData, "~/MolToxLab/Behaviour/Output/FinalData.csv")
 
 #The lazy way to import all the data
 FinalData <- read_csv("FinalData.csv")

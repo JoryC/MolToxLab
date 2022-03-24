@@ -6,13 +6,14 @@ library(Rcurvep)
 library(DescTools)
 source("Functions/cal_auc_simi_endpoints.R")
 source("Functions/behavioural_endpoint_calc.R")
+options(scipen = 9)
 
 ####Metadata and Import####
 metadata <- read.csv("RawData/meta_data_behaviour.csv")
 filenames <- metadata[,1]
 chemnames <- substr(filenames, 1, nchar(filenames)-4)
 HighDose <- setNames(metadata[,2], chemnames)
-LowDose <- setNames(metadata[,3],chemnames)
+LowDose <- setNames(metadata[,3], chemnames)
 raw_data <- list()
 for(i in chemnames){
   raw_data[[i]] <- read.table(paste0("RawData/", i, "/", i, ".txt"),
@@ -20,7 +21,7 @@ for(i in chemnames){
 }
 
 ####Calculate Similarity Endpoints####
-simi_endps <- list("ld_pearson" = seq(1, 20, by = 1))
+simi_endps <- list("ld_pearson" = seq(1, 30, by = 1))
 simi_endpoints <- list()
 for(i in chemnames){
   temp <- create_simi_endpoints(raw_data[[i]], segments = simi_endps, metric = "pearson")
@@ -46,7 +47,9 @@ summarystats_list <- lapply(simi_norm, summarystats)
 anova_list <- sapply(simi_norm, combinedanova)
 print(anova_list)
 
-dunnett_list <- sapply(simi_norm, combineddunnett)
+dunnett_list <- sapply(simi_norm, combineddunnett) %>%
+  setNames(., chemnames) %>% 
+  as.array()
 print(dunnett_list)
 
 ####Export Data####
@@ -67,16 +70,32 @@ for(i in chemnames) {
     simi_norm[[i]] %>%
     ggplot(aes(x = as.character(dose), y = endpoint_value_norm, group = dose)) +
     geom_boxplot(outlier.shape = NA, width = 0.5) +
-    geom_jitter(width = 0.2,
-                height = 0,
+    geom_jitter(position = position_jitter(width = 0.2,
+                height = 0, seed = 42069),
                 colour = "black") +
-    labs(title = paste0(i), x = "Dose (�g/L)", y = "Response") +
+    labs(title = paste0(i), x = "Dose (µg/L)", y = "Response") +
     theme_classic()
 }
 
 print(behaviourplots[[1]])
 
 multiplot(plotlist = behaviourplots, cols = 2 )
+
+# behaviourplots <- list()
+# for(i in chemnames) {
+#   behaviourplots[[i]] <-
+#     simi_norm[[i]] %>%
+#     ggplot(aes(x = as.numeric(dose), y = endpoint_value_norm)) +
+#     geom_boxplot(aes(group = dose), outlier.shape = NA, width = 0.5) +
+#     geom_smooth(se = FALSE, method = "auto") +
+#     geom_jitter(width = 0.2,
+#                 height = 0,
+#                 colour = "black") +
+#     labs(title = paste0(i), x = "Dose (µg/L)", y = "Response") +
+#     scale_x_continuous(breaks = c(1:6), labels = levels(simi_norm[[i]]$dose)) +
+#     theme_classic()
+# }
+# print(behaviourplots[[1]])
 
 ####Setup Data for RCurvep####
 #pre_rcurvep function - to be moved later
