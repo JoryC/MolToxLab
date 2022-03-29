@@ -290,7 +290,7 @@ LeveneResults <- LeveneResults %>%
   ))
 LeveneResults
 
-write_csv(x = LeveneResults, file = "Output/Levene_Test_Results.csv")
+#write_csv(x = LeveneResults, file = "Output/Levene_Test_Results.csv")
 #rm(VarianceCheck)
 
 
@@ -365,8 +365,8 @@ ANOVA_Sig_Results
 
 
 #Saving the ANCOVA and ANOVA Results
-write_csv(x = ANCOVACheck, file = "Output/ANCOVA_Results.csv") #ANCOVA
-write_csv(x = ANOVA_Check, file = "Output/ANOVA_Results.csv") #ANOVA
+# write_csv(x = ANCOVACheck, file = "Output/ANCOVA_Results.csv") #ANCOVA
+# write_csv(x = ANOVA_Check, file = "Output/ANOVA_Results.csv") #ANOVA
 
 
 #PostHoc tests
@@ -408,7 +408,8 @@ Dunnett_comb <- Dunnett_comb %>%
   ))
 Dunnett_comb
 
-write_csv(Dunnett_comb, file = "Output/Dunnett_test_results.csv")
+#Write to a .csv
+#write_csv(Dunnett_comb, file = "Output/Dunnett_test_results.csv")
 
 #indexing what the significant results were...
 Dunnett_Sig_Results <-
@@ -420,6 +421,9 @@ Dunnett_Sig_Results
 #Bonferronni Adjustment
 #Jasoooooooooooooonnnnnnnnnnn... help
 
+
+#Filtering some interesting results
+Interesting_Chemicals <- distinct(as_tibble(c(ANCOVA_Sig_Results$Chemical, ANOVA_Sig_Results$Chemical, Dunnett_Sig_Results)$.id))
 
 
 ####Plots and Visuals####
@@ -491,6 +495,7 @@ ggsave(
 #points = raw values coloured by replicate group w/ 75% IQR outliers removed
 Tidy_Data %>%
   group_by(Chemical, `Dose(mg/L)`) %>%
+  # filter(Chemical %in% as_vector(Interesting_Chemicals)) %>%
   summarise(
     SD = sd(Delta_Fluorescence, na.rm = TRUE),
     Delta_Fluorescence = mean(Delta_Fluorescence, na.rm = TRUE)
@@ -512,3 +517,30 @@ Tidy_Data %>%
     na.rm = TRUE
   ) +
   geom_errorbar(aes(ymin = Delta_Fluorescence - SD, ymax = Delta_Fluorescence + SD))
+
+#Tweaking geom_col() to only show sig results
+Tidy_Data %>%
+  group_by(Chemical, `Dose(mg/L)`) %>%
+  filter(Chemical %in% as_vector(Interesting_Chemicals)) %>%
+  summarise(
+    SD = sd(Delta_Fluorescence, na.rm = TRUE),
+    Mean_Delta_Fluorescence = mean(Delta_Fluorescence, na.rm = TRUE)
+  ) %>%
+  ggplot(aes(x = as.factor(`Dose(mg/L)`), y = Mean_Delta_Fluorescence)) +
+  geom_col(fill = "coral2") +
+  facet_wrap(~ Chemical, scales = "free") +
+  xlab("Dose (mg/L)") +
+  ylab("Change in Fluorescence (d24h)") +
+  labs(title = "Subset of 8/29 Chemicals ") +
+  geom_jitter(
+    data =
+      Tidy_Data %>%
+      filter(Chemical %in% as_vector(Interesting_Chemicals)) %>%
+      select(Chemical, Group, `Dose(mg/L)`, Delta_Fluorescence),
+    mapping = aes(x = as.factor(`Dose(mg/L)`),
+        y = Delta_Fluorescence),
+    na.rm = TRUE,
+    position = position_jitter(width = 0.2, height = 0, seed = 42069)
+  ) +
+  geom_errorbar(aes(ymin = Mean_Delta_Fluorescence - SD, ymax = Mean_Delta_Fluorescence + SD))
+

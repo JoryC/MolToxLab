@@ -5,6 +5,7 @@ library(rlang)
 library(Rcurvep)
 library(DescTools)
 library(data.table)
+library(plyr)
 source("Functions/cal_auc_simi_endpoints.R")
 source("Functions/behavioural_endpoint_calc.R")
 options(scipen = 9)
@@ -120,6 +121,57 @@ for(i in chemnames){
 simi_norm_tib <- as_tibble(rbindlist(simi_norm))
 write_csv(simi_norm_tib, file = "Output/simi_norm_data.csv")
 
+simi_norm_tib <- read_csv(file = "Output/simi_norm_data.csv")
+
+
+###Find the Interesting Data###
+
+#ANOVA results
+anova_comb <- as_tibble(ldply(anova_list))
+anova_comb <- anova_comb %>%
+  na.omit() %>%
+  mutate(is.significant = if_else(
+    condition = `Pr(>F)` < 0.05,
+    true = TRUE,
+    false = FALSE
+  ))
+anova_comb
+
+#Any significant results?
+anova_comb %>%
+  filter(is.significant == TRUE)
+#Yep, 34DCA is significant... be cautious look at the raw data
+
+#write.csv(x = anova_comb, file = "Output/ANOVA_Results_Simi_endpoint.csv")
+
+#Dunnett's Test rquires a bunch of wrangling
+dunnett_temp <- list() #Take Dunnett's test results without any of the fancy summary information and shove it into a named list
+for (i in chemnames) {
+  dunnett_temp[[names(dunnett_list[i])]] <-
+    dunnett_list[[i]] %>% as.data.frame() %>% rownames_to_column(var = "dose") #Coerce to a data frame temporarily so what we can take the row names of the reults and turn them into a variable with rownames_to_column
+}
+dunnett_comb <- ldply(dunnett_temp) #this function combines all of the lists together and gives them a variable name according to the chemical
+dunnett_comb$dose = substr(dunnett_comb$dose,
+                           start = 1,
+                           stop = nchar(dunnett_comb$dose) - 2) %>%
+  as.numeric() #Here we are fixing the dose column... the dose column has the test dose related to the control... but we just want to see what the test dose is without it giving us redundant information about the comparison to the control for every observation...
+dunnett_comb <- as_tibble(dunnett_comb)
+dunnett_comb <- dunnett_comb %>%
+  na.omit() %>%
+  mutate(is.significant = if_else(
+    condition = pval < 0.05,
+    true = TRUE,
+    false = FALSE
+  ))
+dunnett_comb
+
+# Any significant results?
+dunnett_comb %>%
+  filter(is.significant == TRUE)
+#Yep, dose 1000ug/L in 34DCA once again... but the raw data is no good in thehighest dose :(
+
+#write.csv(x = dunnett_comb, file = "Output/Dunnett_Results_Simi_endpoint.csv")
+
 ####Plotting####
 behaviourplots <- list()
 for(i in chemnames) {
@@ -130,39 +182,44 @@ for(i in chemnames) {
     geom_jitter(position = position_jitter(width = 0.2,
                 height = 0, seed = 42069),
                 colour = "black") +
-    labs(title = paste0(i), x = "Dose (µg/L)", y = "Response") +
-    theme_classic()
+    labs(title = paste0(i)) + # x = "Dose (µg/L)", y = "Response") +
+    theme_classic() +
+    theme(axis.title.x = element_blank(), axis.title.y = element_blank())
 }
-print(behaviourplots[[1]])
+print(behaviourplots[[8]])
 
 multiplot(plotlist = behaviourplots, cols = 5 )
 
-
-# simi_norm_tib %>%
-#   ggplot(aes(x = dose, y = endpoint_value_norm, group = dose)) +
-#   geom_boxplot(outlier.shape = NA, width = 0.5) +
-#   geom_jitter(position = position_jitter(width = 0.2,
-#                                          height = 0, seed = 42069),
-#               colour = "black") +
-#   labs(x = "Dose (µg/L)", y = "Response") +
-#   theme_classic() + 
-#   facet_wrap(~plate_id)
-
-# behaviourplots <- list()
-# for(i in chemnames) {
-#   behaviourplots[[i]] <-
-#     simi_norm[[i]] %>%
-#     ggplot(aes(x = as.numeric(dose), y = endpoint_value_norm)) +
-#     geom_boxplot(aes(group = dose), outlier.shape = NA, width = 0.5) +
-#     geom_smooth(se = FALSE, method = "auto") +
-#     geom_jitter(width = 0.2,
-#                 height = 0,
-#                 colour = "black") +
-#     labs(title = paste0(i), x = "Dose (µg/L)", y = "Response") +
-#     scale_x_continuous(breaks = c(1:6), labels = levels(simi_norm[[i]]$dose)) +
-#     theme_classic()
-# }
-# print(behaviourplots[[1]])
+#Playing with plots
+ behaviourplots <- list()
+ for(i in chemnames) {
+   behaviourplots[[i]] <-
+     simi_norm[[i]] %>%
+     ggplot(aes(x = as.numeric(dose), y = endpoint_value_norm)) +
+     geom_boxplot(aes(group = dose), outlier.shape = NA, width = 0.5) +
+     geom_smooth(se = FALSE, method = "auto") +
+     geom_jitter(width = 0.2,
+                 height = 0,
+                 colour = "black") +
+     labs(title = paste0(i), x = "Dose (µg/L)", y = "Response") +
+     scale_x_continuous(breaks = c(1:6), labels = levels(simi_norm[[i]]$dose)) +
+     theme_classic()
+ }
+ print(behaviourplots[[1]])
+ 
+ #Plotting from tibble
+ simi_norm_tib %>%
+   mutate(dose_num = as.numeric(as.vector(dose))) %>%
+   group_by(plate_id) %>%
+   ggplot(aes(x = dose_num, y = endpoint_value_norm, group = dose_num)) +
+   geom_boxplot(outlier.shape = NA, width = 0.5) +
+   geom_jitter(position = position_jitter(width = 0.2,
+                                          height = 0, seed = 42069),
+               colour = "black") +
+   labs(x = "Dose (µg/L)", y = "Response") +
+   theme_classic() +
+   scale_x_log10() +
+   facet_wrap(~plate_id)
 
 ####Setup Data for RCurvep####
 #pre_rcurvep function - to be moved later

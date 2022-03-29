@@ -23,7 +23,7 @@ library(readr)
 library(stringr)
 library(data.table)
 library(car)
-
+options(scipen = 9)
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 ####                Directory                    ####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
@@ -100,7 +100,7 @@ rm(AllDoses, data, data2)
 write.csv(FinalData, "~/MolToxLab/Behaviour/Output/FinalData.csv")
 
 #The lazy way to import all the data
-FinalData <- read_csv("FinalData.csv")
+FinalData <- read_csv("Output/FinalData.csv")
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 #####                Analysis                 #####
@@ -658,6 +658,52 @@ ggsave(filename = "Total_activity_distance.pdf", plot = totaldistplot, device = 
        units = "px", scale = 3
 )
 
+
+#Plotting INteresting Chemicals
+FinalData %>%
+  filter(Chemical %in% c("4TPP", "Analine", "DMSO", "Flutamide", "TGSH", "BPA", "BPAF", "EE2", "DES")) %>%
+  group_by(Chemical, `Dose(mg/L)`, time) %>%
+  mutate(avgtotaldist = mean(totaldist)) %>%
+  ungroup() %>%
+  group_by(Chemical) %>%
+  select(Chemical, Group, `Dose(mg/L)`, time, avgtotaldist) %>%
+  ggplot(aes(x = time, y = avgtotaldist)) +
+  geom_line(aes(color = as.factor(`Dose(mg/L)`))) +
+  geom_rect(data = dark, inherit.aes = FALSE,
+            aes(xmin = start, xmax = end, ymin = -Inf, ymax = Inf),
+            fill = 'black', alpha = 0.2) +
+  facet_wrap(~Chemical, scales = "free", ncol = 2) +
+  geom_vline(xintercept = 20, linetype = "dashed") +
+  xlab("Time [min]") +
+  ylab("Total activity duration") + 
+  guides(color = guide_legend(title = "Dose (mg/L)")) +
+  #("Subset of 9/29 chemicals") +
+  xlim(5, 50)
+
+#Plotting one Chemical
+FinalData %>%
+  filter(Chemical == "4TPP", time >= 20) %>%
+  #mutate(animal = as.numeric(str_extract_all(animal, "[0-9]+"))) %>%
+  mutate(animal_rep = rep(x = 1:9, times = 1674/9)) %>%
+  #group_by(Chemical, `Dose(mg/L)`, time) %>%
+  #mutate(avgtotaldist = mean(totaldist)) %>%
+  #ungroup() %>%
+  group_by(animal_rep) %>%
+  select(Chemical, Group, `Dose(mg/L)`, time, totaldist, animal_rep) %>%
+  ggplot(aes(x = time, y = totaldist, group = as.factor(animal_rep), color = as.factor(animal_rep))) +
+  geom_line() +
+  geom_rect(data = dark, inherit.aes = FALSE,
+            aes(xmin = start, xmax = end, ymin = -Inf, ymax = Inf),
+            fill = 'black', alpha = 0.2) +
+  facet_wrap(~`Dose(mg/L)`, ncol = 3) +
+  #geom_vline(xintercept = 20, linetype = "dashed") +
+  xlab("Time [min]") +
+  ylab("Total activity duration") +
+  labs(title = "4-Tert Pentylphenol (4TPP)") +
+  #("Subset of 9/29 chemicals") +
+  xlim(20, 50) +
+  ylim(0,2500) +
+  theme(legend.position = "none")
 
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
