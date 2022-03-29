@@ -58,7 +58,13 @@ nestData <- allData %>%
 # Number of genes with at least 1 read per sample
 ngene_per_sample <- allData %>% 
   as.data.frame() %>% 
-  mutate(genecount = rowSums(.[4:ncol(allData)]!=0)) %>%
+  mutate(genecount = rowSums(.[4:ncol(allData)]!= 0)) %>%
+  select(sample, chemical, dose, genecount)
+
+#Per sample ncov5
+ncov5_sample <- allData %>% 
+  as.data.frame() %>% 
+  mutate(genecount = rowSums(.[4:ncol(allData)] >= 5)) %>%
   select(sample, chemical, dose, genecount)
 
 ngene_per_sample_mean <- mean(ngene_per_sample[,"genecount"])
@@ -75,7 +81,7 @@ ngene_total_data <- mapply(sum, allData[,-c(1:3)])
 ngene_total <- length(which(ngene_total_data != 0))
 
 # Number of genes with a cumulative read count of at least 5 across all samples
-ncov5 <- length(which(ngene_total_data >= 5))
+# ncov5 <- length(which(ngene_total_data >= 5))
 
 # Number of genes (highest to lowest read count) that make up 80% of reads
 nsig80<-vector()
@@ -90,6 +96,20 @@ for(i in 1:5){
 }
 names(nsig80) <- as.vector(nestData$chemical)
 nsig80_mean <- mean(nsig80)
+
+# nsig80 per sample
+nsig80_sample<-vector()
+for(i in 1:nrow(allData)){
+  test1 <-allData[i,] %>%
+    as.data.frame() %>%
+    select(-sample, -dose, -chemical) %>%
+    as.integer()
+  test1<- test1[order(test1, decreasing=TRUE)]
+  test_percent <- test1/sum(test1)*100
+  nsig80_sample<-c(nsig80_sample,sum(cumsum(test_percent)<80))
+  rm(test1, test_percent)
+}
+names(nsig80_sample) <- as.vector(allData$sample)
 
 #Number of genes that have at least 1 read across all samples per chemical
 ngene_total_chem_data <- vector()
@@ -115,12 +135,12 @@ for(i in 1:5) {
 qcSummary <- data.frame(endpoint = c("ngene_per_sample_mean", 
                                      "ngene_total",
                                      # "ngene_total_allsamples",
-                                     "ncov5", 
+                                     # "ncov5", 
                                      "nsig80_mean"),
                         value = c(ngene_per_sample_mean,
                                   ngene_total,
                                   # ngene_total_allsamples,
-                                  ncov5,
+                                  # ncov5,
                                   nsig80_mean)
                         )
 
@@ -130,15 +150,20 @@ qcSummary_chem <- ngene_per_chem_mean %>%
   mutate(ngene_allsamples = ngene_total_chem_data) %>%
   mutate(nsig80 = nsig80)
 
+#Sample specific QC
+qcSummary_sample <- ncov5_sample %>%
+  rename(ncov5_sample = genecount) %>%
+  mutate(nsig80_sample = nsig80_sample)
+  
+
 #### FILTER ####
 # uses the "countFilter' function from the "RNAseqFunctions" source code
 nestData <- nestData %>%
-  mutate(filterData = map(data, countFilter, grouping = "dose", median_threshold = 5)) 
+  mutate(filterData = map(data, countFilter, grouping = "dose", median_threshold = 1)) 
 
 #### NORMALIZE ####
 nestData <- nestData %>%
   mutate(normData = map(filterData, tmmNorm)) 
-
 
 #### EXPORT NORM DATA ####
 
