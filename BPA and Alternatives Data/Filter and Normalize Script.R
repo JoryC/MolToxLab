@@ -159,8 +159,9 @@ qcSummary_sample <- ncov5_sample %>%
 #### FILTER ####
 # uses the "countFilter' function from the "RNAseqFunctions" source code
 nestData <- nestData %>%
-  mutate(filterData = map(data, countFilter, grouping = "dose", median_threshold = 1)) 
-
+  mutate(filterData5 = map(data, countFilter, grouping = "dose", median_threshold = 5)) %>%
+  mutate(filterData3 = map(data, countFilter, grouping = "dose", median_threshold = 3)) %>%
+  mutate(filterData1 = map(data, countFilter, grouping = "dose", median_threshold = 1)) %>%
 #### NORMALIZE ####
 nestData <- nestData %>%
   mutate(normData = map(filterData, tmmNorm)) 
