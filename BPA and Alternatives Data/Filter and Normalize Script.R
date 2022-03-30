@@ -123,6 +123,13 @@ for(i in 1:5) {
   rm(temp, temp_sum)
 }
 
+ngene_total_all_samples <- function(x){
+  temp <- x %>%
+    select(-sample,-dose)
+  temp_sum <- mapply(sum, temp[temp>0])
+  return(length(which(temp_sum == nrow(x))))
+}
+
 #Number of genes that have at least 1 read across all samples for all chemicals
 # ngene_total_allsamples_data <- allData %>%
 #   as.data.frame() %>%
@@ -155,6 +162,28 @@ qcSummary_sample <- ncov5_sample %>%
   rename(ncov5_sample = genecount) %>%
   mutate(nsig80_sample = nsig80_sample)
   
+qcSummary_sample %>%
+  ggplot(aes(x = chemical, y = nsig80_sample, group = chemical)) +
+  geom_boxplot(outlier.shape = NA, width = 0.5) +
+  geom_jitter(position = position_jitter(width = 0.2, height = 0, seed = 42069),
+              colour = "black") +
+  ylim(0,1600) +
+  theme_classic()
+
+qcSummary_sample %>%
+  ggplot(aes(x = chemical, y = ncov5_sample, group = chemical)) +
+  geom_boxplot(outlier.shape = NA, width = 0.5) +
+  geom_jitter(position = position_jitter(width = 0.2, height = 0, seed = 42069),
+              colour = "black") +
+  theme_classic()
+
+ngene_per_sample %>%
+  ggplot(aes(x = chemcial, y = genecount, group = chemcial)) +
+  geom_boxplot(outlier.shape = NA, width = 0.5) +
+  geom_jitter(position = position_jitter(width = 0.2, height = 0, seed = 42069),
+              colour = "black") +
+  theme_classic()
+
 
 #### FILTER ####
 # uses the "countFilter' function from the "RNAseqFunctions" source code
@@ -162,13 +191,18 @@ nestData <- nestData %>%
   mutate(filterData5 = map(data, countFilter, grouping = "dose", median_threshold = 5)) %>%
   mutate(filterData3 = map(data, countFilter, grouping = "dose", median_threshold = 3)) %>%
   mutate(filterData1 = map(data, countFilter, grouping = "dose", median_threshold = 1)) %>%
+  mutate(ngene5 = map(filterData5, ngene_total_all_samples)) %>%
+  mutate(ngene3 = map(filterData3, ngene_total_all_samples)) %>%
+  mutate(ngene1 = map(filterData1, ngene_total_all_samples)) %>%
+  mutate(ngeneraw = map(data, ngene_total_all_samples))
+  
 #### NORMALIZE ####
 nestData <- nestData %>%
-  mutate(normData = map(filterData, tmmNorm)) 
+  mutate(normData = map(filterData3, tmmNorm)) 
 
 #### EXPORT NORM DATA ####
 
-if(FALSE){   #switch to TRUE if you want to save the output files
+if(TRUE){   #switch to TRUE if you want to save the output files
   apply(nestData, 1, FUN = function(x){
     
     outData <- x$normData %>%
@@ -202,7 +236,7 @@ nestData <- nestData %>%
                size = 3) +
       theme_bw() +
       scale_shape_manual(values = c(15, 16)) +
-      labs(title = paste(chemical), colour = "Dose(??M)", shape = "") +
+      labs(title = paste(chemical), colour = "Dose(µg/L)", shape = "") +
       guides(shape = FALSE) +
       theme(plot.title = element_text(hjust = 0.5))
   }))
