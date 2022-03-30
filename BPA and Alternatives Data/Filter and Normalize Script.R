@@ -1,24 +1,26 @@
 #### LIBRARIES AND FUCNTION SOURCE ####
+
+# libraries
 library(tidyverse)
 library(edgeR)
 library(preprocessCore) # for quantile normalization
 library(PMCMRplus)  # for Williams Trend Test
-# library(purrr)
 library(ggfortify)
-options(scipen = 9)
 
+#source codes
 source("RNAseqFunctions.R")
 source("BMDExpressFunctions.R") # for multiplot
 
+#options
+options(scipen = 9) # ensures that small numbers arent converted to scientific notation. Helpful for plotting
+
 
 #### IMPORT METADATA ####
-
 metadata <- read.csv("RNAseqData/metadata.csv", header = TRUE) %>%
   arrange(chemical, dose)
 
 #### IMPORT SEQ DATA ####
 # folders containing ONLY raw data
-
 dataFolders <- paste0("RNAseqData/RawData/",dir("RNAseqData/RawData"))
 
 # load data into a list
@@ -45,26 +47,21 @@ allData <- reduce(loadRaw, full_join, by="gene") %>%
 # merge with metadata,  
   left_join(x = metadata, y = ., by="sample") %>%
 # convert chemical and dose to factors,
-  mutate(chemical = as.factor(chemical), dose = as.factor(dose)) %>%
-# and group by chemical  
-  group_by(chemical)
+  mutate(chemical = as.factor(chemical), dose = as.factor(dose))
 
 
-# NEST data: a neat little function that is similar to breaking the data into lists. However the data stay in "tibble" format, and can be manipulated with dplyr commands
+# Group by chemical and nest
 nestData <- allData %>%
+  group_by(chemical) %>%
   nest()
+
+
   
 ####QC####
 # Number of genes with at least 1 read per sample
 ngene_per_sample <- allData %>% 
   as.data.frame() %>% 
   mutate(genecount = rowSums(.[4:ncol(allData)]!= 0)) %>%
-  select(sample, chemical, dose, genecount)
-
-#Per sample ncov5
-ncov5_sample <- allData %>% 
-  as.data.frame() %>% 
-  mutate(genecount = rowSums(.[4:ncol(allData)] >= 5)) %>%
   select(sample, chemical, dose, genecount)
 
 ngene_per_sample_mean <- mean(ngene_per_sample[,"genecount"])
@@ -77,66 +74,26 @@ ngene_per_chem_mean <- ngene_per_sample %>%
   rename(ngene_sd = fn2)
 
 # Number of genes with at least 1 read across all samples
-ngene_total_data <- mapply(sum, allData[,-c(1:3)])
-ngene_total <- length(which(ngene_total_data != 0))
+# for entire data set
+allData %>%
+  nGene(metadata=metadata)
 
-# Number of genes with a cumulative read count of at least 5 across all samples
-# ncov5 <- length(which(ngene_total_data >= 5))
+# per chemical
+nestData <- nestData %>%
+  mutate(nGene = map_dbl(data, ~nGene(.x, metadata=metadata))) %>%
+  mutate(nOverlap = map_dbl(data, ~nGeneIntercept(.x, metadata = metadata)))
 
-# Number of genes (highest to lowest read count) that make up 80% of reads
-nsig80<-vector()
-for(i in 1:5){
-  test1 <-nestData$data[[i]] %>%
-    select(-sample, -dose) %>%
-    colSums()
-  test1<- test1[order(test1, decreasing=TRUE)]
-  test_percent <- test1/sum(test1)*100
-  nsig80<-c(nsig80,sum(cumsum(test_percent)<80))
-  rm(test1, test_percent)
-}
-names(nsig80) <- as.vector(nestData$chemical)
-nsig80_mean <- mean(nsig80)
+# nCov5: number of genes in a sample with a count of at least 5
+nestData <- nestData %>%
+  mutate(nCov5=map(data, ~nCovN(.x, metadata = metadata))) %>%
+  mutate(nCov5_avg=map_dbl(nCov5, ~mean(.x$nCovN)))
+ 
+# nSig80: The number of the most abundant genes that make up 80% of the reads, per sample
+nestData <- nestData %>%
+  mutate(nSig80=map(data, ~nSig80_V2(.x, metadata = metadata))) %>%
+  mutate(nSig80_avg=map_dbl(nSig80, ~mean(.x$nSig80)))
 
-# nsig80 per sample
-nsig80_sample<-vector()
-for(i in 1:nrow(allData)){
-  test1 <-allData[i,] %>%
-    as.data.frame() %>%
-    select(-sample, -dose, -chemical) %>%
-    as.integer()
-  test1<- test1[order(test1, decreasing=TRUE)]
-  test_percent <- test1/sum(test1)*100
-  nsig80_sample<-c(nsig80_sample,sum(cumsum(test_percent)<80))
-  rm(test1, test_percent)
-}
-names(nsig80_sample) <- as.vector(allData$sample)
 
-#Number of genes that have at least 1 read across all samples per chemical
-ngene_total_chem_data <- vector()
-for(i in 1:5) {
-  temp <- nestData$data[[i]] %>%
-    select(-sample,-dose)
-  temp[temp > 0] <- 1
-  temp_sum <- mapply(sum, temp)
-  ngene_total_chem_data <-
-    c(ngene_total_chem_data, length(which(temp_sum == nrow(nestData$data[[i]]))))
-  rm(temp, temp_sum)
-}
-
-ngene_total_all_samples <- function(x){
-  temp <- x %>%
-    select(-sample,-dose)
-  temp_sum <- mapply(sum, temp[temp>0])
-  return(length(which(temp_sum == nrow(x))))
-}
-
-#Number of genes that have at least 1 read across all samples for all chemicals
-# ngene_total_allsamples_data <- allData %>%
-#   as.data.frame() %>%
-#   select(-sample, -chemical, -dose)
-# ngene_total_allsamples_data[ngene_total_allsamples_data > 0] <-1
-# ngene_total_allsamples_sum <- mapply(sum, ngene_total_allsamples_data)
-# ngene_total_allsamples <- length(which(ngene_total_allsamples_sum == nrow(allData)))
 
 #Overall QC Summary
 qcSummary <- data.frame(endpoint = c("ngene_per_sample_mean", 
@@ -186,16 +143,20 @@ ngene_per_sample %>%
 
 
 #### FILTER ####
-# uses the "countFilter' function from the "RNAseqFunctions" source code
-nestData <- nestData %>%
-  mutate(filterData5 = map(data, countFilter, grouping = "dose", median_threshold = 5)) %>%
-  mutate(filterData3 = map(data, countFilter, grouping = "dose", median_threshold = 3)) %>%
-  mutate(filterData1 = map(data, countFilter, grouping = "dose", median_threshold = 1)) %>%
-  mutate(ngene5 = map(filterData5, ngene_total_all_samples)) %>%
-  mutate(ngene3 = map(filterData3, ngene_total_all_samples)) %>%
-  mutate(ngene1 = map(filterData1, ngene_total_all_samples)) %>%
-  mutate(ngeneraw = map(data, ngene_total_all_samples))
-  
+filterData <- nestData %>%
+  select(chemical, data) %>%
+  mutate(filterData3 = map(data, ~countFilter(.x, grouping = "dose", median_threshold = 3, metadata=metadata))) %>%
+  select(-data) %>%
+  mutate(nGene_filt3 = map_dbl(filterData3, ~nGene(.x, metadata=metadata))) %>%
+  mutate(nOverlap_filt3 = map_dbl(filterData3, ~nGeneIntercept(.x, metadata = metadata))) %>%
+  mutate(nCov5=map(filterData3, ~nCovN(.x, metadata = metadata))) %>%
+  mutate(nCov5_avg=map_dbl(nCov5, ~mean(.x$nCovN))) %>%
+  mutate(nSig80=map(filterData3, ~nSig80_V2(.x, metadata = metadata))) %>%
+  mutate(nSig80_avg=map_dbl(nSig80, ~mean(.x$nSig80)))
+
+
+
+ 
 #### NORMALIZE ####
 nestData <- nestData %>%
   mutate(normData = map(filterData3, tmmNorm)) 
