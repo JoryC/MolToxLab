@@ -112,44 +112,16 @@ for(i in 1:nrow(allData)){
 names(nsig80_sample) <- as.vector(allData$sample)
 
 #Number of genes that have at least 1 read across all samples per chemical
-# ngene_total_chem_data <- vector()
-# for(i in 1:5) {
-#   temp <- nestData$data[[i]] %>%
-#     select(-sample,-dose)
-#   temp[temp > 0] <- 1
-#   temp_sum <- mapply(sum, temp)
-#   ngene_total_chem_data <-
-#     c(ngene_total_chem_data, length(which(temp_sum == nrow(nestData$data[[i]]))))
-#   rm(temp, temp_sum)
-# }
-
-
-
-#### nGene Functions ####
-
-# number of genes with at least one count in ANY sample
-nGene <- function(x){  
-  x %>%
-    select(-sample, -dose) %>%
-    sapply(any) %>%
-    sum()
+ngene_total_chem_data <- vector()
+for(i in 1:5) {
+  temp <- nestData$data[[i]] %>%
+    select(-sample,-dose)
+  temp[temp > 0] <- 1
+  temp_sum <- mapply(sum, temp)
+  ngene_total_chem_data <-
+    c(ngene_total_chem_data, length(which(temp_sum == nrow(nestData$data[[i]]))))
+  rm(temp, temp_sum)
 }
-
-# number of genes with at least one count in ALL sample
-nGeneIntercept <- function(x){
-  x %>%
-    select(-sample, -dose) %>%
-    sapply(all) %>%
-    sum()
-}
-
-# Apply nGene and nGene Intercept functions to data (prefiltered)
-nestData <- nestData %>%
-  mutate(nGene = map_dbl(data, ~nGene(.x))) %>%
-  mutate(nIntercept = map_dbl(data, ~nGeneIntercept(.x)))
-
-
-
 
 #Number of genes that have at least 1 read across all samples for all chemicals
 # ngene_total_allsamples_data <- allData %>%
@@ -187,18 +159,9 @@ qcSummary_sample <- ncov5_sample %>%
 #### FILTER ####
 # uses the "countFilter' function from the "RNAseqFunctions" source code
 nestData <- nestData %>%
-  mutate(filterData3 = map(data, ~countFilter(.x, grouping = "dose", median_threshold = 3))) 
- 
-
-# use nGene functions to filtered data
- nestData <-nestData %>%
-  mutate(nGene_filt3 = map_dbl(filterData3, ~nGene(.x))) %>%
-  mutate(nIntercept_filt3 = map_dbl(filterData3, ~nGeneIntercept(.x)))
-
-
-
-
-
+  mutate(filterData5 = map(data, countFilter, grouping = "dose", median_threshold = 5)) %>%
+  mutate(filterData3 = map(data, countFilter, grouping = "dose", median_threshold = 3)) %>%
+  mutate(filterData1 = map(data, countFilter, grouping = "dose", median_threshold = 1)) %>%
 #### NORMALIZE ####
 nestData <- nestData %>%
   mutate(normData = map(filterData, tmmNorm)) 
