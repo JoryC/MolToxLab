@@ -55,10 +55,8 @@ nestData <- allData %>%
   group_by(chemical) %>%
   nest()
 
-
-  
 ####QC####
-# Number of genes with at least 1 read per sample
+# Number of genes with at least 1 read for each sample
 ngene_per_sample <- allData %>% 
   as.data.frame() %>% 
   mutate(genecount = rowSums(.[4:ncol(allData)]!= 0)) %>%
@@ -93,55 +91,6 @@ nestData <- nestData %>%
   mutate(nSig80=map(data, ~nSig80_V2(.x, metadata = metadata))) %>%
   mutate(nSig80_avg=map_dbl(nSig80, ~mean(.x$nSig80)))
 
-
-
-#Overall QC Summary
-qcSummary <- data.frame(endpoint = c("ngene_per_sample_mean", 
-                                     "ngene_total",
-                                     # "ngene_total_allsamples",
-                                     # "ncov5", 
-                                     "nsig80_mean"),
-                        value = c(ngene_per_sample_mean,
-                                  ngene_total,
-                                  # ngene_total_allsamples,
-                                  # ncov5,
-                                  nsig80_mean)
-                        )
-
-#Chemical specific QC
-qcSummary_chem <- ngene_per_chem_mean %>%
-  select(-ngene_sd) %>%
-  mutate(ngene_allsamples = ngene_total_chem_data) %>%
-  mutate(nsig80 = nsig80)
-
-#Sample specific QC
-qcSummary_sample <- ncov5_sample %>%
-  rename(ncov5_sample = genecount) %>%
-  mutate(nsig80_sample = nsig80_sample)
-  
-qcSummary_sample %>%
-  ggplot(aes(x = chemical, y = nsig80_sample, group = chemical)) +
-  geom_boxplot(outlier.shape = NA, width = 0.5) +
-  geom_jitter(position = position_jitter(width = 0.2, height = 0, seed = 42069),
-              colour = "black") +
-  ylim(0,1600) +
-  theme_classic()
-
-qcSummary_sample %>%
-  ggplot(aes(x = chemical, y = ncov5_sample, group = chemical)) +
-  geom_boxplot(outlier.shape = NA, width = 0.5) +
-  geom_jitter(position = position_jitter(width = 0.2, height = 0, seed = 42069),
-              colour = "black") +
-  theme_classic()
-
-ngene_per_sample %>%
-  ggplot(aes(x = chemcial, y = genecount, group = chemcial)) +
-  geom_boxplot(outlier.shape = NA, width = 0.5) +
-  geom_jitter(position = position_jitter(width = 0.2, height = 0, seed = 42069),
-              colour = "black") +
-  theme_classic()
-
-
 #### FILTER ####
 filterData <- nestData %>%
   select(chemical, data) %>%
@@ -154,12 +103,62 @@ filterData <- nestData %>%
   mutate(nSig80=map(filterData3, ~nSig80_V2(.x, metadata = metadata))) %>%
   mutate(nSig80_avg=map_dbl(nSig80, ~mean(.x$nSig80)))
 
+####Plotting####
+#number of genes per sample
+ngene_plot <-
+  ngene_per_sample %>%
+  ggplot(aes(x = chemical, y = genecount)) +
+  geom_boxplot(outlier.shape = NA, width = 0.5) +
+  geom_jitter(position = position_jitter(width = 0.2, height = 0, seed = 42069),
+              colour = "black") +
+  labs(x = "Chemical", y = "Gene Count per Sample") +
+  theme_classic()
 
+#nCov5 plotting
+nCov5_plot <-
+  filterData$nCov5 %>%
+  bind_rows() %>%
+  mutate(chemical = str_extract(sample, "[^_]+")) %>%
+  ggplot(aes(x = chemical, y = nCovN)) +
+  geom_boxplot(outlier.shape = NA, width = 0.5) +
+  geom_jitter(position = position_jitter(width = 0.2, height = 0, seed = 42069),
+              colour = "black") +
+  ylim(0, NA) +
+  labs(x = "Chemical", y = "nCov5") +
+  theme_classic()
 
- 
+#nsig80 plotting
+nSig80_plot <-
+  filterData$nSig80 %>%
+  bind_rows() %>%
+  mutate(chemical = str_extract(sample, "[^_]+")) %>%
+  ggplot(aes(x = chemical, y = nSig80)) +
+  geom_boxplot(outlier.shape = NA, width = 0.5) +
+  geom_jitter(position = position_jitter(width = 0.2,height = 0, seed = 42069),
+              colour = "black") +
+  ylim(0, NA) +
+  labs(x = "Chemical", y = "nSig80") +
+  theme_classic()
+
 #### NORMALIZE ####
-nestData <- nestData %>%
+filterData <- filterData %>%
   mutate(normData = map(filterData3, tmmNorm)) 
+
+
+
+test <- filterData$normData[[2]] %>% 
+  select(-names(metadata)[names(metadata) %in% names(filterData$normData[[2]])]) %>%
+  unlist() %>%
+  as.data.frame %>%
+  rename(value = ".")
+
+ggplot(test, aes(x = value)) +
+  geom_histogram(color="black", fill=NA, bins = 1000) +
+  scale_x_continuous(expand = expand_scale(0, 0))
+
+ggplot(filterData$normData[[1]]) +
+  geom_histogram(color = "black", fill = "white")
+
 
 #### EXPORT NORM DATA ####
 

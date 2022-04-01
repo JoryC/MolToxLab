@@ -5,7 +5,7 @@ countFilter <- function(data, grouping, median_threshold, metadata){
  
   # column selectors: used to select all meta data columns, so that the gene cols can be quickly selected
   metaCols <- names(metadata)[names(metadata) %in% names(data)]
-  omitCols <- metaCols[!keepCols %in% grouping]
+  omitCols <- metaCols[!metaCols %in% grouping]
   
   # group and nest by "grouping"
   nestData<-data %>%
