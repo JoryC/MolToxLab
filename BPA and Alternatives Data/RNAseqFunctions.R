@@ -33,6 +33,13 @@ countFilter <- function(data, grouping, median_threshold, metadata){
   return(filterData)
 }
 
+#### FUNCTION: logCount ####
+logCount <- function(x, zeroPad=1){
+  x %>% 
+    mutate(across(where(is.integer), ~log2(.+zeroPad)))
+}
+
+
 
 #### Function: nCovN ####
 # the number of genes in a samples with at least N counts

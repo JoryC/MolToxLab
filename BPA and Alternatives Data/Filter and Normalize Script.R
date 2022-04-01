@@ -115,10 +115,9 @@ ngene_plot <-
   theme_classic()
 
 #nCov5 plotting
-nCov5_plot <-
-  filterData$nCov5 %>%
-  bind_rows() %>%
-  mutate(chemical = str_extract(sample, "[^_]+")) %>%
+nCov5_plot <- filterData %>%
+  select(chemical, nCov5) %>%
+  unnest(cols=c(nCov5)) %>%
   ggplot(aes(x = chemical, y = nCovN)) +
   geom_boxplot(outlier.shape = NA, width = 0.5) +
   geom_jitter(position = position_jitter(width = 0.2, height = 0, seed = 42069),
@@ -128,10 +127,9 @@ nCov5_plot <-
   theme_classic()
 
 #nsig80 plotting
-nSig80_plot <-
-  filterData$nSig80 %>%
-  bind_rows() %>%
-  mutate(chemical = str_extract(sample, "[^_]+")) %>%
+nSig80_plot <- filterData %>%
+  select(chemical, nSig80) %>%
+  unnest(cols=c(nSig80)) %>%
   ggplot(aes(x = chemical, y = nSig80)) +
   geom_boxplot(outlier.shape = NA, width = 0.5) +
   geom_jitter(position = position_jitter(width = 0.2,height = 0, seed = 42069),
@@ -140,24 +138,41 @@ nSig80_plot <-
   labs(x = "Chemical", y = "nSig80") +
   theme_classic()
 
+
 #### NORMALIZE ####
 filterData <- filterData %>%
-  mutate(normData = map(filterData3, tmmNorm)) 
+  mutate(normData = map(filterData3, tmmNorm)) %>% 
+  mutate(logData = map(filterData3, logCount)) %>%
+  mutate(logNormData = map(logData, tmmNorm)) 
+
+
+# plot before normazliation
+filterData$logData[[2]] %>%
+  select(-dose) %>%
+  column_to_rownames("sample") %>%
+  #mutate_all(~log2(.+1)) %>%
+  as.data.frame() %>%
+  t() %>%
+  boxplot()
+
+
+par(mfrow=c(2,3))
+for(i in 1:5){
+  # plot before normazliation
+  filterData$logNormData[[i]] %>%
+    #bind_rows() %>%
+    select(-dose) %>%
+    column_to_rownames("sample") %>%
+    #mutate_all(~log2(.+1)) %>%
+    as.data.frame() %>%
+    t() %>%
+    boxplot(horizontal=TRUE)
+}
 
 
 
-test <- filterData$normData[[2]] %>% 
-  select(-names(metadata)[names(metadata) %in% names(filterData$normData[[2]])]) %>%
-  unlist() %>%
-  as.data.frame %>%
-  rename(value = ".")
-
-ggplot(test, aes(x = value)) +
-  geom_histogram(color="black", fill=NA, bins = 1000) +
-  scale_x_continuous(expand = expand_scale(0, 0))
-
-ggplot(filterData$normData[[1]]) +
-  geom_histogram(color = "black", fill = "white")
+test %>%
+  boxplot(ylim=c(0.995, 1.05))
 
 
 #### EXPORT NORM DATA ####
