@@ -146,15 +146,15 @@ filterData <- filterData %>%
   mutate(logNormData = map(logData, tmmNorm)) 
 
 
-# plot before normazliation
-filterData$logData[[2]] %>%
-  select(-dose) %>%
-  column_to_rownames("sample") %>%
-  #mutate_all(~log2(.+1)) %>%
-  as.data.frame() %>%
-  t() %>%
-  boxplot()
-
+# # plot before normazliation
+# filterData$logData[[2]] %>%
+#   select(-dose) %>%
+#   column_to_rownames("sample") %>%
+#   #mutate_all(~log2(.+1)) %>%
+#   as.data.frame() %>%
+#   t() %>%
+#   boxplot()
+# 
 
 par(mfrow=c(2,3))
 for(i in 1:5){
@@ -169,16 +169,10 @@ for(i in 1:5){
     boxplot(horizontal=TRUE)
 }
 
-
-
-test %>%
-  boxplot(ylim=c(0.995, 1.05))
-
-
 #### EXPORT NORM DATA ####
 
 if(TRUE){   #switch to TRUE if you want to save the output files
-  apply(nestData, 1, FUN = function(x){
+  apply(filterData, 1, FUN = function(x){
     
     outData <- x$normData %>%
       select(-sample, -dose) %>%
@@ -199,7 +193,7 @@ if(TRUE){   #switch to TRUE if you want to save the output files
 #### PCA ####
 # PCA of using prcomp and plotted using autoplot
 
-nestData <- nestData %>%
+filterData <- filterData %>%
   mutate(PCAplots = map(normData, function(x){
     x <- x %>% mutate(controlcol = ifelse(dose == 0, "Control", "Treated"))
     x %>%
@@ -220,6 +214,6 @@ nestData <- nestData %>%
 # nestData$PCAplots[[1]]
 
 # multiplot
-multiplot(plotlist=nestData$PCAplots, cols=3)
+multiplot(plotlist=filterData$PCAplots, cols=3)
 
 
