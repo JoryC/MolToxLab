@@ -45,23 +45,31 @@ allData <- reduce(loadRaw, full_join, by="gene") %>%
   # convert to tibble,
   as_tibble() %>%
   # merge with metadata,  
-  left_join(x = metadata, y = ., by="sample") %>%
+  left_join(x = metadata, y = ., by="sample")
   # convert chemical and dose to factors,
-  mutate(chemical = as.factor(chemical), dose = as.factor(dose))
+  # mutate(chemical = as.factor(chemical), dose = as.factor(dose))
 
 #create data list
 data_list <- list()
 
 for(i in as.character(unique(allData$chemical))){
   data_list[[i]] <- filter(allData, chemical == i) %>%
-    select(-chemical,
-           -dose) %>%
+    select(-chemical) %>%
     column_to_rownames(var = "sample") %>%
     t()
 }
 
-# #log transform data and 
-# log_data_list <- lapply(data_list, FUN = function(x){log2(x+1)})
+filter_list <- lapply(data_list, function(x) {
+  x %>%
+    t() %>%
+    as.data.frame() %>%
+    countFilter(grouping = "dose", median_threshold = 3, metadata = metadata) %>%
+    select(-dose) %>%
+    t()
+})
+
+#log transform data and
+# logdata_list <- lapply(data_list, FUN = function(x){log2(x+1)})
 
 #create metadata list
 metadata_list <- list()
@@ -85,9 +93,8 @@ library(DESeq2)
 
 norm_counts <- list()
 
-
-for(i in names(data_list)){
-  dds <- DESeqDataSetFromMatrix(countData = data_list[[i]],
+for(i in names(filter_list)){
+  dds <- DESeqDataSetFromMatrix(countData = filter_list[[i]],
                                 colData = metadata_list[[i]],
                                 design = ~ dose)
   dds <- estimateSizeFactors(dds)
@@ -97,6 +104,52 @@ for(i in names(data_list)){
 
 
 
+par(mfrow=c(2,3))
+for(i in 1:length(norm_counts)){
+    log2(norm_counts[[i]]+min(norm_counts[[i]][norm_counts[[i]] > 0])/10) %>%
+    t() %>%
+    graphics::boxplot(horizontal=TRUE, xlim = c(0, 20))
+}
+
+
+for(i in names(norm_counts)){
+  outData <- norm_counts[["BPA"]] %>% as.data.frame()
+  doses <- filter(metadata, chemical == "BPA") %>%
+    select(dose)
+  outData <- outData %>%
+    mutate(dose = doses) %>%
+    relocate(dose) %>%
+    t() %>%
+    as.data.frame()
+  write_delim(outData,
+              paste0("RNAseqData/DESeqnormalizedData/",i, "_DESeq_normData.txt"),
+              delim = "\t")
+}
+
+
+
+
+if(TRUE){   #switch to TRUE if you want to save the output files
+  apply(norm_counts, 1, FUN = function(x){
+    
+    outData <- x$normData %>%
+      select(-sample, -dose) %>%
+      t() %>%
+      as.data.frame() 
+    
+    colnames(outData) <- x$normData$dose
+    outData <- data.frame(gene=rownames(outData), outData, check.names = FALSE)
+    
+    write_delim(outData,
+                paste0("RNAseqData/DESeqnormalizedData/",x$chemical, "_normData.txt"),
+                delim = "\t"
+    )
+  })
+}
+
+
+
+# detach("package:DESeq2", unload=TRUE)
 
 # 
 # # Group by chemical and nest
