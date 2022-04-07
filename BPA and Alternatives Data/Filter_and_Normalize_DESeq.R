@@ -113,39 +113,21 @@ for(i in 1:length(norm_counts)){
 
 
 for(i in names(norm_counts)){
-  outData <- norm_counts[["BPA"]] %>% as.data.frame()
-  doses <- filter(metadata, chemical == "BPA") %>%
+  outData <- norm_counts[[i]] %>% as.data.frame()
+  doses <- filter(metadata, chemical == i) %>%
     select(dose)
   outData <- outData %>%
     mutate(dose = doses) %>%
     relocate(dose) %>%
     t() %>%
-    as.data.frame()
+    as.data.frame() %>%
+    rownames_to_column()
   write_delim(outData,
               paste0("RNAseqData/DESeqnormalizedData/",i, "_DESeq_normData.txt"),
+              col_names = F,
               delim = "\t")
 }
 
-
-
-
-if(TRUE){   #switch to TRUE if you want to save the output files
-  apply(norm_counts, 1, FUN = function(x){
-    
-    outData <- x$normData %>%
-      select(-sample, -dose) %>%
-      t() %>%
-      as.data.frame() 
-    
-    colnames(outData) <- x$normData$dose
-    outData <- data.frame(gene=rownames(outData), outData, check.names = FALSE)
-    
-    write_delim(outData,
-                paste0("RNAseqData/DESeqnormalizedData/",x$chemical, "_normData.txt"),
-                delim = "\t"
-    )
-  })
-}
 
 
 
