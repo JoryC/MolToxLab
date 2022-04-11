@@ -105,17 +105,19 @@ filterData <- nestData %>%
 
 ####Plotting####
 #number of genes per sample
-ngene_plot <-
+QCplots <- list()
+QCplots[["ngene_plot"]] <-
   ngene_per_sample %>%
   ggplot(aes(x = chemical, y = genecount)) +
   geom_boxplot(outlier.shape = NA, width = 0.5) +
   geom_jitter(position = position_jitter(width = 0.2, height = 0, seed = 42069),
               colour = "black") +
-  labs(x = "Chemical", y = "Gene Count per Sample") +
+  labs(x = "Chemical", y = "Gene Count per Sample", title = "Gene Count") +
   theme_classic()
 
 #nCov5 plotting
-nCov5_plot <- filterData %>%
+QCplots[["nCov5_plot"]] <- 
+  filterData %>%
   select(chemical, nCov5) %>%
   unnest(cols=c(nCov5)) %>%
   ggplot(aes(x = chemical, y = nCovN)) +
@@ -123,11 +125,12 @@ nCov5_plot <- filterData %>%
   geom_jitter(position = position_jitter(width = 0.2, height = 0, seed = 42069),
               colour = "black") +
   ylim(0, NA) +
-  labs(x = "Chemical", y = "nCov5") +
+  labs(x = "Chemical", y = "nCov5", title = "nCov5") +
   theme_classic()
 
 #nsig80 plotting
-nSig80_plot <- filterData %>%
+QCplots[["nSig80_plot"]] <- 
+  filterData %>%
   select(chemical, nSig80) %>%
   unnest(cols=c(nSig80)) %>%
   ggplot(aes(x = chemical, y = nSig80)) +
@@ -135,9 +138,10 @@ nSig80_plot <- filterData %>%
   geom_jitter(position = position_jitter(width = 0.2,height = 0, seed = 42069),
               colour = "black") +
   ylim(0, NA) +
-  labs(x = "Chemical", y = "nSig80") +
+  labs(x = "Chemical", y = "nSig80", title = "nSig80") +
   theme_classic()
 
+multiplot(plotlist = QCplots, cols = 3)
 
 #### NORMALIZE ####
 filterData <- filterData %>%
