@@ -475,7 +475,7 @@ ggsave(
   units = "in",
   height = 8,
   width = 12,
-  filename = "Output/Alamar_Blue_Tyler.pdf",
+  filename = "Output/Images/Alamar_Blue_Tyler.pdf",
   plot = g,
   path = getwd(),
   device = "pdf"
@@ -484,7 +484,7 @@ ggsave(
 #   units = "",
 #   height = 800,
 #   width = 1200,
-#   filename = "Output/Alamar_Blue_Tyler.png",
+#   filename = "Output/Images/Alamar_Blue_Tyler.png",
 #   plot = g,
 #   path = getwd(),
 #   device = "png"
