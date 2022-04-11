@@ -3,12 +3,18 @@ library(tidyverse)
 source("BMDExpressFunctions.R")
 
 ####Metadata Import####
-metadata <- read.csv("RNAseqData/metadata_nocontrol.csv")
+metadata <- read.csv("RNAseqData/metadata.csv")
 chemnames <- unique(metadata$chemical)
+
 lowestdoses <- unique(metadata[, c("chemical", "dose")]) %>%
   group_by(chemical) %>%
   filter(dose > 0) %>%
   summarise_all(min)
+
+highestdoses <- unique(metadata[,c("chemical","dose")]) %>%
+  group_by(chemical) %>%
+  filter(dose>0) %>%
+  summarise_all(max)
 
 ####GO Term BMD Extraction####
 #Import

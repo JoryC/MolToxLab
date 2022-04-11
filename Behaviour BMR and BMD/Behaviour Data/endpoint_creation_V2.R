@@ -20,7 +20,7 @@ for(i in chemnames){
 }
 
 ####Calculate Similarity Endpoints####
-simi_endps <- list("ld_pearson" = seq(1, 20, by = 1))
+simi_endps <- list("ld_pearson" = seq(1, 30, by = 1))
 simi_endpoints <- list()
 for(i in chemnames){
   temp <- create_simi_endpoints(raw_data[[i]], segments = simi_endps, metric = "pearson")
@@ -46,7 +46,9 @@ summarystats_list <- lapply(simi_norm, summarystats)
 anova_list <- sapply(simi_norm, combinedanova)
 print(anova_list)
 
-dunnett_list <- sapply(simi_norm, combineddunnett)
+dunnett_list <- sapply(simi_norm, combineddunnett) %>% 
+  setNames(., chemnames) %>%
+  as.array()
 print(dunnett_list)
 
 ####Export Data####
@@ -59,6 +61,7 @@ for(i in chemnames){
 for(i in chemnames){
   write.csv(dunnett_list[[i]], file = paste0("Output/", i,"/",i,"_dunnett.csv"))
 }
+
 ####Plotting####
 behaviourplots <- list()
 
@@ -74,7 +77,7 @@ for(i in chemnames) {
     theme_classic()
 }
 
-print(behaviourplots[[1]])
+# print(behaviourplots[[1]])
 
 multiplot(plotlist = behaviourplots, cols = 2 )
 
