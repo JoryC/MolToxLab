@@ -3,18 +3,24 @@ library(Rfast)
 library(tidyverse)
 library(purrr)
 source("BMDExpressFunctions.R")
+options(scipen = 9)
 
 ####Metadata Import####
-metadata <- read.csv("RNAseqData/metadata_nocontrol.csv")
+metadata <- read.csv("RNAseqData/metadata.csv")
 chemnames <- unique(metadata$chemical)
+
 lowestdoses <- unique(metadata[,c("chemical","dose")]) %>%
   group_by(chemical) %>%
   filter(dose>0) %>%
   summarise_all(min)
 
-#### load tPod Values ####
-tPoD_values <- read.table(file = "tpod_values.txt")
+highestdoses <- unique(metadata[,c("chemical","dose")]) %>%
+  group_by(chemical) %>%
+  filter(dose>0) %>%
+  summarise_all(max)
 
+#### load tPod Values ####
+tPoD_values <- read.table(file = "BMDExpressData/Output/tpod_values.txt")
 
 
 #### BMD HISTOGRAM #####
@@ -33,7 +39,7 @@ filtered_hist_data <- list()
 for(i in chemnames){
   filtered_hist_data[[i]] <- BMDfiltering(x = raw_hist_data[[i]], 
                                          lowdose = lowestdoses$dose[lowestdoses$chemical==i], 
-                                         highdose = 3,
+                                         highdose = highestdoses$dose[highestdoses$chemical==i],
   ) %>%
     mutate(logBMD = log10(BMD))
 }
@@ -58,7 +64,6 @@ for(i in chemnames){
   )
 }
 
-
 # historgram plot values
 dataHist<-list()
 for(i in chemnames){
@@ -69,10 +74,10 @@ for(i in chemnames){
   dataHist[[i]] <- data.frame(x=dataHist[[i]]$mids, y=dataHist[[i]]$count)
 }
 
-
 # maximum x and y-values for multi plotting (highest freq value)
-min_x <- -5
-max_x <- 1
+
+# min_x <- log10(min(lowestdoses$dose))
+# max_x <- log10(max(highestdoses$dose))
 
 max_y <- sapply(dataHist, function(x){
   max(x$y)
@@ -98,7 +103,8 @@ histPlots<-list()
 for(i in chemnames){
   histPlots[[i]]<-ggplot(filtered_hist_data[[i]], aes(x = logBMD)) +
     # x and y scales
-    scale_x_continuous(limit = c(min_x, max_x), oob = function(x, limits) x) + # i know this is a weird line... apparently there is a minor bug with just using "xlim" for histograms
+    scale_x_continuous(limit = c(log10(lowestdoses$dose[lowestdoses$chemical == i]), 
+                                 log10(highestdoses$dose[highestdoses$chemical == i])), oob = function(x, limits) x) + # i know this is a weird line... apparently there is a minor bug with just using "xlim" for histograms
     scale_y_continuous(limit = c(0, max_y), expand=c(0,0)) + 
     # plot data
     geom_histogram(binwidth = dataModes[[i]]$bw, color="black", fill=NA) +
@@ -173,16 +179,20 @@ for(i in 1:length(filtered_reactome_data)){
 
 
 # x and y axis values
+
+# min_x <- log10(min(lowestdoses$dose))
+# max_x <- log10(max(highestdoses$dose))
+
 max_y<-max(sapply(filtered_reactome_data, nrow))
-min_x<- -5
-max_x<- 1
+
 
 
 reactomePlots<-list()
 for(i in chemnames){
   reactomePlots[[i]] <- ggplot(filtered_reactome_data[[i]], aes(x = logBMD, y=rank)) + # can plot by "rank" or "count"
     # x and y axis lims
-    xlim(min_x,max_x) +
+    xlim(log10(lowestdoses$dose[lowestdoses$chemical == i]), 
+         log10(highestdoses$dose[highestdoses$chemical == i])) +
     ylim(0,max_y) +
     # plot data
     geom_line(size=2, col="orange") +  
