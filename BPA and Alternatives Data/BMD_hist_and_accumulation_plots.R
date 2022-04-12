@@ -148,7 +148,7 @@ for(i in chemnames){
 # NOTE after doing all this, i learned that the function "min_rank" does the same thing... ah well
 
 for(i in 1:length(filtered_reactome_data)){
-  if(nrow(filtered_reactome_data[[i]]>0)){
+  if(nrow(filtered_reactome_data[[i]])>1){
     rVal<-1
     ranker<-rVal
     cVal<-1
@@ -170,9 +170,16 @@ for(i in 1:length(filtered_reactome_data)){
     filtered_reactome_data[[i]]$rank<-ranker
     filtered_reactome_data[[i]]$rank_count<-counter
   }else{
-    filtered_reactome_data[[i]]$count<-vector()
-    filtered_reactome_data[[i]]$rank<-vector()
-    filtered_reactome_data[[i]]$rank_count<-vector()
+    if(nrow(filtered_reactome_data[[i]])==1){
+      filtered_reactome_data[[i]]$count<-1
+      filtered_reactome_data[[i]]$rank<-1
+      filtered_reactome_data[[i]]$rank_count<-1
+    }else{
+      filtered_reactome_data[[i]]$count<-vector()
+      filtered_reactome_data[[i]]$rank<-vector()
+      filtered_reactome_data[[i]]$rank_count<-vector()  
+    }
+    
   }
   
 }
@@ -191,7 +198,7 @@ reactomePlots<-list()
 for(i in chemnames){
   reactomePlots[[i]] <- ggplot(filtered_reactome_data[[i]], aes(x = logBMD, y=rank)) + # can plot by "rank" or "count"
     # x and y axis lims
-    xlim(log10(lowestdoses$dose[lowestdoses$chemical == i]), 
+    xlim(log10(lowestdoses$dose[lowestdoses$chemical == i]/10), 
          log10(highestdoses$dose[highestdoses$chemical == i])) +
     ylim(0,max_y) +
     # plot data
@@ -245,16 +252,14 @@ for(i in chemnames){
 max_y<-max(sapply(filtered_go_data, function(x){
   max(x$rank)
 }))
-min_x<- -5
-max_x<- 1
-
 
 
 goLevelPlots<-list()
 for(i in chemnames){
   goLevelPlots[[i]] <- ggplot(filtered_go_data[[i]], aes(x = logBMD, y=rank, color=GO.Level)) + 
     # x and y axis lims
-    xlim(min_x,max_x) +
+    xlim(log10(lowestdoses$dose[lowestdoses$chemical == i]/10), 
+         log10(highestdoses$dose[highestdoses$chemical == i])) +
     ylim(0,max_y) +
     # plot data
     geom_line(size=2) +  
@@ -314,7 +319,8 @@ goPlots<-list()
 for(i in chemnames){
   goPlots[[i]] <- ggplot(filtered_go_data[[i]], aes(x = logBMD, y=rank)) + 
     # x and y axis lims
-    xlim(min_x,max_x) +
+    xlim(log10(lowestdoses$dose[lowestdoses$chemical == i]/10), 
+         log10(highestdoses$dose[highestdoses$chemical == i])) +
     ylim(0,max_y) +
     # plot data
     geom_line(size=2, col="orange") +  
