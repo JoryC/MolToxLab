@@ -110,9 +110,9 @@ for(i in chemnames){
     geom_histogram(binwidth = dataModes[[i]]$bw, color="black", fill=NA) +
     geom_line(data=dataDens[[i]], aes(x=x, y=y), inherit.aes = FALSE, size=1.5, col=hsv(0.5,1,0.8,0.4)) +
     # lines
-    geom_vline(xintercept = tPoD_values[tPoD_values$chemical==i, "first_mode"], color = "red", size = 0.5) +
-    geom_vline(xintercept = tPoD_values[tPoD_values$chemical==i, "X10th_percentile"], color = "green", size = 0.5) +
-    geom_vline(xintercept = tPoD_values[tPoD_values$chemical==i, "X20th_gene"], color = "purple", size = 0.5) +
+    geom_vline(xintercept = tPoD_values[tPoD_values$chemical==i, "first_mode"], color = "red", size = 0.8, linetype = "dashed") +
+    geom_vline(xintercept = tPoD_values[tPoD_values$chemical==i, "X10th_percentile"], color = "green", size = 0.8, linetype = "dotted") +
+    geom_vline(xintercept = tPoD_values[tPoD_values$chemical==i, "X20th_gene"], color = "purple", size = 0.8, linetype = "dotdash") +
     # labels
     labs(title = paste0(i," (n=",nrow(filtered_hist_data[[i]]), " genes)"), x = "logBMD", y = "Count") +
     # theme
@@ -120,7 +120,7 @@ for(i in chemnames){
     theme(plot.title = element_text(hjust = 0.5, size=12))
 }
 
-multiplot(plotlist = histPlots, cols = 3)
+multiplot(plotlist = histPlots, layout = matrix(c(1:length(histPlots),NA), nrow=2, byrow=TRUE))
 
 
 
@@ -211,69 +211,65 @@ for(i in chemnames){
     theme(plot.title = element_text(hjust = 0.5, size=12))
 }
 
-multiplot(plotlist=reactomePlots, cols=3)
+multiplot(plotlist=reactomePlots, layout = matrix(c(1:length(reactomePlots),NA), nrow=2, byrow=TRUE))
 
-
-
-
-
-#### GO TERM ACCUMULATION PLOT ..... GROUPED BY LEVEL ####
-
-# load GO data
-raw_go_data <- list()
-filenames <- list.files("BMDExpressData/GO_TERM_CSV")
-for(i in 1:length(chemnames)){
-  raw_go_data[[chemnames[i]]] <- read.csv(paste0("BMDExpressData/GO_TERM_CSV/",filenames[i]), header = TRUE) %>%
-    cleanupcolumns_goterm()
-}
-
-# filter data
-filtered_go_data <- list()
-for(i in chemnames){
-  filtered_go_data[[i]] <- goterm_filtering(x = raw_go_data[[i]]) %>%
-    mutate(logBMD = log10(BMD.Median)) %>%
-    arrange(logBMD) %>%
-    as_tibble()
-}
-
-
-# group by GO level then ranked by logBMD
-for(i in chemnames){
-  filtered_go_data[[i]] <- filtered_go_data[[i]] %>%
-    group_by(GO.Level) %>%
-    mutate(rank=min_rank(logBMD)) %>%
-    arrange(GO.Level, logBMD) %>%
-    ungroup() %>%
-    mutate(GO.Level=as.factor(GO.Level))
-}
-
-
-# x and y axis values
-max_y<-max(sapply(filtered_go_data, function(x){
-  max(x$rank)
-}))
-
-
-goLevelPlots<-list()
-for(i in chemnames){
-  goLevelPlots[[i]] <- ggplot(filtered_go_data[[i]], aes(x = logBMD, y=rank, color=GO.Level)) + 
-    # x and y axis lims
-    xlim(log10(lowestdoses$dose[lowestdoses$chemical == i]/10), 
-         log10(highestdoses$dose[highestdoses$chemical == i])) +
-    ylim(0,max_y) +
-    # plot data
-    geom_line(size=2) +  
-    geom_point(size=3, stroke=2, shape=22, fill="white") +
-    # labels
-    labs(title = paste0(i, " (n=", nrow(filtered_go_data[[i]]), " GO terms)"), x = "logBMD", y = "Cumulative GO terms") +
-    #theme
-    theme_classic() +
-    theme(plot.title = element_text(hjust = 0.5, size=12))
-}
-
-multiplot(plotlist=goLevelPlots, cols=3)
-
-goLevelPlots[[2]]
+# #### GO TERM ACCUMULATION PLOT ..... GROUPED BY LEVEL ####
+# 
+# # load GO data
+# raw_go_data <- list()
+# filenames <- list.files("BMDExpressData/GO_TERM_CSV")
+# for(i in 1:length(chemnames)){
+#   raw_go_data[[chemnames[i]]] <- read.csv(paste0("BMDExpressData/GO_TERM_CSV/",filenames[i]), header = TRUE) %>%
+#     cleanupcolumns_goterm()
+# }
+# 
+# # filter data
+# filtered_go_data <- list()
+# for(i in chemnames){
+#   filtered_go_data[[i]] <- goterm_filtering(x = raw_go_data[[i]]) %>%
+#     mutate(logBMD = log10(BMD.Median)) %>%
+#     arrange(logBMD) %>%
+#     as_tibble()
+# }
+# 
+# 
+# # group by GO level then ranked by logBMD
+# for(i in chemnames){
+#   filtered_go_data[[i]] <- filtered_go_data[[i]] %>%
+#     group_by(GO.Level) %>%
+#     mutate(rank=min_rank(logBMD)) %>%
+#     arrange(GO.Level, logBMD) %>%
+#     ungroup() %>%
+#     mutate(GO.Level=as.factor(GO.Level))
+# }
+# 
+# 
+# # x and y axis values
+# max_y<-max(sapply(filtered_go_data, function(x){
+#   max(x$rank)
+# }))
+# 
+# 
+# goLevelPlots<-list()
+# for(i in chemnames){
+#   goLevelPlots[[i]] <- ggplot(filtered_go_data[[i]], aes(x = logBMD, y=rank, color=GO.Level)) + 
+#     # x and y axis lims
+#     xlim(log10(lowestdoses$dose[lowestdoses$chemical == i]/10), 
+#          log10(highestdoses$dose[highestdoses$chemical == i])) +
+#     ylim(0,max_y) +
+#     # plot data
+#     geom_line(size=2) +  
+#     geom_point(size=3, stroke=2, shape=22, fill="white") +
+#     # labels
+#     labs(title = paste0(i, " (n=", nrow(filtered_go_data[[i]]), " GO terms)"), x = "logBMD", y = "Cumulative GO terms") +
+#     #theme
+#     theme_classic() +
+#     theme(plot.title = element_text(hjust = 0.5, size=12))
+# }
+# 
+# multiplot(plotlist=goLevelPlots, cols=3)
+# 
+# goLevelPlots[[2]]
 
 
 
@@ -332,7 +328,7 @@ for(i in chemnames){
     theme(plot.title = element_text(hjust = 0.5, size=12))
 }
 
-multiplot(plotlist=goPlots, cols=3)
+multiplot(plotlist=goPlots, layout = matrix(c(1:length(goPlots),NA), nrow=2, byrow=TRUE))
 
 
   
