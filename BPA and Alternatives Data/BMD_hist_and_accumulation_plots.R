@@ -174,7 +174,7 @@ for(i in 1:length(filtered_reactome_data)){
     filtered_reactome_data[[i]]$rank<-vector()
     filtered_reactome_data[[i]]$rank_count<-vector()
   }
-  
+  print(i)
 }
 
 
