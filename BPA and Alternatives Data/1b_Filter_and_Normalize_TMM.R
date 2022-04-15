@@ -37,7 +37,7 @@ for(i in dataFolders){
 }
 
 # join,
-allData <- reduce(loadRaw, full_join, by="gene") %>%
+allData <- purrr::reduce(loadRaw, full_join, by="gene") %>%
 # transpose,
   column_to_rownames("gene") %>%
   t() %>%
