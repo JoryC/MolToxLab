@@ -63,6 +63,13 @@ readcount <- allData %>%
   mutate(row_sum = rowSums(select(.,4:length(allData)))) %>%
   select(sample, chemical, dose, row_sum)
 
+readcount_per_chem_mean <- readcount %>% 
+  select(-sample, -dose) %>%
+  group_by(chemical) %>% 
+  summarise_at(vars(row_sum), .funs = c(mean, sd)) %>%
+  rename(read_mean = fn1) %>%
+  rename(read_sd = fn2)
+
 # Number of genes with at least 1 read for each sample
 ngene_per_sample <- allData %>% 
   as.data.frame() %>% 
@@ -91,12 +98,14 @@ nestData <- nestData %>%
 # nCov5: number of genes in a sample with a count of at least 5
 nestData <- nestData %>%
   mutate(nCov5=map(data, ~nCovN(.x, metadata = metadata))) %>%
-  mutate(nCov5_avg=map_dbl(nCov5, ~mean(.x$nCovN)))
+  mutate(nCov5_avg=map_dbl(nCov5, ~mean(.x$nCovN))) %>%
+  mutate(nCov5_sd=map_dbl(nCov5, ~sd(.x$nCovN)))
  
 # nSig80: The number of the most abundant genes that make up 80% of the reads, per sample
 nestData <- nestData %>%
   mutate(nSig80=map(data, ~nSig80_V2(.x, metadata = metadata))) %>%
-  mutate(nSig80_avg=map_dbl(nSig80, ~mean(.x$nSig80)))
+  mutate(nSig80_avg=map_dbl(nSig80, ~mean(.x$nSig80))) %>%
+  mutate(nSig80_sd=map_dbl(nSig80, ~sd(.x$nSig80)))
 
 #### FILTER ####
 filterData <- nestData %>%
@@ -139,7 +148,7 @@ QCplots[["ngene_plot"]] <-
 
 #nCov5 plotting
 QCplots[["nCov5_plot"]] <- 
-  filterData %>%
+  nestData %>%
   select(chemical, nCov5) %>%
   unnest(cols=c(nCov5)) %>%
   ggplot(aes(x = chemical, y = nCovN)) +
@@ -152,7 +161,7 @@ QCplots[["nCov5_plot"]] <-
 
 #nsig80 plotting
 QCplots[["nSig80_plot"]] <- 
-  filterData %>%
+  nestData %>%
   select(chemical, nSig80) %>%
   unnest(cols=c(nSig80)) %>%
   ggplot(aes(x = chemical, y = nSig80)) +

@@ -67,7 +67,7 @@ for(i in chemnames){
     rename(ensembl_gene_id = Probe.Id)
   geneset_BMD[[i]] <- inner_join(ensembl_geneset, temp,  by = "ensembl_gene_id") %>%
     rename("ZFIN Gene ID" = zfin_id_symbol,
-           "Ensenbl Gene ID" = ensembl_gene_id) %>%
+           "Ensembl Gene ID" = ensembl_gene_id) %>%
     dplyr::select(-logBMD,
                   -fitPValue)
   rm(temp)
