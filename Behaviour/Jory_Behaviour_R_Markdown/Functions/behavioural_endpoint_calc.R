@@ -55,6 +55,8 @@ combineddunnett <- function(df){
   DunnettTest(x = df$endpoint_value_norm, g = df$dose)
 }
 
+
+
 ####Multiple plot function####
 #
 # ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)

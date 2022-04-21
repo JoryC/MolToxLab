@@ -1,0 +1,199 @@
+---
+title: "EDA Zebrafish Embryo Behaviour - with `r params$metric` correlation metric and `r params$value` behavioural effect endpoint"
+author: "Jory Curry"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+params:
+  metric: "pearson"
+  value: totaldist
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen = 9)
+```
+
+```{r libraries, include=FALSE}
+library(knitr)
+library(rlang)
+library(Rcurvep)
+library(DescTools)
+library(plyr)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(readr)
+library(stringr)
+library(tibble)
+library(data.table)
+library(car)
+library(lazyeval)
+source("Functions/cal_auc_simi_endpoints.R")
+source("Functions/behavioural_endpoint_calc.R")
+```
+
+
+# Rmd Report Assignment - BIOL5502
+
+## Version Control
+- My Machine Info:
+  - R version 4.1.3 (2022-03-10) -- "One Push-Up"
+  - Platform: x86_64-pc-linux-gnu (64-bit)         5.11.0-34-generic / Ubuntu 20.04.4
+  - Desktop: GNOME 3.36.5
+  - Hardware: CPU - Intel Core i5-9400F 6 core 4.1GHz / RAM - 15924MiB
+- Package Versions:
+  - lazyeval_0.2.2
+  - car_3.0-12
+  - tibble_3.1.6
+  - ggplot2 Package: Version 3.3.5
+  - dplyr Package: Version 1.0.8
+  - plyr_1.8.7
+  - tidyr: Version 1.2.0
+  - readr Package: Version 2.1.2
+  - stringr: 1.4.0
+  - data.table: 1.14.2
+  - car: 3.0-12
+  - DescTools_0.99.44
+  - Rcurvep_1.2.0
+  - rlang_1.0.2
+  
+## Background
+  About me: I come from an environmental ecotoxicology laboratory that explores the feasibility of using acute tests to estimate chronic toxicity for aquatic wildlife (e.g., early behavioural perturbation analyses, early metabolism analyses, and transcriptomic dose-response modelling).\
+  The data supplied in the zip folder pertains to behavioural data collected from 5 day-old (120hpf) zebrafish embryos using a [Viewpoint ZebraBox and Viewpoint ZebraLab software](https://www.viewpoint.fr/en/p/equipment/zebrabox-for-embryos-or-larvae/publications). This is real data that I collected!! It's bound to have some errors.\
+  Chemical exposures are performed in glass petri dishes (3 dishes per dose group -- A,B,C) for 120 hours post-fertilization.
+![](/home/joryc/MolToxLab/Behaviour/Jory_Behaviour_R_Markdown/Data/5-Day_Exposure_Layout.png)
+On the final exposure day, embryos are pipetted into 96-Well plates.
+There are 26 experiments/plates included in the data set, each a unique chemical, and each with 6 different dose groups including a vehicle control group. There are 9 fish per dose group and 6 dose groups -- 54 fish per plate
+![](/home/joryc/MolToxLab/Behaviour/Jory_Behaviour_R_Markdown/Data/96-Well_Plate_Layout.png)
+The behavioural data is collected using an infrared camera over a 50-minute period where the first 20 minutes allow the zebrafish embryos to acclimate to their environment, and for the next 30 minutes there are 5-minute cycles of light and darkness -- 96-well plate format. Zebrafish naturally tend to be more active in the dark. Neurotoxic chemicals may change the swimming behaviours of fish
+```{r experiment_protocol_visualization, echo=FALSE}
+ggplot(data = data.frame(x = c(1:50), y = c(1:50))) + 
+  geom_blank(aes(x = x, y = y)) + 
+  geom_rect(
+  data = data.frame(start = c(20, 30, 40), end = c(25, 35, 45)),
+  aes(
+    xmin = start,
+    xmax = end,
+    ymin = -Inf,
+    ymax = Inf
+  ),
+  fill = 'black',
+  alpha = 0.2
+) + 
+  geom_vline(xintercept = 20, linetype = "dashed") + ylab("response") + xlab("time in minutes") + 
+  geom_text(data = data.frame(
+  xvar = c(10, 22.5, 27.5, 32.5, 37.5, 42.5, 47.5),
+  yvar = c(25, 40, 10, 40, 10, 40, 10),
+  labvar = c("Acclimation", "Dark", "Light", "Dark", "Light", "Dark", "Light")
+),
+aes(x = xvar, y = yvar, label = labvar))
+```
+
+The infrared camera traces the swim paths of fish during the entire experiment. A one-minute snapshot of raw swim paths look like this:
+![](/home/joryc/MolToxLab/Behaviour/Jory_Behaviour_R_Markdown/Data/Path_Trace_Example.png)
+The raw data contain many variables that we will explore once we import the data. You can browse the meta data in the next section of this report.
+
+## Directory & Meta Data
+```{r directory, include=FALSE}
+dir <- paste0(getwd(), "/Data/All")
+```
+
+.XLS files have been converted to .csv files and are included in the directory `r dir`. These are the raw data files that this EDA will be using.
+```{r directory_files_filenames, include=FALSE}
+fileNames <- list.files("Data/Raw") #Get the name of each .csv file
+chemicalNames <- str_split(string = fileNames, pattern = ".csv", simplify = TRUE)[,1] #Identify the chemicals included in the files
+metaData <- read.csv(file = "Data/MetaData.csv") #Import the Meta Data that includes information about the data in the folders
+#CAS is the Chemical Abstract Service, MOA is the Mode of Action. This table includes useful information about the exposure concentrations for each chemical dose in mg/L. We'll use this later to create our final data frame
+HighDose <- setNames(metaData[,6], chemicalNames) #subsetting metadata
+```
+
+```{r metadata_table, echo=FALSE}
+metaData %>%
+  select(NAME, plate_id, MOA, Dose1:Dose5) %>%
+  kable(
+    col.names = c(
+      "Chemical Name",
+      "Plate ID",
+      "Mode of Action",
+      "Dose 1 (High)",
+      "Dose 2",
+      "Dose 3",
+      "Dose 4",
+      "Dose 5 (Low)"
+    ),
+    align = "lllrrrrr",
+    caption = "Table 1. Information about each chemical included in the experiment with dose information in mg/L"
+  )
+```
+
+## Importing the raw data files & taking a glimpse
+
+Glimpse the raw data to see the structure of each variable, the number of observations and the class of the `raw_data` object
+```{r glimpse_raw_data, echo=FALSE}
+list <- list()
+for (i in 1:length(fileNames)) {
+  list[[i]] <- read_delim(file = paste0("Data/Raw/", fileNames[[i]]),
+                          col_names = TRUE,
+                          col_types = "cclnninninninnin", #Where c is character, l is logical, n is numeric, i is integer
+                          na = c("", 'NA', "NA", "\t NA", "\tNA") #Specify what to consider NA
+  )
+}
+names(list) <- chemicalNames #Name List objects
+raw_data <- as_tibble(rbindlist(list, idcol = "plate_id")) #name the plates by the chemical names
+glimpse(raw_data)
+class(raw_data)
+```
+From the glimpse it can be seen that there are 17 variables in the tibble/data frame:
+
+* `plate_id` the chemical used in the exposure experiment
+* `animal` represents individual animals in the experiment
+* `Treatment` The Dose group, and internal replicate (petri dish A, B or C)
+* `an` Unknown/not useful
+* `start` start time of observation in seconds
+* `end` end time of observation in seconds
+* `inact` Inactivity Counts | the number of times the fish went from being active to inactive over the observation time
+* `inadur` Inactivity Duration | the duration of time, in seconds, the fish went from being active to inactive over the observation time (1 minute)
+* `inadist` Inactivity Distance | the distance travelled by inactive observations (this value should be 0)
+* `smlct` Small Activity Counts | the number of times the fish had a small burst of swim activity over the observation time (1 minute)
+* `smldur` Small Activity Duration | the duration of the small burst of swim activity over the observation time (1 minute)
+* `smldist` Small Activity Distance | The distance travelled during small bursts of activity
+* `larct` Large Activity Counts | the number of times the fish had a large burst of swim activity over the observation time (1 minute)
+* `lardur` Large Activity Duration | the duration of the large burst of swim activity over the observation time (1 minute)
+* `lardist` Large Activity Distance | The distance travelled during large bursts of activity
+* `emptyct` Counts that were neither inactive or active (data recording artifact)
+* `emptydur` duration of time fish was neither inactive, or active (data recording artifact) | Almost acts like a confidence value. The closer it is to 60, the more unreliable the data are
+
+## Investigating `raw_data`
+### Checking expectations
+#### Number of observations/rows
+It is expected that the raw data wil have `r 96*50*26` rows because there are 96 wells, 50 minutes, and 26 different plates
+```{r n_rows, echo=TRUE}
+nrow(raw_data)
+```
+However, there are `r nrow(raw_data)` rows present in the raw data. This expectation was violated because each observation is duplicated
+```{r duplicates, echo=FALSE}
+raw_data %>%
+  select(plate_id, Treatment, an, end, smldist, lardist, emptyct, emptydur)
+```
+By looking at just the head of `raw_data`, it can be seen that the variable `an` has a `TRUE` and `FALSE` row for each individual observation. The only difference between these duplicate rows is that the `FALSE` rows retain information about `emptyct` and `emptydur`.\
+```{r filter_an, include=FALSE}
+raw_data <- raw_data %>%
+  filter(an == FALSE) %>% # Removing duplicate rows
+  select(-c(an)) # This variable is not very useful anymore
+```
+After filtering for just the false values, there are now `r nrow(raw_data)` rows.
+```{r nrow_filtered_raw_data, echo=TRUE}
+nrow(raw_data)
+```
+There are just `r nrow(raw_data) - (96*50*26)` extra observations in `raw_data`.\
+```{r only_50_mins, include=FALSE}
+raw_data <- raw_data[raw_data$end <= 3000,] # Deleting observations past 50 mins (3000 seconds)
+```
+After ensuring there are no observations past the 50-minute mark, there are now `r nrow(raw_data)` rows.
+```{r nrow_raw_data_filtered_2, echo=TRUE}
+identical(as.numeric(nrow(raw_data)), (96*50*26)) # is the expected number of rows consistent with the observed number of rows after processing?
+```
+#### NAs

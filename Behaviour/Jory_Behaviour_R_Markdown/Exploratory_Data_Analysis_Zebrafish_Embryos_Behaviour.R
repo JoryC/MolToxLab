@@ -15,27 +15,26 @@
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 ####                 Version Control            #####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
-#Machine Info:
-#R version 4.1.3 (2022-03-10) -- "One Push-Up"
-#Platform: x86_64-pc-linux-gnu (64-bit) 5.11.0-34-generic / Ubuntu 20.04.4
-#Desktop: GNOME 3.36.5
-#Hardware: CPU - Intel Core i5-9400F 6 core 4.1GHz / RAM - 15924MiB
-#Package Versions:
-#lazyeval_0.2.2
-#car_3.0-12
-#tibble_3.1.6
-#ggplot2 Package: Version 3.3.5
-#dplyr Package: Version 1.0.8
-#plyr_1.8.6
-#tidyr: Version 1.2.0
-#readr Package: Version 2.1.2
-#stringr: 1.4.0
-#data.table: 1.14.2
-#car: 3.0-11
-#DescTools_0.99.44
-#Rcurvep_1.2.0
-#rlang_1.0.1
-#here_1.0.1
+# Machine Info:
+# R version 4.1.3 (2022-03-10) -- "One Push-Up"
+# Platform: x86_64-pc-linux-gnu (64-bit) 5.11.0-34-generic / Ubuntu 20.04.4
+# Desktop: GNOME 3.36.5
+# Hardware: CPU - Intel Core i5-9400F 6 core 4.1GHz / RAM - 15924MiB
+# Package Versions:
+# lazyeval_0.2.2
+# car_3.0-12
+# tibble_3.1.6
+# ggplot2 Package: Version 3.3.5
+# dplyr Package: Version 1.0.8
+# plyr_1.8.7
+# tidyr: Version 1.2.0
+# readr Package: Version 2.1.2
+# stringr: 1.4.0
+# data.table: 1.14.2
+# car: 3.0-12
+# DescTools_0.99.44
+# Rcurvep_1.2.0
+# rlang_1.0.2
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 #####                 Background                 ####
@@ -49,12 +48,14 @@
 # Neurotoxic chemicals may change the swimming behaviours of fish
 # The raw data contains many variables that we will explore once we import the data
 # You can browse the meta data in the 'Directory & Meta Data' step of this script
-# I come from an environmental ecotoxicology laboratory that explores the feasibility of using acute tests to estimate chronic toxicity for aquatic wildlife (e.g., Early behavioural perturbation anlyses, early metabolism analyses, and transcriptomic dose-response modelling)
+# I come from an environmental ecotoxicology laboratory that explores the feasibility of using acute tests to estimate chronic toxicity for aquatic wildlife (e.g., Early behavioural perturbation analyses, early metabolism analyses, and transcriptomic dose-response modelling)
+
+# TODO: For the Rmd report, it would be nice (if possible, but not a priority) if you had a rudimentary graphic that shows the wells and the fish in each well. # It could also show certain numbers that the audience needs to remember like 54 fish per plate, or 26 experiments.
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 #####                   Libraries                ####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
-library(here)
+#library(here)
 #library(tidyverse) #Something in the tidyverse package is masking a function that I'm using... Just going to comment this out
 library(rlang)
 library(Rcurvep)
@@ -69,6 +70,8 @@ library(tibble)
 library(data.table)
 library(car)
 library(lazyeval)
+# library(rstudioapi)
+# setwd(dirname(getActiveDocumentContext()$path))
 source("Functions/cal_auc_simi_endpoints.R")
 source("Functions/behavioural_endpoint_calc.R")
 options(scipen = 9) #For displaying scientific notation -- set to print out small numbers w/ no scientific notation
@@ -76,8 +79,9 @@ options(scipen = 9) #For displaying scientific notation -- set to print out smal
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 ####           Directory & Meta Data             ####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+
 # .XLS files have been converted to .csv files and are included in the directory '~/path/to/files/Data/All'
-getwd() # Check out the path to the directory... it should be something like 'path/to/folder/Jory_R_Markdown_Assignment'
+getwd() # Check out the path to the directory... it should be something like 'path/to/folder/Jory_Behaviour_R_Markdown'
 fileNames <- list.files("Data/Raw") #Get the name of each .csv file
 fileNames
 chemicalNames <- str_split(string = fileNames, pattern = ".csv", simplify = TRUE)[,1] #Identify the chemicals included in the files
@@ -148,6 +152,9 @@ nrow(raw_data) #254,018 rows...
 # Odd, we have double the amount of rows we should have... and more! What's happening?
 
 # ---------------------------------------------------------------------------- #
+# TODO: This kind of throws me off say some thing like we will first investigate this by considering the
+# amount of observations per minute.
+
 #We expect to see only 50 observations (1 for each minute) per well (96 wells)
 50*60 #We expect the 'end' variable to have a highest value of 3000seconds (50 minutes*60 = 3000seconds)
 # ---------------------------------------------------------------------------- #
@@ -244,6 +251,7 @@ temp %>%
 
 # ---------------------------------------------------------------------------- #
 #Overall, the animal recording set up had an approximate failure-rate of 2% -- These is the approximate percentage of time the infrared camera failed to detect an animal when it was present
+# TODO: *This* is the approximate percentage of time...
 paste0(round((nSketchy/nrow(temp))*100), "%", " ", "Failure-rate") 
 # ---------------------------------------------------------------------------- #
 
@@ -281,7 +289,7 @@ is.integer(na.omit(temp$inact)) #Good - TRUE
 qplot(data = temp, x = inact) # Normal Dist
 
 # -- Small activity
-range(na.omit(temp$smlct)) #Small Activity -- This number can vary quite a bit but they should all be 
+range(na.omit(temp$smlct)) #Small Activity -- This number can vary quite a bit
 is.integer(na.omit(temp$smlct)) #Good - TRUE
 # - Small Counts Quick Plot
 qplot(data = temp, x = smlct) # Looks Normal - Maybe a couple small outliers but nothing crazy
@@ -785,6 +793,8 @@ smooth_oneChem(data = fishBehavDat, chemical = "Vinclozolin", y = "totaldist", y
 #####                 Analyzing                  #####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 
+#NOTE: Paramaterize this section to analyze different endpoints (similiarity scores vs area under the curve) and different variables (total distance, active duration, inactive counts etc.)
+
 lfishBehavDat <- fishBehavDat %>%
   mutate(value = totaldist, dose = Dose_mg_L) %>% #We will specify total activity distance
   filter(time_end > 20) %>% # For the analysis, we don't want the 20 minute acclimation period
@@ -932,14 +942,17 @@ for(i in chemicalNames){
 write.csv(x = dunnett_comb, file = "Output/Dunnett_Results_Simi_endpoint.csv")
 write.csv(x = ancova_comb, file = "Output/ANCOVA_Results_Simi_endpoint.csv")
 write.csv(x = anova_comb, file = "Output/ANOVA_Results_Simi_endpoint.csv")
+
 #Export Normalized Similarity scores in a tibble
 doseData <- doseData %>%
   mutate(dose = Dose) #Renaming dose variable to inner_join
 simi_norm_tib <- as_tibble(rbindlist(simi_norm)) #Convert from list to tibble
 simi_norm_tib <- simi_norm_tib %>%
   inner_join(doseData) %>%
-  select(plate_id, dose, Dose_mg_L, Group, endpoint, endpoint_value_norm)
+  mutate(is_VC = as.integer(is_VC)) %>%
+  select(plate_id, dose, Dose_mg_L, is_VC, Group, endpoint, endpoint_value_norm)
 simi_norm_tib
+
 write_csv(simi_norm_tib, file = "Output/simi_norm_data.csv")
 
 ## Active Duration Value/Variable
@@ -1001,25 +1014,80 @@ simi_norm_tib %>%
 
 ############ NOT DONE ###############
 ####Setup Data for RCurvep####
-#pre_rcurvep function - to be moved later
-pre_rcurvep <- function(x){
-  x %>%
-    rename(
-      resp = endpoint_value_norm,
-      chemical = plate_id,
-    ) %>%
-    filter(is_VC == 0) %>%
-    mutate(conc = dose) %>%
-    select(-dose, -is_VC)
-}
+simi_norm_tib_4rcurvep <- simi_norm_tib %>%
+  rename(resp = endpoint_value_norm,
+         chemical = plate_id) %>%
+  filter(is_VC == 0) %>%
+  mutate(conc = log10(Dose_mg_L)) %>%
+  select(endpoint, chemical, conc, resp)
+glimpse(simi_norm_tib_4rcurvep)
 
-simi_prercurvep <- lapply(simi_norm, ungroup)
-simi_prercurvep <- lapply(simi_prercurvep, pre_rcurvep)
-simi_combined <- bind_rows(simi_prercurvep)
+#Estimate BMR - bootstrap - simulate curves
+set.seed(42069)
 
-test <- estimate_dataset_bmr(combi_run_rcurvep(
-  simi_combined, 
-  n_samples = 10, 
+simi_norm_tib_4rcurvep_act <- combi_run_rcurvep(
+  simi_norm_tib_4rcurvep, 
+  n_samples = 100, 
   keep_sets = c("act_set"), 
-  TRSH = seq(5, 95, by = 5) # test all candidates, 5 to 95
-), plot = TRUE)
+  TRSH = seq(5, 95, by = 5)
+)
+
+simi_norm_tib_4rcurvep_act[["result"]][["act_set"]] %>%
+  ggplot(aes(x = wConc, y = wResp, group = sample_id)) + 
+  geom_point() +
+  geom_line() +
+  facet_wrap(~chemical, scales = "free")
+
+simi_norm_tib_4rcurvep_act_Summary_Output <- summarize_rcurvep_output(simi_norm_tib_4rcurvep_act)
+
+bmr_output <- estimate_dataset_bmr(simi_norm_tib_4rcurvep_act, plot = TRUE)
+bmr_output
+
+plot(bmr_output)
+
+#Calculating the BMD based off of the BMR using the 'Hill' model
+fit_dat <- run_fit(create_dataset(simi_norm_tib_4rcurvep), hill_pdir = 1, n_samples = 10, modls = "hill")
+fit_dat
+
+fit_dat_summary_output <-
+  summarize_fit_output(fit_dat, thr_resp = bmr_output$outcome$bmr_ori)
+fit_dat_summary_output
+
+fit_dat_summary_output[["act_summary"]] %>% View()
+
+#Calculating the BMD based off of the BMR using the 'CurveP' model
+
+
+
+
+
+##Testing running for each individual chemical
+test <- split(x = simi_norm_tib_4rcurvep, f = ~chemical, drop = FALSE) 
+
+
+#Estimating the BMR - Bootstrap
+test_act <- combi_run_rcurvep(
+  test[[1]], 
+  n_samples = 100, 
+  keep_sets = c("act_set"), 
+  TRSH = seq(5, 95, by = 5), # test all candidates, 5 to 95
+  RNGE = 10
+)
+#summarize_rcurvep_output(test_act)
+test_act[["result"]][["act_set"]] %>%
+  ggplot(aes(x = wConc, y = wResp, group = sample_id)) + 
+  geom_point() +
+  geom_line()
+
+bmr_output <- estimate_dataset_bmr(test_act, plot = TRUE)
+bmr_output$outcome
+
+#Calculating the BMD based off the BMR
+fit_dat <- run_fit(create_dataset(simi_norm_tib_4rcurvep), hill_pdir = 1, n_samples = 10, modls = "hill")
+fit_dat
+
+fit_dat_summary_output <-
+  summarize_fit_output(fit_dat, thr_resp = bmr_output$outcome$bmr_ori)
+fit_dat_summary_output
+
+fit_dat_summary_output[["act_summary"]] %>% filter(hit_confidence >= 0.1) %>% View()
