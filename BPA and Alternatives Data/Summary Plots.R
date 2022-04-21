@@ -15,9 +15,9 @@ lowestdoses <- unique(metadata[, c("chemical", "dose")]) %>%
   summarise_all(min)
 
 #RDS files
-logBMDvalues <- readRDS("all_BMD_list_logtransformed.RDS")
-goBMDvalues <- readRDS("go_BMD_list_logtransformed.RDS")
-reactomeBMDvalues <- readRDS("reactome_BMD_list_logtransformed.RDS")
+logBMDvalues <- readRDS("BMDExpressData/RDS/all_BMD_list_logtransformed.RDS")
+goBMDvalues <- readRDS("BMDExpressData/RDS/go_BMD_list_logtransformed.RDS")
+reactomeBMDvalues <- readRDS("BMDExpressData/RDS/reactome_BMD_list_logtransformed.RDS")
 
 #Apical Data
 

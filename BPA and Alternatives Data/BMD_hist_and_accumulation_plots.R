@@ -44,7 +44,6 @@ for(i in chemnames){
     mutate(logBMD = log10(BMD))
 }
 
-
 # Set arguments for mode function
 source("mode_antimode.R")
 min_dense<-0.06  
