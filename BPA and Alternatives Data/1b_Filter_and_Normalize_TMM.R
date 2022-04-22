@@ -174,6 +174,21 @@ QCplots[["nSig80_plot"]] <-
 
 multiplot(plotlist = QCplots, layout = matrix(c(1:4), nrow=2, byrow=TRUE))
 
+
+QC_sample_summary <- nestData %>% 
+  select(chemical, nCov5, nSig80) %>% 
+  unnest(names_repair = "unique", cols = c(nCov5, nSig80)) %>%
+  select(-sample...5,
+         -dose...6) %>%
+  rename(sample = sample...2,
+         dose = dose...3) %>%
+  full_join(., readcount, by = "sample") %>%
+  full_join(., ngene_per_sample, by = "sample") %>%
+  select(chemical, sample, dose, row_sum, genecount, nCovN, nSig80)
+
+write.csv(QC_sample_summary, "BMDExpressData/Output/QC_sample_summary.csv", row.names = F)
+
+
 #### NORMALIZE ####
 filterData <- filterData %>%
   mutate(normData = map(filterData3, tmmNorm)) %>% 
