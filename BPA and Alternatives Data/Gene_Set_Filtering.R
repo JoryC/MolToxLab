@@ -1,6 +1,6 @@
 ####Libraries####
-library(tidyverse)
 library(biomaRt)
+library(tidyverse)
 source("BMDExpressFunctions.R")
 options(scipen = 9)
 
@@ -72,6 +72,72 @@ for(i in chemnames){
                   -fitPValue)
   rm(temp)
 }
+
+####Fisher's Exact Test####
+
+#Import normalized Data
+normdata_gene <- list()
+
+for(i in chemnames){
+  normdata_gene[[i]] <- read.table(paste0("RNAseqData/normalizedData/", i, "_normData.txt"),
+                                   header = TRUE) %>%
+  select(gene)
+}
+
+#Total number of estrogen genes in normalized Data
+geneset_in_norm <- list()
+
+for(i in chemnames){
+  geneset_in_norm[[i]] <- normdata_gene[[i]] %>%
+    filter(gene %in% (ensembl_geneset %>% pull(ensembl_gene_id)))
+}
+
+#Total number of estrogen genes without BMD
+geneset_noBMD <- list()
+
+for(i in chemnames){
+  geneset_noBMD[[i]] <- geneset_in_norm[[i]] %>%
+    filter(!gene %in% (geneset_BMD[[i]] %>% pull("Ensembl Gene ID")))
+}
+
+#Total number of non-estrogen genes with BMD
+non_geneset_BMD <- list()
+
+for(i in chemnames){
+  non_geneset_BMD[[i]] <- filtered_BMD[[i]] %>%
+    select(Probe.Id) %>%
+    filter(!Probe.Id %in% (geneset_BMD[[i]] %>% pull("Ensembl Gene ID")))
+}
+
+#Total number of non-estrogen genes without BMD
+non_geneset_no_BMD <- list()
+
+for(i in chemnames){
+  non_geneset_no_BMD[[i]] <- normdata_gene[[i]] %>%
+    filter(!gene %in% (filtered_BMD[[i]] %>% pull("Probe.Id"))) %>%
+    filter(!gene %in% (ensembl_geneset %>% pull(ensembl_gene_id)))
+}
+
+#Fisher's Test Table Setup
+
+fisher_table <- list()
+
+for(i in chemnames){
+  fisher_table[[i]] <- data.frame(
+    "GeneSet" = c(nrow(geneset_BMD[[i]]), nrow(geneset_noBMD[[i]])),
+    "Non_Geneset" = c(nrow(non_geneset_BMD[[i]]), nrow(non_geneset_no_BMD[[i]])),
+    row.names = c("BMD", "No BMD"),
+    stringsAsFactors = F
+  )
+}
+
+fisher_test_list <- list()
+
+for(i in chemnames){
+  fisher_test_list[[i]] <- fisher.test(fisher_table[[i]])
+}
+
+#
 
 geneset_BMD_df <- bind_rows(geneset_BMD, .id = 'Chemical')
 
