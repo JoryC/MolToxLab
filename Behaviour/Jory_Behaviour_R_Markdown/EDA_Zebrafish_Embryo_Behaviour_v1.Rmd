@@ -18,6 +18,7 @@ options(scipen = 9)
 
 ```{r libraries, include=FALSE}
 library(knitr)
+library(gridExtra)
 library(rlang)
 library(Rcurvep)
 library(DescTools)
@@ -39,37 +40,46 @@ source("Functions/behavioural_endpoint_calc.R")
 # Rmd Report Assignment - BIOL5502
 
 ## Version Control
-- My Machine Info:
-  - R version 4.1.3 (2022-03-10) -- "One Push-Up"
-  - Platform: x86_64-pc-linux-gnu (64-bit)         5.11.0-34-generic / Ubuntu 20.04.4
-  - Desktop: GNOME 3.36.5
-  - Hardware: CPU - Intel Core i5-9400F 6 core 4.1GHz / RAM - 15924MiB
-- Package Versions:
-  - lazyeval_0.2.2
-  - car_3.0-12
-  - tibble_3.1.6
-  - ggplot2 Package: Version 3.3.5
-  - dplyr Package: Version 1.0.8
-  - plyr_1.8.7
-  - tidyr: Version 1.2.0
-  - readr Package: Version 2.1.2
-  - stringr: 1.4.0
-  - data.table: 1.14.2
-  - car: 3.0-12
-  - DescTools_0.99.44
-  - Rcurvep_1.2.0
-  - rlang_1.0.2
-  
+```{r version_control, comment=""}
+# - My Machine Info:
+#   - R version 4.1.3 (2022-03-10) -- "One Push-Up"
+#   - Platform: x86_64-pc-linux-gnu (64-bit)         5.11.0-34-generic / Ubuntu 20.04.4
+#   - Desktop: GNOME 3.36.5
+#   - Hardware: CPU - Intel Core i5-9400F 6 core 4.1GHz / RAM - 15924MiB
+# - Package Versions:
+#   - lazyeval_0.2.2
+#   - car_3.0-12
+#   - tibble_3.1.6
+#   - ggplot2 Package: Version 3.3.5
+#   - dplyr Package: Version 1.0.8
+#   - plyr_1.8.7
+#   - tidyr: Version 1.2.0
+#   - readr Package: Version 2.1.2
+#   - stringr: 1.4.0
+#   - data.table: 1.14.2
+#   - car: 3.0-12
+#   - DescTools_0.99.44
+#   - Rcurvep_1.2.0
+#   - rlang_1.0.2
+```
+
 ## Background
   About me: I come from an environmental ecotoxicology laboratory that explores the feasibility of using acute tests to estimate chronic toxicity for aquatic wildlife (e.g., early behavioural perturbation analyses, early metabolism analyses, and transcriptomic dose-response modelling).\
   The data supplied in the zip folder pertains to behavioural data collected from 5 day-old (120hpf) zebrafish embryos using a [Viewpoint ZebraBox and Viewpoint ZebraLab software](https://www.viewpoint.fr/en/p/equipment/zebrabox-for-embryos-or-larvae/publications). This is real data that I collected!! It's bound to have some errors.\
   Chemical exposures are performed in glass petri dishes (3 dishes per dose group -- A,B,C) for 120 hours post-fertilization.
-![](/home/joryc/MolToxLab/Behaviour/Jory_Behaviour_R_Markdown/Data/5-Day_Exposure_Layout.png)
+```{r figure1, echo=FALSE, fig.align='center', fig.cap='Figure 1. The experimental layout of the 5-day chemical exposures in petri dishes prior to the behavioural assay', out.height="50%", out.width="50%"}
+knitr::include_graphics("./Data/5-Day_Exposure_Layout.png")
+
+```
+
 On the final exposure day, embryos are pipetted into 96-Well plates.
 There are 26 experiments/plates included in the data set, each a unique chemical, and each with 6 different dose groups including a vehicle control group. There are 9 fish per dose group and 6 dose groups -- 54 fish per plate
-![](/home/joryc/MolToxLab/Behaviour/Jory_Behaviour_R_Markdown/Data/96-Well_Plate_Layout.png)
+```{r figure2, echo=FALSE, fig.align='center', fig.cap='Figure 2. The behavioural assay plate layout for an individual experiment. In total, 54 5-day old embryos, 9 for each dose, are transferred to a 96-well plate in exposure media', out.height="60%", out.width="60%"}
+knitr::include_graphics("./Data/96-Well_Plate_Layout.png")
+```
+
 The behavioural data is collected using an infrared camera over a 50-minute period where the first 20 minutes allow the zebrafish embryos to acclimate to their environment, and for the next 30 minutes there are 5-minute cycles of light and darkness -- 96-well plate format. Zebrafish naturally tend to be more active in the dark. Neurotoxic chemicals may change the swimming behaviours of fish
-```{r experiment_protocol_visualization, echo=FALSE}
+```{r experiment_protocol_visualization, echo=FALSE, fig.align='center', fig.cap='Figure 3. A visual representation of the behavioural assay protocol', out.height="75%", out.width="75%"}
 ggplot(data = data.frame(x = c(1:50), y = c(1:50))) + 
   geom_blank(aes(x = x, y = y)) + 
   geom_rect(
@@ -93,7 +103,9 @@ aes(x = xvar, y = yvar, label = labvar))
 ```
 
 The infrared camera traces the swim paths of fish during the entire experiment. A one-minute snapshot of raw swim paths look like this:
-![](/home/joryc/MolToxLab/Behaviour/Jory_Behaviour_R_Markdown/Data/Path_Trace_Example.png)
+```{r figure4, echo=FALSE, fig.align='center', fig.cap='Figure 4. An example of what the raw swim-path tracing looks like from the Viewpoint Zebrabox infrared camera and Viewpoint Zebralab software', out.height="50%", out.width="50%"}
+knitr::include_graphics("./Data/Path_Trace_Example.png")
+```
 The raw data contain many variables that we will explore once we import the data. You can browse the meta data in the next section of this report.
 
 ## Directory & Meta Data
@@ -132,7 +144,7 @@ metaData %>%
 ## Importing the raw data files & taking a glimpse
 
 Glimpse the raw data to see the structure of each variable, the number of observations and the class of the `raw_data` object
-```{r glimpse_raw_data, echo=FALSE}
+```{r glimpse_raw_data, echo=FALSE, collapse=TRUE}
 list <- list()
 for (i in 1:length(fileNames)) {
   list[[i]] <- read_delim(file = paste0("Data/Raw/", fileNames[[i]]),
@@ -170,7 +182,7 @@ From the glimpse it can be seen that there are 17 variables in the tibble/data f
 ### Checking expectations
 #### Number of observations/rows
 It is expected that the raw data wil have `r 96*50*26` rows because there are 96 wells, 50 minutes, and 26 different plates
-```{r n_rows, echo=TRUE}
+```{r n_rows, echo=TRUE, collapse=TRUE}
 nrow(raw_data)
 ```
 However, there are `r nrow(raw_data)` rows present in the raw data. This expectation was violated because each observation is duplicated
@@ -179,21 +191,316 @@ raw_data %>%
   select(plate_id, Treatment, an, end, smldist, lardist, emptyct, emptydur)
 ```
 By looking at just the head of `raw_data`, it can be seen that the variable `an` has a `TRUE` and `FALSE` row for each individual observation. The only difference between these duplicate rows is that the `FALSE` rows retain information about `emptyct` and `emptydur`.\
-```{r filter_an, include=FALSE}
+```{r nrow_filtered_raw_data, echo=TRUE, collapse=TRUE}
 raw_data <- raw_data %>%
   filter(an == FALSE) %>% # Removing duplicate rows
-  select(-c(an)) # This variable is not very useful anymore
-```
-After filtering for just the false values, there are now `r nrow(raw_data)` rows.
-```{r nrow_filtered_raw_data, echo=TRUE}
+  select(-c(an)) # This variable is not very useful anymore, so removing
 nrow(raw_data)
 ```
-There are just `r nrow(raw_data) - (96*50*26)` extra observations in `raw_data`.\
-```{r only_50_mins, include=FALSE}
-raw_data <- raw_data[raw_data$end <= 3000,] # Deleting observations past 50 mins (3000 seconds)
+After filtering for just the false values, there are now `r nrow(raw_data)` rows.\ 
+There are `r nrow(raw_data) - (96*50*26)` extra observations in `raw_data` because there are some extra observations past 50 minutes.\ 
+```{r nrow_raw_data_filtered_2, echo=TRUE, collapse=TRUE}
+raw_data <- raw_data %>%
+  filter(end <= 3000) # Deleting observations past 50 mins (3000 seconds)
+nrow(raw_data)
+identical(as.numeric(nrow(raw_data)), (96 * 50 * 26)) # is the expected number of rows consistent with the observed number of rows after processing?
 ```
-After ensuring there are no observations past the 50-minute mark, there are now `r nrow(raw_data)` rows.
-```{r nrow_raw_data_filtered_2, echo=TRUE}
-identical(as.numeric(nrow(raw_data)), (96*50*26)) # is the expected number of rows consistent with the observed number of rows after processing?
+After ensuring there are no observations past the 50-minute mark, there are now `r nrow(raw_data)` rows, as expected.
+
+#### Treatment-level NAs
+It is expected that wells 10:12, 22:24, 34:36, 46:48, 58:60, 70:96 will all be `NA` in the `Treatment` column because these are all empty wells (Figure 2). Each plate has  `r (3*6) + (12*2)` empty wells. This means that all `NA` treatments should be `r 42*50*26` observations long. After removing `NA`s there should be `r nrow(raw_data)-(42*50*26)` rows in `raw_data`.
+```{r removeNAs, echo=TRUE, collapse=TRUE}
+raw_data <- raw_data %>%
+  filter(Treatment != is.na(Treatment))
+nrow(raw_data)
+identical(as.numeric(nrow(raw_data)), (54 * 50 * 26)) # Does the expected number of rows match the observed number of rows after filtering?
 ```
-#### NAs
+
+#### Variable Distributions & Outliers
+
+Quick visualizations of the distributions of each variable are a fast and easy way to learn a lot about the data such as the range, distribution of observations, and outliers.\
+\
+First, the 'counts' variable distributions will be investigated.
+```{r qplots_counts, echo=FALSE, warning=FALSE, message=FALSE, fig.height=6 , fig.align='center', fig.cap="Figure 5. Quick plots of the 'counts' variables in the `raw_data` object", out.height= "150%", out.width= "150%"}
+grid.arrange(
+  qplot(
+    data = raw_data,
+    x = emptyct,
+    xlim = c(-15, 100),
+    xlab = "Number of times counted as an empty well in a minute (artifact) `emptyct`"
+  ),
+  qplot(
+    data = raw_data,
+    x = inact,
+    xlim = c(-15, 200),
+    xlab = "Number of times counted as inactive in a minute `inact`"
+  ),
+  qplot(
+    data = raw_data,
+    x = smlct,
+    xlim = c(-15, 400),
+    xlab = "Number of times counted as a small activity in a minute `smlct`"
+  ),
+  qplot(
+    data = raw_data,
+    x = larct,
+    xlim = c(-15, 400),
+    xlab = "Number of times counted as a large activity in a minute `larct`"
+  ),
+  nrow = 4
+)
+```
+Figure 5 (plot 1) shows that there are some artifacts in the data. Sometimes, the camera/software was not able to detect a fish even though, there certainly were fish in those wells. The `emptyct` variable (plot 1) is a good tool to use for flagging observations that need to transformed to `NA`s in the next section (Suspicious Values).\
+It can be seen that the amount of times an animal goes inactive during an observation period (`inact`) is approximately 75 times per minute. As well, it can be seen that small swim bursts (`smlct`) tend to occur just over 150 times per minute. And finally, we can see that large swim bursts (`larct`) can either occur just over 100 times per minute, or 0 times per minute. This could be due to sensitive effects of light on swim inhibition, or darkness stimulating large swim behaviours.\
+\
+The distributions of all count variables are slightly skewed, with few outliers, except for the empty well counts which are very positively skewed.\
+\
+Next, the 'duration' variable distributions will be explored. Note: this variable should never exceed 60 seconds.
+```{r qplots_duration, echo=FALSE, warning=FALSE, message=FALSE, fig.height=6 , fig.align='center', fig.cap="Figure 6. Quick plots of the 'duration' variables in the `raw_data` object", out.height= "150%", out.width= "150%", fig.height = 7.5, fig.width=7}
+raw_data <- raw_data %>%
+  mutate(activedur = smldur + lardur)
+grid.arrange(
+  qplot(
+    data = raw_data,
+    x = emptydur,
+    xlim = c(-5, 65),
+    xlab = "Amount of time animals were not found in a 60 second observation (artifact) `emptydur`"
+  ) + geom_vline(xintercept = 3, linetype = "dashed", color = "red"),
+  qplot(
+    data = raw_data,
+    x = inadur,
+    xlab = "Amount of time animal spent inactive in a 60 second observation `inadur`",
+    xlim = c(-5, 65)
+  ),
+  qplot(
+    data = raw_data,
+    x = activedur,
+    xlab = "Amount of time animal spent active in a 60 second observation `activedur`",
+    xlim = c(-5, 65)
+  ),
+  qplot(
+    data = raw_data,
+    x = smldur,
+    xlab = "Amount of time animal spent doing small swimming motions in a 60 second observation `smldur`",
+    xlim = c(-5, 65)
+  ),
+  qplot(
+    data = raw_data,
+    x = lardur,
+    xlab = "Amount of time animal spent doing large swimming motions in a 60 second observation `lardur`",
+    xlim = c(-5, 65)
+  ) + geom_vline(xintercept = 40, linetype = "dashed", color = "red"),
+  nrow = 5
+)
+```
+Figure 6 reveals another red flag with the `emptydur` variable (plot 1 in figure 6). There are some observations that show 60 full seconds of being empty! This is likely more than just an artifact in the recording instrument/software. These are likely dead fish that never moved at all so the infrared camera was never able to start tracing their swim patterns. However, it can also be seen that there are some observations greater than 0 and less than 60 in this plot. In theory, if an animal is present in the well, the `emptydur` value should always be zero. An arbitrary threshold of 3 seconds of empty duration will be used to transform all observations (across variables) with an `emptydur` > 3 into `NA`s\
+\
+Again, it can also be seen that the distributions of observations for each variable is slightly skewed. Note also that `inadur` and `activedur` (plots 2 and 3 from figure 6) are approximately inversely related as expected. The emerging pattern of large swim activity duration (`lardur`) clustering around two modes (0s and ~15s) can be observed, similar to the counts variable.\
+\
+There are a few outliers in the data but they are a bit difficult to see in figure 6. Notably, large swim activity duration (plot 5 in figure 6) has 27 outliers past ~40 seconds. Taking a closer look at those outliers...
+```{r lardur_outliers, echo=FALSE, warning=FALSE, message=FALSE}
+raw_data %>%
+  filter(lardur > 40) %>%
+  select(plate_id, animal, Treatment, lardur) %>%
+  group_by(plate_id, Treatment, animal) %>%
+  summarise(distance = mean(lardur)) %>%
+  kable(align = 'lllc', col.names = c("Chemical", "Individual", "Dose", "Large Activity Duration (seconds)"), caption = "Table 2. Summary of outliers in large swim activity duration variable (> 40s), showing only unique individuals")
+```
+From table 2, it can be seen that many of the hyperactivity observations come from the same individual animals in the experiment (with a few exceptions). These are extreme observable effects on individuals, they do not necessarily represent the the rest of the population within groups.\
+\
+Chemicals observed in extremely hyperactive individuals:
+
+- Bisphenol A (BPA) -- estrogen receptor binder
+- Dimethylformamide -- liver toxicity
+- Fadrozole -- aromatase inhibitor (estrogen blocker)
+- Flutamide -- androgen antagonist (testosterone blocker)
+- Vinclozolin -- androgen antagonist (testosterone blocker)
+
+Behavioural perturbation (hyperactivity) suggests that it is possible that these chemicals can effect the nervous system of individuals early on in development. However, it is wise to be cautious and not draw any conclusions yet without any sort of statistical analyses.\
+\
+Next, the distributions of the 'distance' variables will be investigated.
+```{r distance_qplots, echo=FALSE, fig.align='center', fig.cap="Figure 7. Quick plots of the 'distance' variable in the `raw_data` object", warning=FALSE, message=FALSE, fig.height = 5, fig.width = 7.5, out.height= "150%", out.width= "150%"}
+raw_data <- raw_data %>%
+  mutate(totaldist = smldist + lardist)
+grid.arrange(
+  qplot(
+    data = raw_data,
+    x = smldist,
+    xlab = "Distance travelled during small swimming motions in a minute `smldist`"
+  ),
+  qplot(
+    data = raw_data,
+    x = lardist,
+    xlab = "Distance travelled during large swimming motions in a minute `lardist`",
+    xlim = c(-100,5000)
+  ) + geom_vline(xintercept = 2500, linetype = "dashed", color = "red"),
+  qplot(
+    data = raw_data,
+    x = totaldist,
+    xlab = "Distance travelled during all swimming motions in a minute `totaldist`",
+    xlim = c(-100,5000)
+  ) + geom_vline(xintercept = 4000, linetype = "dashed", color = "red"),
+  nrow = 3
+)
+
+```
+Figure 7 shows that the distributions of of the 'distance' variables are slightly skewed with the `totaldist` variable being the most normally distributed. Notably, `totaldist` seems to be a promising effect endpoint to analyse since it is the most normally distributed of all the other effect endpoints.\
+\
+However, there are outliers in `totaldist` and so the following steps will be taking a closer look at those outliers...
+```{r totaldist_outliers, echo=FALSE, warning=FALSE, message=FALSE}
+raw_data %>%
+  filter(totaldist > 4000) %>%
+  select(plate_id, Treatment, animal, totaldist) %>%
+  group_by(plate_id, Treatment, animal) %>%
+  summarise(distance = mean(totaldist)) %>%
+  kable(col.names = c("Chemical", "Dose", "Individual", "Distance travelled in 1 min"), align = 'lllc', caption = "Table 3. Summary of outliers in total distance travelled variable (>4000) showing only unique individuals")
+```
+We see there are 3 chemicals in the extreme outliers, and that most of the individual animals are from the highest dose treatment group:\
+\
+Chemicals observed in extremely hyperactive individuals:
+
+- Bisphenol A (BPA) -- estrogen receptor binder
+- Fadrozole -- aromatase inhibitor (estrogen blocker)
+- Vinclozolin -- androgen antagonist (testosterone blocker)
+
+Again, we see 3 of the same chemicals that are potentially inducing hyperactivity in the same individuals. However, as previously stated, these individuals are not representative of the rest of the population within their respective dose groups and no conclusions can be drawn yet!\
+\
+It is important to also consider determining outliers not just between plates in the larger data frame, but within the same plate. 
+```{r plate_distribution_visualizer, include=FALSE}
+distVis <- function (df, chem, var, time_start = 0) {
+df %>%
+  filter(plate_id == chem, start >= time_start*60) %>% #Subetting to chemical of choice
+  mutate(Treatment = rep(
+    c(
+      "Dose1_A","Dose1_B","Dose1_C","Dose2_A","Dose2_B","Dose2_C",
+      "Dose3_A","Dose3_B","Dose3_C","Dose4_A","Dose4_B","Dose4_C",
+      "Dose5_A","Dose5_B","Dose5_C","Control_A","Control_B","Control_C"
+    ),
+    times = (nrow(.)/(18)/3), #repeat 2,700/18 = 150 times (number of observations divided by number of treatments = number of treatment observations) then divide that by 3 because each will be repeating 3 times
+    each = 3
+  )) %>% #Separating Dose from Group letter with an underscore
+  separate(col = Treatment, # Column we want to separate
+           into = c('Dose', 'Group'), #Into these two column names
+           convert = TRUE) %>%
+  ggplot(aes(x = .data[[var]])) +
+  geom_histogram() +
+  xlab(var) +
+  ggtitle(chem) +
+  facet_wrap(~Dose)
+}
+```
+
+```{r within_plate_outliers, echo=FALSE, fig.align='center', fig.cap="Figure 8. Example of within-plate outlier quick plots", warning=FALSE, message=FALSE, fig.height= 8, out.height="150%", out.width="125%"}
+#Summary of outliers: TGSH > 2000, Clofib > 2000, 17beta_estradiol > 2500, 24DMP > 2500, DES > 2500, DMF > 2500, EE2 > 2500, Fluoxetine > 2500, BPA > 3000, Fadrozole > 3500, Vinclozolin > 4000
+grid.arrange((
+  distVis(
+    df = raw_data,
+    chem = "BPA",
+    var = "totaldist",
+    time_start = 20
+  ) + geom_vline(
+    xintercept = 3000,
+    linetype = c("blank", "dashed", "blank", "blank", "blank", "blank"),
+    color = "red"
+  )
+),
+(
+  distVis(
+    df = raw_data,
+    chem = "Fadrozole",
+    var = "totaldist",
+    time_start = 20
+  ) + geom_vline(
+    xintercept = 3500,
+    linetype = c("blank", "dashed", "blank", "blank", "blank", "blank"),
+    color = "red"
+  )
+),
+(
+  distVis(
+    df = raw_data,
+    chem = "Vinclozolin",
+    var = "totaldist",
+    time_start = 20
+  ) + geom_vline(
+    xintercept = 4000,
+    linetype = c("blank", "dashed", "blank", "blank", "blank", "blank"),
+    color = "red"
+  )
+))
+```
+
+After a careful examination of individual plates, the following outliers were identified in the `totaldist` variable:
+
+```{r outliers, include=FALSE}
+treatment_groups <- c("Dose1_A","Dose1_B","Dose1_C","Dose2_A","Dose2_B","Dose2_C",
+  "Dose3_A","Dose3_B","Dose3_C","Dose4_A","Dose4_B","Dose4_C",
+  "Dose5_A","Dose5_B","Dose5_C","Control_A","Control_B","Control_C")
+
+raw_data <- raw_data %>%
+  mutate(Treatment = rep(treatment_groups,
+    times = (nrow(.)/(18)/3), #repeat 2,700/18 = 150 times (number of observations divided by number of treatments = number of treatment observations) then divide that by 3 because each will be repeating 3 times
+    each = 3
+  )) %>% #Separating Dose from Group letter with an underscore
+  separate(col = Treatment, # Column we want to separate
+           into = c('Dose', 'Group'), #Into these two column names
+           convert = TRUE)
+
+out_1 <- raw_data %>%
+  filter(plate_id == "Vinclozolin") %>%
+  filter(totaldist >= 4000)
+out_2 <- raw_data %>%
+  filter(plate_id == "Fadrozole") %>%
+  filter(totaldist >= 3500)
+out_3 <- raw_data %>%
+  filter(plate_id == "BPA") %>%
+  filter(totaldist >= 3000)
+out_4 <- raw_data %>%
+  filter(plate_id %in% c("Fluoxetine", "EE2", "DMF", "DES", "24DMP", "17beta_estradiol")) %>%
+  filter(totaldist >= 2500)
+out_5 <- raw_data %>%
+  filter(plate_id %in% c("TGSH", "Clofibric_Acid")) %>%
+  filter(totaldist >= 2000)
+out_totaldist <- rbind(out_1, out_2, out_3, out_4, out_5)
+
+raw_data <- raw_data %>%
+  mutate(outliers = if_else(condition = (do.call(paste0, .) %in% do.call(paste0, out_totaldist)), true = TRUE, false = FALSE))
+```
+
+```{r outlier_summary, echo=FALSE, warning=FALSE, message=FALSE}
+out_totaldist %>%
+  group_by(plate_id, Dose) %>%
+  tally() %>%
+  arrange(desc(n)) %>%
+  kable(col.names = c("Chemical", "Dose", "Number of outlier observations (totaldist)"), align = 'llr', caption = "Table 4. Summary of outliers in `raw_data` grouped by chemical and dose group")
+```
+From this summary table it can be seen that there are three chemicals that make up the majority of all the outliers based on this deeper-dive into the within-plates data. Those chemicals with the highest proportions of outliers were:
+
+- Bisphenol-A
+- Fadrozole
+- Phenol, 4,4'-sulfonylbis[2-(2-propenyl)- (TGSH)
+
+It can also be noted that the most represented dose group in the outliers is dose group 1 (the highest dose):
+```{r r outlier_summary_tally_by_dose_group, echo=FALSE, warning=FALSE, message=FALSE}
+out_totaldist %>%
+  group_by(Dose) %>%
+  tally() %>%
+  arrange(desc(n)) %>%
+  kable(col.names = c("Dose", "Number of outlier observations (totaldist)"), align = 'lr', caption = "Table 4. Summary of outliers in `raw_data` grouped by dose")
+```
+This suggests that the effects of chemical exposure could be behaving monotonically:
+
+```{r outlier_summary_tally_by_dose_group, echo=FALSE, warning=FALSE, message=FALSE, fig.cap="Figure 9. Monotonic relationship of outlier observations (totaldist) and dose groups", fig.align='center'}
+out_totaldist %>%
+  mutate(Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>%
+  group_by(Dose) %>%
+  tally() %>%
+  ggplot(aes(x = Dose, y = n, group = 1)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, linetype = "dashed", color = "black") +
+  ylab("Frequency")
+```
+However, removing these outliers from the data set could be artificially masking the most extreme effects of exposure on individuals (especially in the highest dose). Therefore, the outliers should be kept in the data set to avoid removing any observations that could be the result of chemical exposure. But, they will be flagged as outliers in `raw_data`.
+
+### Evaluating Data Quality
+emptydur > 60*0.05 seconds
