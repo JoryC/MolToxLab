@@ -1,16 +1,5 @@
 # Jory Curry
-
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
-####                 Instructions               #####
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
-
-# Your EDA should include:
-# importing
-# hygiene and tidying
-# transformation, as needed
-# wrangling steps, as needed
-# several visualizations
-# In your script here, include comments throughout that explain key points to the user, including what your research question(s) is/are, where your dataset comes from, and what specific actions you are performing in the script and why.
+# Note: My .Rmd file is much more 'revised' than this one. Apologies for any typos and spelling mistakes.
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 ####                 Version Control            #####
@@ -1022,15 +1011,10 @@ set.seed(42069)
 simi_norm_tib_4rcurvep_act <- combi_run_rcurvep(
   simi_norm_tib_4rcurvep, 
   n_samples = 100, 
-  keep_sets = c("act_set"), 
-  TRSH = seq(5, 95, by = 5)
+  keep_sets = "act_set", 
+  TRSH = seq(5, 95, by = 5),
+  RNGE = -1000000
 )
-
-simi_norm_tib_4rcurvep_act[["result"]][["act_set"]] %>%
-  ggplot(aes(x = wConc, y = wResp, group = sample_id)) + 
-  geom_point() +
-  geom_line() +
-  facet_wrap(~chemical, scales = "free")
 
 simi_norm_tib_4rcurvep_act_Summary_Output <- summarize_rcurvep_output(simi_norm_tib_4rcurvep_act)
 

@@ -1,5 +1,5 @@
 ---
-title: "EDA Zebrafish Embryo Behaviour - with `r params$metric` correlation metric and `r params$value` behavioural effect endpoint"
+title: "EDA Zebrafish Embryo Behaviour Assay"
 author: "Jory Curry"
 date: "`r format(Sys.time(), '%d %B %Y')`"
 output: 
@@ -9,7 +9,7 @@ output:
     toc_float: true
     theme: readable
 params:
-  metric: "pearson"
+  metric: pearson
   value: totaldist
 ---
 
@@ -499,7 +499,7 @@ out_totaldist %>%
   group_by(Dose) %>%
   tally() %>%
   arrange(desc(n)) %>%
-  kable(col.names = c("Dose", "Number of outlier observations (totaldist)"), align = 'lr', caption = "Table 4. Summary of outliers in `raw_data` grouped by dose") %>%
+  kable(col.names = c("Dose", "Number of outlier observations (totaldist)"), align = 'lr', caption = "Table 5. Summary of outliers in `raw_data` grouped by dose") %>%
   kable_styling(full_width = TRUE) %>%
   scroll_box()
 ```
@@ -565,9 +565,7 @@ Overall, the animal recording set-up had an approximate failure-rate of `r round
 
 ## Exploring & Visualizing
 
-### Pre-Processing
-
-```{r pre_process_1, echo=TRUE, class.source ='fold-hide', message=FALSE, warning=FALSE}
+```{r pre_process_1, include=FALSE, class.source ='fold-hide', message=FALSE, warning=FALSE}
 # First defining an object that carries all dosing information (in mg/L) for each chemical, from the meta data
 doseData <- metaData %>%
   select(plate_id, Dose1:Control) %>%
@@ -676,7 +674,7 @@ Obvious observable dose differences from my naked eye:
 - vinclozolin (+'ve)
 
 
-```{r ggplots_all_chems_totaldist, echo=FALSE, fig.align='center', fig.cap="Figure 10.", warning=FALSE, message=FALSE, out.height="150%", out.width="250%", fig.width=11, fig.height=6}
+```{r ggplots_all_chems_totaldist, echo=FALSE, fig.align='center', fig.cap="Figure 10. Behavioural data from the `totaldist` endpoint from the last 30 minutes of the assay where light and dark cycles stimulate fish to be active, and calm. The different colours represent different dose groups and the deep purple line on each facet represents the control group. Doses that perturb swimming activity in fish stand out from the internal control groups and others. Faceted by chemical (n = 26)", warning=FALSE, message=FALSE, out.height="150%", out.width="250%", fig.width=11, fig.height=6}
 gg_smooth_AllChems(data = fishBehavDat, y = "totaldist", ylab = "Total activity distance", min_start = 20)
 ```
 
@@ -692,7 +690,7 @@ Obvious observable dose differences from my naked eye:
 - prochloraz (-'ve)
 
 
-```{r ggplots_all_chems_activedur, echo=FALSE, fig.align='center', fig.cap="Figure 11.", warning=FALSE, message=FALSE, out.height="150%", out.width="250%", fig.width=11, fig.height=6}
+```{r ggplots_all_chems_activedur, echo=FALSE, fig.align='center', fig.cap="Figure 11. Behavioural data from the `activedur` endpoint from the last 30 minutes of the assay where light and dark cycles stimulate fish to be active, and calm. The different colours represent different dose groups and the deep purple line on each facet represents the control group. Doses that perturb swimming activity in fish stand out from the internal control groups and others. Faceted by chemical (n = 26)", warning=FALSE, message=FALSE, out.height="150%", out.width="250%", fig.width=11, fig.height=6}
 gg_smooth_AllChems(data = fishBehavDat, y = "activedur", ylab = "Active Duration", min_start = 20)
 ```
 
@@ -710,7 +708,7 @@ Obvious observable dose differences from my naked eye:
 - prochloraz (-'ve)
 
 Note: a negative change in inactivity counts represents hyperactivity
-```{r ggplots_all_chems_inact, echo=FALSE, fig.align='center', fig.cap="Figure 12.", warning=FALSE, message=FALSE,out.height="150%", out.width="250%", fig.width=11, fig.height=6}
+```{r ggplots_all_chems_inact, echo=FALSE, fig.align='center', fig.cap="Figure 12. Behavioural data from the `inact` endpoint from the last 30 minutes of the assay where light and dark cycles stimulate fish to be active, and calm. The different colours represent different dose groups and the deep purple line on each facet represents the control group. Doses that perturb swimming activity in fish stand out from the internal control groups and others. Faceted by chemical (n = 26)", warning=FALSE, message=FALSE,out.height="150%", out.width="250%", fig.width=11, fig.height=6}
 gg_smooth_AllChems(data = fishBehavDat, y = "inact", ylab = "Inactivity counts", min_start = 20)
 ```
 
@@ -726,17 +724,17 @@ Figures 13 through 15 are just three examples of what should be done for every c
 
 #### `totaldist` Variable
 
-```{r ggplots_4TPP_totaldist, echo=FALSE, fig.align='center', fig.cap="Figure 13.", warning=FALSE, message=FALSE}
+```{r ggplots_4TPP_totaldist, echo=FALSE, fig.align='center', fig.cap="Figure 13. Within-plate plots of the final 30 minutes of the behavioural assay where light and dark cycles stimulate activity or calm in fish. Each colourful line represents an individual fish (n = 9 fish per group/facet). The red horizontal line is the mean of the control group. The smooth black line represents a smooth moving average. Faceted by `Dose` variable (n = 6). In total, data represents 54 fish", warning=FALSE, message=FALSE}
 smooth_oneChem(data = fishBehavDat, chemical = "4TPP", y = "totaldist", ylab = "Total activity distance", min_start = 20) #Seems that one fish is driving most of the effect. Probably best to remove these outliers and replace as NA
 ```
 It can be seen from figure 13 that the highest dose (1mg/L) seems to induce some hyperactivity in fish that is slightly above the mean of the control group.
 
-```{r ggplots_DMSO_totaldist, echo=FALSE, fig.align='center', fig.cap="Figure 14.", warning=FALSE, message=FALSE}
+```{r ggplots_DMSO_totaldist, echo=FALSE, fig.align='center', fig.cap="Figure 14. Within-plate plots of the final 30 minutes of the behavioural assay where light and dark cycles stimulate activity or calm in fish. Each colourful line represents an individual fish (n = 9 fish per group/facet). The red horizontal line is the mean of the control group. The smooth black line represents a smooth moving average. Faceted by `Dose` variable (n = 6). In total, data represents 54 fish", warning=FALSE, message=FALSE}
 smooth_oneChem(data = fishBehavDat, chemical = "DMSO", y = "totaldist", ylab = "Total activity distance", min_start = 20) # A clearer pattern of effect of chemical dose on movement distance
 ```
 Again, in figure 14, we can see that the highest dose group (10mg/L) seems to be associated with hyperactivity when compared the mean of the control group.
 
-```{r ggplots_Fadrozole_totaldist, echo=FALSE, fig.align='center', fig.cap="Figure 15.", warning=FALSE, message=FALSE}
+```{r ggplots_Fadrozole_totaldist, echo=FALSE, fig.align='center', fig.cap="Figure 15. Within-plate plots of the final 30 minutes of the behavioural assay where light and dark cycles stimulate activity or calm in fish. Each colourful line represents an individual fish (n = 9 fish per group/facet). The red horizontal line is the mean of the control group. The smooth black line represents a smooth moving average. Faceted by `Dose` variable (n = 6). In total, data represents 54 fish", warning=FALSE, message=FALSE}
 smooth_oneChem(data = fishBehavDat, chemical = "Fadrozole", y = "totaldist", ylab = "Total activity distance", min_start = 20) # A few individuals driving these effects in the highest dose
 ```
 Finally, figure 15 shows a similar trend where the highest dose group (1mg/L) is associated with hyperactivity. Also notable, is that one fish from the lowest dose group seems to be naturally more active than the others in the same group.\
@@ -757,4 +755,237 @@ lfishBehavDat <- fishBehavDat %>%
 lfishBehavDat <- split(as.data.frame(lfishBehavDat), ~ plate_id) # Split into lists
 ```
 
-The analysis pipeline included in this report was adapted from Hsieh et al 2018.
+The analysis pipeline included in this report was adapted from [Hsieh et al 2019](https://pubmed.ncbi.nlm.nih.gov/30321397/). It is still a work in progress.\
+\
+The general workflow is to first, calculate similarity scores (pearson's correlation coeff.) for observations, normalize data to the median of control group, then perform statistical analyses and post-hoc tests (ANCOVA, Dunnett's test). Finally, a benchmark dose (BMD) is calculated for each chemical using the [Rcurvep package](https://github.com/moggces/Rcurvep).\
+\
+This report has been paramaterized to easily adjust what variables (columns) will be analyzed and what similarity metric will be used to calculate the similarity scores (pearson, spearman, euclidean, and cosine).
+
+```{r simi_endpoints, include = FALSE}
+simi_endps <- list(seq(1, 30, by = 1)) #One per minute
+names(simi_endps) <- params$metric
+simi_endpoints <- list()
+for (i in chemicalNames) {
+  temp <-
+    create_simi_endpoints(lfishBehavDat[[i]],
+                          segments = simi_endps,
+                          metric = params$metric)
+  simi_endpoints[[i]] <- temp[[1]]
+  rm(temp)
+}
+```
+
+```{r normalized_data, include=FALSE}
+simi_norm <- lapply(simi_endpoints, simi_normalize)
+```
+
+```{r summary statistics, include=FALSE}
+for(i in chemicalNames) {
+  simi_norm[[i]]$dose <- as.factor(simi_norm[[i]]$dose)
+  simi_norm[[i]][, "Group"] = factor(rep(c("A", "B", "C"), times = (nrow(simi_norm[[i]]) /
+                                                                      9), each = 3))
+} # Adding Group column and factoring dose variable
+#Obtaining Summary Statistics
+summarystats_list <- lapply(simi_norm, summarystats
+)
+```
+
+### ANCOVA
+
+```{r ANCOVA, echo=FALSE}
+ancova_list <- sapply(simi_norm, combinedancova)
+#4TPP similarity scores statistically significant from each other
+ancova_comb <- as_tibble(ldply(ancova_list))
+ancova_comb <- ancova_comb %>%
+  na.omit() %>%
+  mutate(is.significant = if_else(
+    condition = `Pr(>F)` < 0.05,
+    true = TRUE,
+    false = FALSE
+  ))
+#Any significant results?
+ancova_comb %>%
+  filter(is.significant == TRUE)  %>%
+  select(.id, Df, `F value`, `Pr(>F)`) %>%
+  kable(
+    col.names = c("Chemical", "Degrees of Freedom", "F-Value", "P-value"),
+    align = 'llrr',
+    caption = "Table 6. Summary table of significant ANCOVA results (p < 0.05) from the `totaldist` variable after controling for within-group variability"
+  ) %>%
+  kable_styling()
+# Total distance - Yep, 4TPP is significant... be cautious look at the raw data
+```
+
+#### Dunnett's Test
+
+```{r Dunnett, include=FALSE}
+dunnett_list <- sapply(simi_norm, combineddunnett) %>%
+  setNames(., chemicalNames) %>%
+  as.array()
+#Dunnett's Test requires a bunch of wrangling
+dunnett_temp <-
+  list() #Take Dunnett's test results without any of the fancy summary information and shove it into a named list
+for (i in chemicalNames) {
+  dunnett_temp[[names(dunnett_list[i])]] <-
+    dunnett_list[[i]] %>% as.data.frame() %>% rownames_to_column(var = "dose") #Coerce to a data frame temporarily so what we can take the row names of the reults and turn them into a variable with rownames_to_column
+}
+dunnett_comb <-
+  ldply(dunnett_temp) #this function combines all of the lists together and gives them a variable name according to the chemical
+dunnett_comb$dose = substr(dunnett_comb$dose,
+                           start = 1,
+                           stop = nchar(dunnett_comb$dose) - 6) #Here we are fixing the dose column... the dose column has the test dose related to the control... but we just want to see what the test dose is without it giving us redundant information about the comparison to the control for every observation...
+dunnett_comb <- as_tibble(dunnett_comb)
+dunnett_comb <- dunnett_comb %>%
+  na.omit() %>%
+  mutate(is.significant = if_else(
+    condition = pval < 0.05,
+    true = TRUE,
+    false = FALSE
+  ))
+# Any significant results?
+dunnett_comb %>%
+  filter(is.significant == TRUE) %>%
+  select(.id, dose, diff, pval) %>%
+  kable()
+# Total Distance - Nope
+```
+```{r Dunnett_message, echo=TRUE}
+# There are no statistically significant results with p < 0.05
+```
+
+
+```{r normalized_data_to_tibble, include=FALSE}
+doseData <- doseData %>%
+  mutate(dose = Dose) #Renaming dose variable to inner_join
+simi_norm_tib <-
+  as_tibble(rbindlist(simi_norm)) #Convert from list to tibble
+simi_norm_tib <- simi_norm_tib %>%
+  inner_join(doseData) %>%
+  mutate(is_VC = as.integer(is_VC)) %>%
+  select(plate_id,
+         dose,
+         Dose_mg_L,
+         is_VC,
+         Group,
+         endpoint,
+         endpoint_value_norm)
+```
+
+```{r normalized_data_ggplot, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap="Figure 16. Dose response relationship of normalized pearson's similarity scores from 26 different chemicals -- `totaldsit` variable", fig.width=10, fig.height=7.5, out.height="100%", out.width="125%"}
+simi_norm_tib %>%
+  mutate(dose = factor(
+    dose,
+    levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"),
+    ordered = TRUE
+  )) %>%
+  group_by(plate_id, dose, Group) %>%
+  summarise(dose = dose,
+            endpoint_value_norm = endpoint_value_norm,
+            Group = Group) %>%
+  ggplot(aes(x = dose, y = endpoint_value_norm, group = 1)) +
+  geom_boxplot(
+    aes(x = dose, y = endpoint_value_norm, group = dose),
+    outlier.shape = NA,
+    width = 0.5
+  ) +
+  # geom_jitter(position = position_jitter(width = 0.2,
+  #                                        height = 0, seed = 42069),
+  #             colour = "black") +
+  geom_jitter(position = position_jitter(
+    width = 0.2,
+    height = 0,
+    seed = 42069
+  ),
+  size = 0.5) +
+  geom_smooth(se = FALSE) +
+  labs(x = "Dose (mg/L)", y = "Response") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+  facet_wrap( ~ plate_id, strip.position = "top") +
+  theme(strip.background = element_blank(),
+        panel.background = element_blank())
+```
+After running an ANCOVA, it can be seen that 4TPP comes back as significant. However, Dunnett's test does not return any results, so it can't be determined from the Dunnett's test which dose group is statistically different from the controls.\
+\
+However, it should still be possible to calculate a benchmark dose for each chemical.
+
+### Benchmark Dose
+
+```{r prep_4_rcurvep, include=FALSE}
+simi_norm_tib_4rcurvep <- simi_norm_tib %>%
+  rename(resp = endpoint_value_norm,
+         chemical = plate_id) %>%
+  filter(is_VC == 0) %>%
+  mutate(conc = log10(Dose_mg_L)) %>%
+  select(endpoint, chemical, conc, resp)
+```
+
+Since we do not know what the benchmark response is for each one of the chemicals, a method will be used that can estimate a benchmark response based off of the given data. This method uses bootstrapping to 100s to 1000s of curves that will help determine what a good estimate is for the benchmark response. This process can be a bit time-intensive to run.
+
+```{r estimating_BMR, echo=FALSE, warning=FALSE, message=FALSE}
+set.seed(42069)
+
+simi_norm_tib_4rcurvep_act <- combi_run_rcurvep(
+  simi_norm_tib_4rcurvep,
+  n_samples = 100,
+  keep_sets = "act_set",
+  TRSH = seq(5, 95, by = 5),
+  RNGE = -1000000
+)
+```
+
+```{r estimating_BMR_2, echo=FALSE, fig.cap= "Figure 17. Summary of Benchmark response estimation", fig.align='center', warning=FALSE, message=FALSE}
+bmr_output <-
+  estimate_dataset_bmr(simi_norm_tib_4rcurvep_act, plot = TRUE)
+```
+
+```{r estimating_BMR_3, echo=FALSE}
+bmr_output$outcome %>%
+  select(endpoint, qc, cor_exp_fit, cor_lm_fit, bmr_exp, bmr_ori) %>%
+  kable(
+    col.names = c(
+      "Endpoint",
+      "Quality Control Message",
+      "Correlation of expotential fit",
+      "Correlation of linear model fit",
+      "BMR of exponential model",
+      "BMR of linear model"
+    ),
+    align = 'llrrrr',
+    caption = "Table 7. Summary of the estimated BMR"
+  ) %>%
+  kable_styling() %>%
+  scroll_box()
+```
+
+From the bootstrapping method, it seems that the benchmark response threshold should be set to `r bmr_output$outcome$bmr_ori`, but be cautious of doing so. In the future, there will be a visualizaiton of all of the simulated curves to try to visually determine if the BMR is appropriate.
+
+```{r calculating_benchmark_dose, include = FALSE}
+bmd_dat <- combi_run_rcurvep(
+  simi_norm_tib_4rcurvep, 
+  n_samples = 100, 
+  keep_sets = "act_set", 
+  TRSH = 40,
+  RNGE = -1000000
+)
+```
+
+```{r calculating_benchmark_dose_2, echo=FALSE, collapse=TRUE}
+sum_bmd_dat <- summarize_rcurvep_output(bmd_dat)
+sum_bmd_dat
+```
+
+```{r calculating_benchmark_dose_3, echo=FALSE}
+sum_bmd_dat$act_summary %>%
+  mutate(lowest_conc = 10^(lowest_conc), highest_conc = 10^(highest_conc), POD_cil = 10^(POD_cil), POD_med = 10^(POD_med), POD_ciu = 10^(POD_ciu)) %>%
+  select(chemical, lowest_conc, highest_conc, POD_cil, POD_med, POD_ciu, hit_confidence) %>%
+  kable(col.names = c("Chemical", "Low Dose", "High Dose", "BMD - low confidence", "BMD", "BMD - high confidence", "Hit Confidence"), caption = "Table 8. Summary of all the benchmark doses (BMDs) of every chemical") %>%
+  kable_styling() %>%
+  scroll_box()
+```
+
+From table 8 it can be seen that this method was not very effective on the current data set likely due to the very low doses used in the chemical exposure study. However, by using the low confidence BMDs, some additional figures will be made to illustrate where the dose-response data is crossing the benchmark response threshold to calculate the BMD.\
+\
+This concludes the report. Thank you for reading.\
+\
+Stay updated! Check out my [github repo](https://github.com/JoryC/MolToxLab).
