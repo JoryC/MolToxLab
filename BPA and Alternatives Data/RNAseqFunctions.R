@@ -1,19 +1,21 @@
 
 #### FUNCTION: countFilter #####
-countFilter <- function(data, grouping, median_threshold){
+countFilter <- function(data, grouping, median_threshold, metadata){
   require(tidyverse)
  
-  medianthrs <- median_threshold
-
+  # column selectors: used to select all meta data columns, so that the gene cols can be quickly selected
+  metaCols <- names(metadata)[names(metadata) %in% names(data)]
+  omitCols <- metaCols[!metaCols %in% grouping]
+  
   # group and nest by "grouping"
   nestData<-data %>%
-    dplyr::select(-sample) %>%
+    dplyr::select(-all_of(omitCols)) %>%
     group_by(across(all_of(grouping))) %>%
     nest()
   
   # determine median count of each nested group
   nestData <- nestData %>%
-    mutate(medCount = map(data, sapply_Median))
+    mutate(medCount = map(data, ~sapply(.x, median)))
 
   medianCount <- as_tibble(do.call(rbind, nestData$medCount))
   
@@ -22,49 +24,107 @@ countFilter <- function(data, grouping, median_threshold){
     sapply(min)
   
   # gene names that are above median_threshold
-  keepGenes <- names(minCount)[which(minCount >= medianthrs)]
+  keepGenes <- names(minCount)[which(minCount >= median_threshold)]
   
   # filter to only keep genes above median_threshold
   filterData <- data %>%
-    dplyr::select(all_of(c("sample", "dose", keepGenes)))
+    dplyr::select(all_of(c(metaCols, keepGenes)))
 
   return(filterData)
+}
 
+#### FUNCTION: logCount ####
+logCount <- function(x, zeroPad=1){
+  x %>% 
+    mutate(across(where(is.integer), ~log2(.+zeroPad)))
+}
+
+
+
+#### Function: nCovN ####
+# the number of genes in a samples with at least N counts
+nCovN <- function(x, N=5,  metadata){
+  metaCols <- names(metadata)[names(metadata) %in% names(x)]
   
-## OLD VERSION THAT WAS SUPER SLOW BECAUSE OF "summarize_all:
-##   Keeping here for reference
-##   system.time test using a 19 X 32522 tibble with 6 groups
-##   takes > 200 seconds!!  vs 6 seconds for "nested" method
-  
-# system.time({
-#  medianthrs <- median_threshold
-#  
-#  medianCount <- data %>%
-#      select(-sample) %>%
-#      group_by(across(all_of(grouping))) %>%
-#      summarise_all(median)
-#  
-#  minCount <- medianCount %>%
-#    ungroup() %>%
-#    select(-dose) %>%
-#    summarise_all(min)
-#  
-#  keepGenes <- names(minCount)[which(minCount >= medianthrs)]
-#  
-#  filterData <- data %>%
-#    select(all_of(c("sample", "dose", keepGenes)))
-#  })
-#  
-#  
+  x %>% 
+    mutate(nCovN = rowSums(.[,-which(names(x) %in% metaCols)] >= 5)) %>%
+    select(all_of(metaCols), nCovN)
+}
+
+#
+nCovAvg <-function(x){
   
 }
 
 
-#### FUNCTION: sapply_median ####
-# a function needed to combine sapply with median for nested data
-sapply_Median<-function(data){
-  sapply(data, median)
+
+#### Function: nGene ####
+# counts the number of genes with a count of N in AT LEAST one sample
+nGene <- function(x, metadata){  
+  metaCols <- names(metadata)[names(metadata) %in% names(x)]
+  
+  n<- x %>%
+    select(-all_of(metaCols)) %>%
+    sapply(any) %>%
+    sum()
+  
+  return(n)
+}  
+
+
+#### Function: nGeneIntercept ####
+# counts the number of genes with a count of at least one in ALL samples
+nGeneIntercept <- function(x, metadata){  
+  metaCols <- names(metadata)[names(metadata) %in% names(x)]
+  
+  n<- x %>%
+    select(-all_of(metaCols)) %>%
+    sapply(all) %>%
+    sum()
+  
+  return(n)
+}  
+
+
+
+#### FUNCTION: nSig80 ####
+
+nSig80 <- function(x, metadata){
+  metaCols <- names(metadata)[names(metadata) %in% names(x)]
+  
+  nsig80<-vector()
+  x1 <- x %>%
+    select(-all_of(metaCols))
+  
+  for(i in 1:nrow(x1)){
+    test1 <-x1[i,]
+    test1<- test1[order(test1, decreasing=TRUE)]
+    test_percent <- test1/sum(test1)*100
+    nsig80<-c(nsig80,sum(cumsum(test_percent)<80))
+  }
+  names(nsig80) <- as.vector(x$sample)
+  
 }
+
+nSig80_V2 <- function(x, metadata){
+  metaCols <- names(metadata)[names(metadata) %in% names(x)]
+  
+  x1 <- x %>%
+    select(-all_of(metaCols))
+  
+  nSig80 <- apply(x1, 1, function(y){
+    y1<- y[order(y, decreasing=TRUE)]
+    y1_percent <- y1/sum(y1)*100
+    n<-sum(cumsum(y1_percent)<80)
+    return(n)
+  })
+  
+  output<-x %>%
+    select(all_of(metaCols)) %>%
+    cbind(nSig80)
+}
+
+
 
 
 #### FUNCTION: tmmNorm ####

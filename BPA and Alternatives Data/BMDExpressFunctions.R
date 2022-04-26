@@ -2,7 +2,7 @@
 # Clean up columns during import
 cleanupcolumns <- function(x){
   x %>%
-    select(Probe.Id,
+    dplyr::select(Probe.Id,
            BMD,
            BMDL,
            BMDU,

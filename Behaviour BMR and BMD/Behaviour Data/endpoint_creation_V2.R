@@ -47,8 +47,13 @@ summarystats_list <- lapply(simi_norm, summarystats)
 anova_list <- sapply(simi_norm, combinedanova)
 print(anova_list)
 
+<<<<<<< HEAD
 dunnett_list <- sapply(simi_norm, combineddunnett) %>%
   setNames(., chemnames) %>% 
+=======
+dunnett_list <- sapply(simi_norm, combineddunnett) %>% 
+  setNames(., chemnames) %>%
+>>>>>>> 3db3f2a83664627f969312a2095ab7b7c96786c0
   as.array()
 print(dunnett_list)
 
@@ -62,6 +67,7 @@ for(i in chemnames){
 for(i in chemnames){
   write.csv(dunnett_list[[i]], file = paste0("Output/", i,"/",i,"_dunnett.csv"))
 }
+
 ####Plotting####
 behaviourplots <- list()
 
@@ -77,7 +83,7 @@ for(i in chemnames) {
     theme_classic()
 }
 
-print(behaviourplots[[1]])
+# print(behaviourplots[[1]])
 
 multiplot(plotlist = behaviourplots, cols = 2 )
 

@@ -3,21 +3,28 @@ library(tidyverse)
 source("Bootstrapping_Functions.R")
 source("mode_antimode.R")
 source("BMDExpressFunctions.R")
+options(scipen = 9)
 
 ####Data Import####
 
 #Metadata
-metadata <- read.csv("RNAseqData/metadata_nocontrol.csv")
+metadata <- read.csv("RNAseqData/metadata.csv")
 chemnames <- unique(metadata$chemical)
+
 lowestdoses <- unique(metadata[, c("chemical", "dose")]) %>%
   group_by(chemical) %>%
   filter(dose > 0) %>%
   summarise_all(min)
 
+highestdoses <- unique(metadata[, c("chemical", "dose")]) %>%
+  group_by(chemical) %>%
+  filter(dose > 0) %>%
+  summarise_all(max)
+
 #RDS files
-logBMDvalues <- readRDS("all_BMD_list_logtransformed.RDS")
-goBMDvalues <- readRDS("go_BMD_list_logtransformed.RDS")
-reactomeBMDvalues <- readRDS("reactome_BMD_list_logtransformed.RDS")
+logBMDvalues <- readRDS("BMDExpressData/RDS/all_BMD_list_logtransformed.RDS")
+goBMDvalues <- readRDS("BMDExpressData/RDS/go_BMD_list_logtransformed.RDS")
+reactomeBMDvalues <- readRDS("BMDExpressData/RDS/reactome_BMD_list_logtransformed.RDS")
 
 #Apical Data
 

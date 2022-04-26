@@ -3,12 +3,18 @@ library(tidyverse)
 source("BMDExpressFunctions.R")
 
 ####Metadata Import####
-metadata <- read.csv("RNAseqData/metadata_nocontrol.csv")
+metadata <- read.csv("RNAseqData/metadata.csv")
 chemnames <- unique(metadata$chemical)
+
 lowestdoses <- unique(metadata[, c("chemical", "dose")]) %>%
   group_by(chemical) %>%
   filter(dose > 0) %>%
   summarise_all(min)
+
+highestdoses <- unique(metadata[,c("chemical","dose")]) %>%
+  group_by(chemical) %>%
+  filter(dose>0) %>%
+  summarise_all(max)
 
 ####GO Term BMD Extraction####
 #Import
@@ -89,7 +95,7 @@ for (i in chemnames) {
   all_BMD_list_logtransformed[[i]] <-
     BMDfiltering(x = BMD_raw_data[[i]],
                  lowdose = lowestdoses$dose[lowestdoses$chemical == i],
-                 highdose = 3) %>%
+                 highdose = highestdoses$dose[highestdoses$chemical == i]) %>%
     mutate(logBMD = log10(BMD)) %>%
     select(logBMD) %>%
     pull() %>%
@@ -97,7 +103,7 @@ for (i in chemnames) {
 }
 
 ####Export Data#### 
-saveRDS(go_BMD_list_logtransformed, "go_BMD_list_logtransformed.RDS")
-saveRDS(reactome_BMD_list_logtransformed, "reactome_BMD_list_logtransformed.RDS")
-saveRDS(all_BMD_list_logtransformed, "all_BMD_list_logtransformed.RDS")
+saveRDS(go_BMD_list_logtransformed, "BMDExpressData/RDS/go_BMD_list_logtransformed.RDS")
+saveRDS(reactome_BMD_list_logtransformed, "BMDExpressData/RDS/reactome_BMD_list_logtransformed.RDS")
+saveRDS(all_BMD_list_logtransformed, "BMDExpressData/RDS/all_BMD_list_logtransformed.RDS")
 
