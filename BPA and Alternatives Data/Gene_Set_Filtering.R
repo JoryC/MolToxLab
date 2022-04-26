@@ -110,35 +110,42 @@ for(i in chemnames){
 }
 
 #Total number of non-estrogen genes without BMD
-non_geneset_no_BMD <- list()
+non_geneset_noBMD <- list()
 
 for(i in chemnames){
-  non_geneset_no_BMD[[i]] <- normdata_gene[[i]] %>%
-    filter(!gene %in% (filtered_BMD[[i]] %>% pull("Probe.Id"))) %>%
-    filter(!gene %in% (ensembl_geneset %>% pull(ensembl_gene_id)))
+  non_geneset_noBMD[[i]] <- normdata_gene[[i]] %>%
+    filter(!gene %in% (ensembl_geneset %>% pull(ensembl_gene_id))) %>%
+    filter(!gene %in% (filtered_BMD[[i]] %>% pull("Probe.Id")))
 }
 
 #Fisher's Test Table Setup
-
 fisher_table <- list()
 
 for(i in chemnames){
   fisher_table[[i]] <- data.frame(
     "GeneSet" = c(nrow(geneset_BMD[[i]]), nrow(geneset_noBMD[[i]])),
-    "Non_Geneset" = c(nrow(non_geneset_BMD[[i]]), nrow(non_geneset_no_BMD[[i]])),
+    "Non_Geneset" = c(nrow(non_geneset_BMD[[i]]), nrow(non_geneset_noBMD[[i]])),
     row.names = c("BMD", "No BMD"),
     stringsAsFactors = F
   )
 }
 
+#Fisher's Test and p value
 fisher_test_list <- list()
+fisher_p_value <- list()
 
 for(i in chemnames){
   fisher_test_list[[i]] <- fisher.test(fisher_table[[i]])
+  fisher_p_value[[i]] <- fisher_test_list[[i]]["p.value"] %>% 
+    as.numeric()
 }
 
-#
 
+#Geneset BMD
 geneset_BMD_df <- bind_rows(geneset_BMD, .id = 'Chemical')
+
+for(i in 1:nrow(geneset_BMD_df)){
+  geneset_BMD_df[i,"p-value"] <- fisher_p_value[geneset_BMD_df[i,"Chemical"]]
+}
 
 write.csv(geneset_BMD_df, "BMDExpressData/Output/geneset_BMD.csv", row.names = F)
