@@ -6,6 +6,7 @@ library(edgeR)
 library(preprocessCore) # for quantile normalization
 library(PMCMRplus)  # for Williams Trend Test
 library(ggfortify)
+library(scales)
 
 #source codes
 source("RNAseqFunctions.R")
@@ -36,7 +37,7 @@ for(i in dataFolders){
 }
 
 # join,
-allData <- reduce(loadRaw, full_join, by="gene") %>%
+allData <- purrr::reduce(loadRaw, full_join, by="gene") %>%
 # transpose,
   column_to_rownames("gene") %>%
   t() %>%
@@ -56,6 +57,19 @@ nestData <- allData %>%
   nest()
 
 ####QC####
+# Total read count
+readcount <- allData %>%
+  as.data.frame %>%
+  mutate(row_sum = rowSums(select(.,4:length(allData)))) %>%
+  select(sample, chemical, dose, row_sum)
+
+readcount_per_chem_mean <- readcount %>% 
+  select(-sample, -dose) %>%
+  group_by(chemical) %>% 
+  summarise_at(vars(row_sum), .funs = c(mean, sd)) %>%
+  rename(read_mean = fn1) %>%
+  rename(read_sd = fn2)
+
 # Number of genes with at least 1 read for each sample
 ngene_per_sample <- allData %>% 
   as.data.frame() %>% 
@@ -84,12 +98,14 @@ nestData <- nestData %>%
 # nCov5: number of genes in a sample with a count of at least 5
 nestData <- nestData %>%
   mutate(nCov5=map(data, ~nCovN(.x, metadata = metadata))) %>%
-  mutate(nCov5_avg=map_dbl(nCov5, ~mean(.x$nCovN)))
+  mutate(nCov5_avg=map_dbl(nCov5, ~mean(.x$nCovN))) %>%
+  mutate(nCov5_sd=map_dbl(nCov5, ~sd(.x$nCovN)))
  
 # nSig80: The number of the most abundant genes that make up 80% of the reads, per sample
 nestData <- nestData %>%
   mutate(nSig80=map(data, ~nSig80_V2(.x, metadata = metadata))) %>%
-  mutate(nSig80_avg=map_dbl(nSig80, ~mean(.x$nSig80)))
+  mutate(nSig80_avg=map_dbl(nSig80, ~mean(.x$nSig80))) %>%
+  mutate(nSig80_sd=map_dbl(nSig80, ~sd(.x$nSig80)))
 
 #### FILTER ####
 filterData <- nestData %>%
@@ -104,8 +120,23 @@ filterData <- nestData %>%
   mutate(nSig80_avg=map_dbl(nSig80, ~mean(.x$nSig80)))
 
 ####Plotting####
-#number of genes per sample
 QCplots <- list()
+
+#readcount
+QCplots[["readcount"]]<- readcount %>%
+  ggplot(aes(x = chemical, y = row_sum)) +
+  geom_boxplot(outlier.shape = NA, width = 0.5) +
+  geom_jitter(position = position_jitter(width = 0.2, height = 0, seed = 42069),
+              colour = "black") +
+  labs(x = "Chemical", y = "Pre-Filtered Read Count", title = "Read Count") +
+  scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x),
+                limits = c(10^3, NA),
+                labels = trans_format("log10", math_format(10^.x))) +
+  annotation_logticks(sides="l") +
+  theme_classic()
+print(QCplots[["readcount"]])
+
+#number of genes per sample
 QCplots[["ngene_plot"]] <-
   ngene_per_sample %>%
   ggplot(aes(x = chemical, y = genecount)) +
@@ -117,7 +148,7 @@ QCplots[["ngene_plot"]] <-
 
 #nCov5 plotting
 QCplots[["nCov5_plot"]] <- 
-  filterData %>%
+  nestData %>%
   select(chemical, nCov5) %>%
   unnest(cols=c(nCov5)) %>%
   ggplot(aes(x = chemical, y = nCovN)) +
@@ -130,7 +161,7 @@ QCplots[["nCov5_plot"]] <-
 
 #nsig80 plotting
 QCplots[["nSig80_plot"]] <- 
-  filterData %>%
+  nestData %>%
   select(chemical, nSig80) %>%
   unnest(cols=c(nSig80)) %>%
   ggplot(aes(x = chemical, y = nSig80)) +
@@ -141,7 +172,22 @@ QCplots[["nSig80_plot"]] <-
   labs(x = "Chemical", y = "nSig80", title = "nSig80") +
   theme_classic()
 
-multiplot(plotlist = QCplots, cols = 3)
+multiplot(plotlist = QCplots, layout = matrix(c(1:4), nrow=2, byrow=TRUE))
+
+
+QC_sample_summary <- nestData %>% 
+  select(chemical, nCov5, nSig80) %>% 
+  unnest(names_repair = "unique", cols = c(nCov5, nSig80)) %>%
+  select(-sample...5,
+         -dose...6) %>%
+  rename(sample = sample...2,
+         dose = dose...3) %>%
+  full_join(., readcount, by = "sample") %>%
+  full_join(., ngene_per_sample, by = "sample") %>%
+  select(chemical, sample, dose, row_sum, genecount, nCovN, nSig80)
+
+write.csv(QC_sample_summary, "BMDExpressData/Output/QC_sample_summary.csv", row.names = F)
+
 
 #### NORMALIZE ####
 filterData <- filterData %>%
