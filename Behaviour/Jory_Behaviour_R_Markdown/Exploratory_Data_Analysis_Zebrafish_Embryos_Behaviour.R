@@ -50,8 +50,6 @@
 # You can browse the meta data in the 'Directory & Meta Data' step of this script
 # I come from an environmental ecotoxicology laboratory that explores the feasibility of using acute tests to estimate chronic toxicity for aquatic wildlife (e.g., Early behavioural perturbation analyses, early metabolism analyses, and transcriptomic dose-response modelling)
 
-# TODO: For the Rmd report, it would be nice (if possible, but not a priority) if you had a rudimentary graphic that shows the wells and the fish in each well. # It could also show certain numbers that the audience needs to remember like 54 fish per plate, or 26 experiments.
-
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 #####                   Libraries                ####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
@@ -152,9 +150,6 @@ nrow(raw_data) #254,018 rows...
 # Odd, we have double the amount of rows we should have... and more! What's happening?
 
 # ---------------------------------------------------------------------------- #
-# TODO: This kind of throws me off say some thing like we will first investigate this by considering the
-# amount of observations per minute.
-
 #We expect to see only 50 observations (1 for each minute) per well (96 wells)
 50*60 #We expect the 'end' variable to have a highest value of 3000seconds (50 minutes*60 = 3000seconds)
 # ---------------------------------------------------------------------------- #
@@ -250,8 +245,7 @@ temp %>%
   filter(Suspicious == TRUE) #There, now we can see that those sketchy zero observations have been turned into NAs for each of the variables we wanted. 1,641 observations turned into NAs!
 
 # ---------------------------------------------------------------------------- #
-#Overall, the animal recording set up had an approximate failure-rate of 2% -- These is the approximate percentage of time the infrared camera failed to detect an animal when it was present
-# TODO: *This* is the approximate percentage of time...
+#Overall, the animal recording set up had an approximate failure-rate of 2% -- This is the approximate percentage of time the infrared camera failed to detect an animal when it was present
 paste0(round((nSketchy/nrow(temp))*100), "%", " ", "Failure-rate") 
 # ---------------------------------------------------------------------------- #
 
@@ -640,19 +634,19 @@ out_5 <- fishBehavDat %>%
 out_totaldist <- rbind(out_1, out_2, out_3, out_4, out_5)
 
 #Changing the data frame - Turning outliers into NAs
-fishBehavDat <- fishBehavDat %>%
-  mutate(outliers = if_else(condition = (do.call(paste0, .) %in% do.call(paste0, out_totaldist)), true = TRUE, false = FALSE)) %>%
-  mutate(across(
-    .cols = c(
-      "inact","inadur",
-      "smlct","smldur","smldist",
-      "larct","lardur","lardist",
-      "activedur", "totaldist"
-    ),
-    .fns = ~ replace(x = ., list = outliers, values = NA)
-  )) %>%
-  select(-outliers)
-fishBehavDat
+# fishBehavDat <- fishBehavDat %>%
+#   mutate(outliers = if_else(condition = (do.call(paste0, .) %in% do.call(paste0, out_totaldist)), true = TRUE, false = FALSE)) %>%
+#   mutate(across(
+#     .cols = c(
+#       "inact","inadur",
+#       "smlct","smldur","smldist",
+#       "larct","lardur","lardist",
+#       "activedur", "totaldist"
+#     ),
+#     .fns = ~ replace(x = ., list = outliers, values = NA)
+#   )) %>%
+#   select(-outliers)
+# fishBehavDat
 
 # ---------------------------------------------------------------------------- #
 #Creating a nested list of data frames (1 chemical per data frame) to use later for an analysis pipeline

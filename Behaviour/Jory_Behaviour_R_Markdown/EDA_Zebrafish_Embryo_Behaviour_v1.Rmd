@@ -4,8 +4,10 @@ author: "Jory Curry"
 date: "`r format(Sys.time(), '%d %B %Y')`"
 output: 
   html_document:
+    code_folding: show
     toc: true
     toc_float: true
+    theme: readable
 params:
   metric: "pearson"
   value: totaldist
@@ -18,6 +20,7 @@ options(scipen = 9)
 
 ```{r libraries, include=FALSE}
 library(knitr)
+library(kableExtra)
 library(gridExtra)
 library(rlang)
 library(Rcurvep)
@@ -40,7 +43,7 @@ source("Functions/behavioural_endpoint_calc.R")
 # Rmd Report Assignment - BIOL5502
 
 ## Version Control
-```{r version_control, comment=""}
+```{r version_control, comment="", class.source ='fold-hide'}
 # - My Machine Info:
 #   - R version 4.1.3 (2022-03-10) -- "One Push-Up"
 #   - Platform: x86_64-pc-linux-gnu (64-bit)         5.11.0-34-generic / Ubuntu 20.04.4
@@ -66,6 +69,7 @@ source("Functions/behavioural_endpoint_calc.R")
 ## Background
   About me: I come from an environmental ecotoxicology laboratory that explores the feasibility of using acute tests to estimate chronic toxicity for aquatic wildlife (e.g., early behavioural perturbation analyses, early metabolism analyses, and transcriptomic dose-response modelling).\
   The data supplied in the zip folder pertains to behavioural data collected from 5 day-old (120hpf) zebrafish embryos using a [Viewpoint ZebraBox and Viewpoint ZebraLab software](https://www.viewpoint.fr/en/p/equipment/zebrabox-for-embryos-or-larvae/publications). This is real data that I collected!! It's bound to have some errors.\
+The dose ranges chosen for the exposure studies were extremely low for an acute-exposure study. We chose such low doses ranges because we are also conducting an RNA-sequencing dose-response analysis as well, which is much more sensitive (can detect changes earlier -- at lower doses) than the behavioural analysis.\
   Chemical exposures are performed in glass petri dishes (3 dishes per dose group -- A,B,C) for 120 hours post-fertilization.
 ```{r figure1, echo=FALSE, fig.align='center', fig.cap='Figure 1. The experimental layout of the 5-day chemical exposures in petri dishes prior to the behavioural assay', out.height="50%", out.width="50%"}
 knitr::include_graphics("./Data/5-Day_Exposure_Layout.png")
@@ -138,7 +142,9 @@ metaData %>%
     ),
     align = "lllrrrrr",
     caption = "Table 1. Information about each chemical included in the experiment with dose information in mg/L"
-  )
+  ) %>%
+  kable_styling(full_width = TRUE) %>%
+  scroll_box(height = "400px")
 ```
 
 ## Importing the raw data files & taking a glimpse
@@ -304,7 +310,9 @@ raw_data %>%
   select(plate_id, animal, Treatment, lardur) %>%
   group_by(plate_id, Treatment, animal) %>%
   summarise(distance = mean(lardur)) %>%
-  kable(align = 'lllc', col.names = c("Chemical", "Individual", "Dose", "Large Activity Duration (seconds)"), caption = "Table 2. Summary of outliers in large swim activity duration variable (> 40s), showing only unique individuals")
+  kable(align = 'lllc', col.names = c("Chemical", "Individual", "Dose", "Large Activity Duration (seconds)"), caption = "Table 2. Summary of outliers in large swim activity duration variable (> 40s), showing only unique individuals") %>%
+  kable_styling(full_width = TRUE) %>%
+  scroll_box()
 ```
 From table 2, it can be seen that many of the hyperactivity observations come from the same individual animals in the experiment (with a few exceptions). These are extreme observable effects on individuals, they do not necessarily represent the the rest of the population within groups.\
 \
@@ -353,7 +361,9 @@ raw_data %>%
   select(plate_id, Treatment, animal, totaldist) %>%
   group_by(plate_id, Treatment, animal) %>%
   summarise(distance = mean(totaldist)) %>%
-  kable(col.names = c("Chemical", "Dose", "Individual", "Distance travelled in 1 min"), align = 'lllc', caption = "Table 3. Summary of outliers in total distance travelled variable (>4000) showing only unique individuals")
+  kable(col.names = c("Chemical", "Dose", "Individual", "Distance travelled in 1 min"), align = 'lllc', caption = "Table 3. Summary of outliers in total distance travelled variable (>4000) showing only unique individuals") %>%
+  kable_styling(full_width = TRUE) %>%
+  scroll_box()
 ```
 We see there are 3 chemicals in the extreme outliers, and that most of the individual animals are from the highest dose treatment group:\
 \
@@ -472,7 +482,10 @@ out_totaldist %>%
   group_by(plate_id, Dose) %>%
   tally() %>%
   arrange(desc(n)) %>%
-  kable(col.names = c("Chemical", "Dose", "Number of outlier observations (totaldist)"), align = 'llr', caption = "Table 4. Summary of outliers in `raw_data` grouped by chemical and dose group")
+  kable(col.names = c("Chemical", "Dose", "Number of outlier observations (totaldist)"), align = 'llr', caption = "Table 4. Summary of outliers in `raw_data` grouped by chemical and dose group") %>%
+  kable_styling(full_width = TRUE) %>%
+  row_spec(c(1,2,3,7,16,17,19,20), background = "#e5e8ed") %>%
+  scroll_box(height = "400px")
 ```
 From this summary table it can be seen that there are three chemicals that make up the majority of all the outliers based on this deeper-dive into the within-plates data. Those chemicals with the highest proportions of outliers were:
 
@@ -486,7 +499,9 @@ out_totaldist %>%
   group_by(Dose) %>%
   tally() %>%
   arrange(desc(n)) %>%
-  kable(col.names = c("Dose", "Number of outlier observations (totaldist)"), align = 'lr', caption = "Table 4. Summary of outliers in `raw_data` grouped by dose")
+  kable(col.names = c("Dose", "Number of outlier observations (totaldist)"), align = 'lr', caption = "Table 4. Summary of outliers in `raw_data` grouped by dose") %>%
+  kable_styling(full_width = TRUE) %>%
+  scroll_box()
 ```
 This suggests that the effects of chemical exposure could be behaving monotonically:
 
@@ -500,7 +515,246 @@ out_totaldist %>%
   geom_smooth(method = "lm", se = FALSE, linetype = "dashed", color = "black") +
   ylab("Frequency")
 ```
-However, removing these outliers from the data set could be artificially masking the most extreme effects of exposure on individuals (especially in the highest dose). Therefore, the outliers should be kept in the data set to avoid removing any observations that could be the result of chemical exposure. But, they will be flagged as outliers in `raw_data`.
+However, removing these outliers from the data set could be artificially masking the most extreme effects of exposure on individuals (especially in the highest dose). Therefore, the outliers will be kept in the data set for now to avoid removing any observations that could be the result of chemical exposure. They will be flagged as outliers in `raw_data`.
+
+<!-- ### What is the best variable to use for analysis? -->
+<!-- For the remaining downstream analysis, it should be determined if the effects of chemical exposure are behaving as expected. It is expected that effects will behave monotonically. Therefore, these should be an increasing or decreasing trend on the effect endpoint (variable) as the dose increases. -->
+<!-- ```{r totaldist_test, echo=FALSE, warning=FALSE, message=FALSE, fig.cap="Figure 10. Monotonic relationship of (totaldist) and dose groups", fig.align='center'} -->
+<!-- norm_to <- raw_data %>% -->
+<!--     filter(Dose == "Control") %>% -->
+<!--     group_by(plate_id) %>% -->
+<!--     summarise(cntrl_mean = rep(mean(totaldist), each = 6)) %>% -->
+<!--     mutate(Dose = factor(x = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>% -->
+<!--   select(plate_id, Dose, cntrl_mean) -->
+<!-- temp_dat <- raw_data %>% -->
+<!--   mutate(Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>% -->
+<!--   group_by(plate_id, Dose) %>% -->
+<!--   summarize(mean = mean(totaldist)) -->
+<!-- norm_dat <- right_join(temp_dat, norm_to) %>% -->
+<!--   mutate(norm_mean = mean - cntrl_mean) -->
+<!-- norm_dat %>% -->
+<!--   ggplot(aes(x = Dose, y = norm_mean, group = 1)) + -->
+<!--   geom_point() + -->
+<!--   geom_smooth(method = "lm", se = FALSE, linetype = "dashed", color = "black") + -->
+<!--   facet_wrap(~ plate_id) -->
+<!-- ``` -->
 
 ### Evaluating Data Quality
-emptydur > 60*0.05 seconds
+Figure 6 showed that the `emptydur` variable can be used reliably to filter out observations with poor data quality. The 'empty duration' variable ranges from 0s to 60s and indicates how long the observation was not able to detect a fish in the well. An arbitrary cutoff value of `r 60*0.05` seconds will be used to determine if an observation was of poor-quality and therefore, should be converted to `NA`. By doing this, the confidence in the accuracy of observations can be increased across the entire data set.
+```{r poor_quality_cutoff, echo=FALSE}
+qualityCutoff <- (60*0.05)
+raw_data <- raw_data %>%
+  mutate(poorQual = if_else(condition = emptydur >= qualityCutoff, true = TRUE, false = FALSE)) %>%
+  mutate(across(
+    .cols = c("inact","inadur","inadist",
+              "smlct","smldur","smldist",
+              "larct","lardur","lardist"),
+    .fns = ~ replace(x = ., list = poorQual, values = NA) 
+  ))
+```
+
+```{r n_NAs, echo=TRUE, collapse=TRUE}
+NAObservations <- raw_data %>%
+  filter(poorQual == TRUE) %>% # Filter only rows with poor quality that have behavioural endpoint observations turned to NAs
+  nrow()
+NAObservations
+```
+`r NAObservations` 60-second observations (rows) were transformed to `NA`s across all of the behavioural endpoint observation variables.\
+\
+Overall, the animal recording set-up had an approximate failure-rate of `r round((NAObservations/nrow(raw_data))*100)` % -- the percentage of time the infrared camera failed to detect an animal when it was present in a well. 
+
+## Exploring & Visualizing
+
+### Pre-Processing
+
+```{r pre_process_1, echo=TRUE, class.source ='fold-hide', message=FALSE, warning=FALSE}
+# First defining an object that carries all dosing information (in mg/L) for each chemical, from the meta data
+doseData <- metaData %>%
+  select(plate_id, Dose1:Control) %>%
+  gather(key = Dose, value = "Dose_mg_L", Dose1:Control)
+
+# Second, creating new variables, re-ordering columns, removing columns that won't be used, and joining dose information
+fishBehavDat <- raw_data %>%
+  mutate(
+    time_end = end / 60, # time in minutes
+     Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE), # factoring dose info into ordered levels
+    is_VC = if_else(
+      condition = Dose == "Control",
+      true = 1,
+      false = 0
+    ),  # is vehicle control? Logical... (0|1)
+    animal = as.numeric(str_extract_all(animal, "[0-9]+")), # removes redundant 'Animal' in prefix in `animal` var
+    replicate = rep(c(1:9), times  = nrow(.) / 9), # replicate (1 through 9) for each dose group
+    embryo_id = paste(Dose, replicate, sep = "_"), # generic embryo identifier for use later in pipeline
+    activedur = lardur + smldur, # recalculating variable after poorQuality observations were removed
+    totaldist = lardist + smldist # recalculating variable after poorQuality observations were removed
+  ) %>%
+  inner_join(doseData) %>% # join dose info
+  select(plate_id, embryo_id, replicate, Dose, Dose_mg_L, is_VC, Group, time_end, inact, smlct, larct, inadur, smldur, lardur, activedur, smldist, lardist, totaldist, outliers)
+```
+
+```{r custom_ggplot_functions, include=FALSE, class.source ='fold-hide'}
+#Function for visualizing the 'variable' for each dose with a geom_smooth, faceted by chemical... each geom_smooth represents the mean of 9 fish from that dose group. All 50 minutes of the experiment by default
+gg_smooth_AllChems <- function (data, y, ylab, min_start = 0, min_end = 50) {
+  start <- c(20,30,40)
+  end <- c(25,35,45)
+  dark <- data.frame(start, end)
+  data %>%
+    filter(time_end >= min_start & time_end <= min_end) %>%
+    group_by(plate_id, Dose_mg_L, time_end) %>%
+    mutate_(meanvalue = interp(~ mean(na.omit(y)), y = as.name(y))) %>% # Must use lazy evaluation in the pipe and some depracated form of mutate_
+    summarise(meanvalue = unique(meanvalue)) %>%
+    ggplot(data = ., mapping = aes(x = time_end, y = meanvalue, group = Dose_mg_L)) +
+    geom_point(size = 0.1) +
+    geom_smooth(se = FALSE, aes(color = as.factor(Dose_mg_L))) +
+    scale_colour_viridis_d() +
+    geom_rect(data = dark, inherit.aes = FALSE, # Adding dark rectangles to represent the dark cycles
+              aes(xmin = start, xmax = end, ymin = -Inf, ymax = Inf),
+              fill = 'black', alpha = 0.2) +
+    geom_vline(xintercept = 20, linetype = "dashed") +
+    facet_wrap(~plate_id, ncol = 6, strip.position = "top", scales = "free") +
+    #theme_classic() +
+    theme(strip.background = element_blank(), panel.background = element_blank()) +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+    xlab("Time [min]") +
+    ylab(ylab) +
+    xlim(min_start, min_end) +
+    guides(color = guide_legend(title = "Dose (mg/L)"))
+}
+
+#And to get a better look at what is driving the observed effects, this next function will show a within-plates point of view... plotting individual fish in each dose group
+smooth_oneChem <- function (data, chemical, y, ylab, min_start = 0, min_end = 50) {
+  start <- c(20,30,40)
+  end <- c(25,35,45)
+  dark <- data.frame(start, end)
+yintercept <- mean(na.omit(filter(.data = data, plate_id == chemical)[[y]], Dose == "Control"))
+  data %>%
+    filter(time_end >= min_start & time_end <= min_end) %>%
+    filter(plate_id == chemical) %>%
+    group_by(plate_id, Dose_mg_L, time_end) %>%
+    mutate_(meanvalue = interp(~ mean(na.omit(y)), y = as.name(y))) %>%
+    ungroup() %>%
+    group_by(Dose_mg_L, replicate) %>%
+    ggplot(aes(x = time_end, y = .[[y]], group = as.factor(replicate), color = as.factor(replicate))) +
+    geom_line() +
+    scale_colour_viridis_d() +
+    geom_smooth(aes(x = time_end, y = meanvalue), se = FALSE, color = "black") +
+    geom_rect(data = dark, inherit.aes = FALSE,
+              aes(xmin = start, xmax = end, ymin = -Inf, ymax = Inf),
+              fill = 'black', alpha = 0.2) +
+    facet_wrap(~Dose_mg_L, ncol = 3) +
+    geom_vline(xintercept = 20, linetype = "dashed") +
+    geom_hline(yintercept = yintercept, linetype = "dashed", color = "red") +
+    theme(strip.background = element_blank(), panel.background = element_blank()) +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+    xlab("Time [min]") +
+    ylab(ylab) +
+    labs(title = chemical) +
+    xlim(min_start, min_end) +
+    theme(legend.position = "none")
+}
+```
+
+
+### ggplots -- All Chemicals (facet by `plate_id`)
+Figures 10 through 12 show the light and dark cycle behavioural data without any acclimation period. The potency of each chemical can be observed by the deepness/darkness of the color palette in each facet. For example ethinyl estradiol (EE2) is the most potent as it is a well-known estrogen receptor binder used in the medical field as an oral contraceptive. The least potent compounds are triethylene glycol (plasticizer, aerosol disinfectant & used in 'smoke machines') and NN-Dimetylformamide (industrial solvent for processing polymer fibers, films and surface coatings).\
+\
+The main purpose of figures 10 through 12 is to scan for differences between dose groups quickly for each chemical.
+
+#### Total Distance Variable -- `totaldist`
+
+Obvious observable dose differences from my naked eye:
+
+- 1-octanol (+'ve)
+- 4-tert pentylphenol (4TPP) (+'ve)
+- bisphenol-A (BPA) (+'ve)
+- dimethylsulfoxide (DMSO) (+'ve)
+- ethinyl estradiol (EE2) (+'ve)
+- fadrozole (+'ve)
+- flutamide (+'ve)
+- prochloraz (-'ve)
+- vinclozolin (+'ve)
+
+
+```{r ggplots_all_chems_totaldist, echo=FALSE, fig.align='center', fig.cap="Figure 10.", warning=FALSE, message=FALSE, out.height="150%", out.width="250%", fig.width=11, fig.height=6}
+gg_smooth_AllChems(data = fishBehavDat, y = "totaldist", ylab = "Total activity distance", min_start = 20)
+```
+
+#### Active Duration Variable -- `activedur`
+
+Obvious observable dose differences from my naked eye:
+
+- 1-octanol (+'ve)
+- 3,4 - dichloroanaline (34DCA) (-'ve)
+- 4-tert pentylphenol (4TPP) (+'ve)
+- dimethylformamide (DMSO) (-'ve)
+- fadrozole (+'ve)
+- prochloraz (-'ve)
+
+
+```{r ggplots_all_chems_activedur, echo=FALSE, fig.align='center', fig.cap="Figure 11.", warning=FALSE, message=FALSE, out.height="150%", out.width="250%", fig.width=11, fig.height=6}
+gg_smooth_AllChems(data = fishBehavDat, y = "activedur", ylab = "Active Duration", min_start = 20)
+```
+
+#### Inactive Counts Variable -- `inact`
+
+Obvious observable dose differences from my naked eye:
+
+- 1-octanol (-'ve)
+- 3,4 - dichloroanaline (34DCA) (-'ve)
+- 4-tert octophenol (4TOP) (-'ve)
+- 4-tert pentylphenol (4TPP) (-'ve)
+- dimethylformamide (DMSO) (-'ve)
+- fadrozole (-'ve)
+- fenitrothion (-'ve)
+- prochloraz (-'ve)
+
+Note: a negative change in inactivity counts represents hyperactivity
+```{r ggplots_all_chems_inact, echo=FALSE, fig.align='center', fig.cap="Figure 12.", warning=FALSE, message=FALSE,out.height="150%", out.width="250%", fig.width=11, fig.height=6}
+gg_smooth_AllChems(data = fishBehavDat, y = "inact", ylab = "Inactivity counts", min_start = 20)
+```
+
+### ggplots -- One Chemical (facet by `Dose`)
+
+Interesting chemicals from figure 10 through 12:
+
+- 4tert-pentylphenol (4TPP)
+- dimethylsulfoxide (DMSO)
+- fadrozole
+
+Figures 13 through 15 are just three examples of what should be done for every chemical to see if there are outlier individuals driving the effects or not. As well, when the smooth black line diverges from the red dashed horizontal line (the mean of all individuals across all dose groups), this means that the dose group is beginning to differ from the mean of the control group.
+
+#### `totaldist` Variable
+
+```{r ggplots_4TPP_totaldist, echo=FALSE, fig.align='center', fig.cap="Figure 13.", warning=FALSE, message=FALSE}
+smooth_oneChem(data = fishBehavDat, chemical = "4TPP", y = "totaldist", ylab = "Total activity distance", min_start = 20) #Seems that one fish is driving most of the effect. Probably best to remove these outliers and replace as NA
+```
+It can be seen from figure 13 that the highest dose (1mg/L) seems to induce some hyperactivity in fish that is slightly above the mean of the control group.
+
+```{r ggplots_DMSO_totaldist, echo=FALSE, fig.align='center', fig.cap="Figure 14.", warning=FALSE, message=FALSE}
+smooth_oneChem(data = fishBehavDat, chemical = "DMSO", y = "totaldist", ylab = "Total activity distance", min_start = 20) # A clearer pattern of effect of chemical dose on movement distance
+```
+Again, in figure 14, we can see that the highest dose group (10mg/L) seems to be associated with hyperactivity when compared the mean of the control group.
+
+```{r ggplots_Fadrozole_totaldist, echo=FALSE, fig.align='center', fig.cap="Figure 15.", warning=FALSE, message=FALSE}
+smooth_oneChem(data = fishBehavDat, chemical = "Fadrozole", y = "totaldist", ylab = "Total activity distance", min_start = 20) # A few individuals driving these effects in the highest dose
+```
+Finally, figure 15 shows a similar trend where the highest dose group (1mg/L) is associated with hyperactivity. Also notable, is that one fish from the lowest dose group seems to be naturally more active than the others in the same group.\
+\
+From these figures, I would conclude that individual effects could potentially be a confounding factor to the dose-response analysis. More replicates per dose group would have been beneficial for a higher throughput analysis of the effects of chemicals on the swim behaviour of fish at different doses.\
+\
+The next step of the analysis to first convert the raw behavioural data into similarity scores, then see if there are any statistically significant effects of chemicals on the swim behaviour of fish (ANCOVA), and then a post-hoc Dunnett's test to see what doses are statistically different from the control dose group.
+
+## Analysis
+
+```{r pre_processing_4_pipeline, include=FALSE}
+lfishBehavDat <- fishBehavDat %>%
+  mutate(value = .[[params$value]], dose = Dose_mg_L) %>%
+  filter(time_end > 20) %>% # For the analysis, we don't want the 20 minute acclimation period
+  mutate(time_end = time_end-20) %>% # Display time 1-30 minutes
+  select(plate_id, embryo_id, is_VC, time_end, value) %>%
+  na.omit() # Pipeline is picky about the data frame
+lfishBehavDat <- split(as.data.frame(lfishBehavDat), ~ plate_id) # Split into lists
+```
+
+The analysis pipeline included in this report was adapted from Hsieh et al 2018.
