@@ -47,13 +47,8 @@ summarystats_list <- lapply(simi_norm, summarystats)
 anova_list <- sapply(simi_norm, combinedanova)
 print(anova_list)
 
-<<<<<<< HEAD
-dunnett_list <- sapply(simi_norm, combineddunnett) %>%
-  setNames(., chemnames) %>% 
-=======
 dunnett_list <- sapply(simi_norm, combineddunnett) %>% 
   setNames(., chemnames) %>%
->>>>>>> 3db3f2a83664627f969312a2095ab7b7c96786c0
   as.array()
 print(dunnett_list)
 
