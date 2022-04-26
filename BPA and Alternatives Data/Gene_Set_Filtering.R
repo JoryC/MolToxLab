@@ -148,4 +148,9 @@ for(i in 1:nrow(geneset_BMD_df)){
   geneset_BMD_df[i,"p-value"] <- fisher_p_value[geneset_BMD_df[i,"Chemical"]]
 }
 
+geneset_BMD_df <- geneset_BMD_df %>%
+  group_by(Chemical) %>%
+  summarise(across("ZFIN Gene ID", ~paste(., collapse = ", ")),
+            across(c("BMD", "BMDL", "BMDU"), median))
+
 write.csv(geneset_BMD_df, "BMDExpressData/Output/geneset_BMD.csv", row.names = F)
