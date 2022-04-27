@@ -22,15 +22,50 @@ highestdoses <- unique(metadata[,c("chemical","dose")]) %>%
 
 
 ####Data Import####
-raw_data <- list()
-filenames <- list.files("BMDExpressData/BMD", pattern = ".txt")
 
-for (i in 1:length(chemnames)) {
-  raw_data[[chemnames[i]]] <-
-    read.table(paste0("BMDExpressData/BMD/", filenames[i]),
-               sep = "/t")
+# OLD IMPORT
+
+#raw_data <- list()
+#filenames <- list.files("BMDExpressData/BMD", pattern = ".txt")
+
+#for (i in 1:length(chemnames)) {
+#  raw_data[[chemnames[i]]] <-
+#    read.table(paste0("BMDExpressData/BMD/", filenames[i]),
+#               sep = "/t")
     # cleanupcolumns()
+#}
+
+
+
+# NEW IMPORT
+
+filenames <- list.files("BMDExpressData/BMD/orig", pattern = ".txt")
+
+# firt import "sloppy data' to identify what row starts with "Probe Id"
+row_start <- vector()
+for (i in 1:length(chemnames)) {
+  row_start[i] <-readLines(paste0("BMDExpressData/BMD/orig/", filenames[i]))# %>%
+  grepl("Probe Id.*", .) %>%
+    which()
 }
+
+# import data starting at correct line
+raw_data <- list()
+for (i in 1:length(chemnames)) {
+  raw_data[[i]] <-suppressWarnings(suppressMessages(  # suppresses annoying parsing error warnings/messages
+    read_delim(paste0("BMDExpressData/BMD/orig/", filenames[i]),
+               skip=row_start[i]-1,
+               delim="\t",
+               col_select=c("Probe Id",
+                            "BMD",
+                            "BMDL",
+                            "BMDU",
+                            "fitPValue"),
+               show_col_types = FALSE)
+  ))
+}
+
+
 
 #### FILTER DATA ####
 
