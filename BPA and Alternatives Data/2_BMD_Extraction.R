@@ -23,14 +23,13 @@ highestdoses <- unique(metadata[,c("chemical","dose")]) %>%
 
 ####Data Import####
 raw_data <- list()
-filenames <- list.files("BMDExpressData/BMD")
+filenames <- list.files("BMDExpressData/BMD", pattern = ".txt")
 
 for (i in 1:length(chemnames)) {
   raw_data[[chemnames[i]]] <-
     read.table(paste0("BMDExpressData/BMD/", filenames[i]),
-               header = TRUE,
-               sep = "\t") %>%
-    cleanupcolumns()
+               sep = "/t")
+    # cleanupcolumns()
 }
 
 #### FILTER DATA ####
@@ -107,8 +106,8 @@ for(i in 1:length(raw_data)){
 
 ####Data Export####
 
-#export tPoDs
-# write.table(tpod_values, file = "BMDExpressData/Output/tpod_values.txt", quote = FALSE, sep = "\t")
+# export tPoDs
+write.table(tpod_values, file = "BMDExpressData/Output/tpod_values.txt", quote = FALSE, sep = "\t")
 
 
 ##Export parameters
