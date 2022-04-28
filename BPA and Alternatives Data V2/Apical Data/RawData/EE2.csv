@@ -1,0 +1,19 @@
+Dose (µg/L),Replicate,Alive,Dead,Total Dead,Deformities,Total Deform,Hatched,Notes,Survival Rate,Deformity Rate,Hatch Rate
+1,A,16,1,4,1,2,16,"stunted development, Curved Spine",0.8,0.05,1
+1,B,14,0,5,0,1,14,"miscount, severely bent tail",0.736842105,0,1
+1,C,17,0,3,0,0,17,,0.85,0,1
+0.1,A,13,1,7,0,1,13,stunted development w/ severely bent tail,0.65,0,1
+0.1,B,18,0,2,0,0,18,,0.9,0,1
+0.1,C,18,0,2,2,2,18,"stunted development, Curved spine",0.9,0.1,1
+0.01,A,15,0,5,0,0,15,,0.75,0,1
+0.01,B,19,0,1,0,0,19,,0.95,0,1
+0.01,C,18,0,2,0,0,18,,0.9,0,1
+0.001,A,19,0,1,1,2,19,"stunted Development, Curved spine",0.95,0.05,1
+0.001,B,19,0,1,0,0,19,,0.95,0,1
+0.001,C,20,0,0,0,0,20,,1,0,1
+0.0001,A,16,0,3,0,0,16,miscount,0.842105263,0,1
+0.0001,B,15,0,4,0,0,15,,0.789473684,0,1
+0.0001,C,15,2,5,1,2,15,,0.75,0.05,1
+0,A,18,0,2,1,1,18,Curved Spines,0.9,0.05,1
+0,B,16,0,4,0,0,16,Curved spines,0.8,0,1
+0,C,17,0,2,0,0,17,miscount,0.894736842,0,1
