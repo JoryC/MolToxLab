@@ -1,0 +1,51 @@
+"Chemical","GO.Pathway.Gene.Set.Gene.ID","GO.Level","GO.Pathway.Gene.Set.Gene.Name","Fisher.s.Exact.Two.Tail","Percentage","BMD.Median","rank"
+"BPA","GO:0016053",5,"organic acid biosynthetic process",0.0040119,1.88,417.667,1
+"BPA","GO:0032787",7,"monocarboxylic acid metabolic process",0.014509,1.17,417.667,1
+"BPA","GO:0046394",6,"carboxylic acid biosynthetic process",0.003873,1.9,417.667,1
+"BPA","GO:0006357",8,"regulation of transcription by RNA polymerase II",0.041992,0.43,568.85,4
+"BPA","GO:0008237",5,"metallopeptidase activity",0.0048299,1.75,572.366,5
+"BPA","GO:0008238",5,"exopeptidase activity",0.00065587,3.53,572.366,5
+"BPAF","GO:0006836",5,"neurotransmitter transport",0.0415,6.52,1.66637,1
+"BPAF","GO:0008021",10,"synaptic vesicle",0.040151,5.19,1.94294,2
+"BPAF","GO:0030133",8,"transport vesicle",0.045431,4.31,2.24999,3
+"BPAF","GO:0070382",9,"exocytic vesicle",0.025367,5.05,2.24999,3
+"BPAF","GO:0030424",6,"axon",0.015584,5,2.746455,5
+"BPAF","GO:0005882",7,"intermediate filament",0.033984,5.48,2.775027,6
+"BPAF","GO:0099503",8,"secretory vesicle",0.026118,4.44,4.54299,7
+"BPAF","GO:0051091",8,"positive regulation of DNA-binding transcription factor activity",0.046159,6.25,4.60738,8
+"BPAF","GO:0014069",5,"postsynaptic density",0.020056,6.45,5.3461,9
+"BPAF","GO:0071478",5,"cellular response to radiation",0.017008,6.78,5.695255,10
+"BPAF","GO:0071482",6,"cellular response to light stimulus",0.0096685,8,5.695255,10
+"DES","GO:0007051",6,"spindle organization",0.011609,4.29,30.7771,1
+"DES","GO:0007600",5,"sensory perception",0.00035191,3.1,36.65065,2
+"DES","GO:0007601",7,"visual perception",0.0000066643,5.44,36.65065,2
+"DES","GO:0050953",6,"sensory perception of light stimulus",0.0000085246,5.26,36.65065,2
+"DES","GO:0030554",6,"adenyl nucleotide binding",0.046122,0.27,37.93535,5
+"DES","GO:0032559",6,"adenyl ribonucleotide binding",0.046055,0.27,37.93535,5
+"DES","GO:0050808",6,"synapse organization",0.020715,3.45,38.3719,7
+"DES","GO:0003924",8,"GTPase activity",0.0058385,2.19,41.759,8
+"DES","GO:0016462",6,"pyrophosphatase activity",0.036809,1.51,41.759,8
+"DES","GO:0016818",5,"hydrolase activity, acting on acid anhydrides, in phosphorus-containing anhydrides",0.040152,1.48,41.759,8
+"DES","GO:0017111",7,"nucleoside-triphosphatase activity",0.019404,1.73,41.759,8
+"EE2","GO:0048703",5,"embryonic viscerocranium morphogenesis",0.040265,3.77,0.2026992,1
+"EE2","GO:0032355",5,"response to estradiol",0.000010986,20,0.263674,2
+"EE2","GO:0006869",6,"lipid transport",0.0025209,4.15,0.290395,3
+"EE2","GO:0014070",5,"response to organic cyclic compound",0.0010589,6.32,0.290395,3
+"EE2","GO:0033993",5,"response to lipid",0.001011,5.43,0.317116,5
+"EE2","GO:0051050",5,"positive regulation of transport",0.020704,4.65,0.327391,6
+"EE2","GO:0032870",5,"cellular response to hormone stimulus",0.000000039516,12.66,0.336303,7
+"EE2","GO:0043627",5,"response to estrogen",0.000000000005793,29.41,0.336303,7
+"EE2","GO:0071391",6,"cellular response to estrogen stimulus",0.000000000001385,33.33,0.336303,7
+"EE2","GO:0071310",5,"cellular response to organic substance",0.000007884,5.42,0.35549,10
+"TGSH","GO:0019218",7,"regulation of steroid metabolic process",0.00076632,33.33,97.6323,1
+"TGSH","GO:0015485",5,"cholesterol binding",0.024223,10.34,318.324,2
+"TGSH","GO:0015850",6,"organic hydroxy compound transport",0.0022642,11.63,318.324,2
+"TGSH","GO:0015918",7,"sterol transport",0.018073,11.54,318.324,2
+"TGSH","GO:0030301",8,"cholesterol transport",0.016243,12,318.324,2
+"TGSH","GO:0032934",5,"sterol binding",0.045426,8.11,318.324,2
+"TGSH","GO:0008284",6,"positive regulation of cell population proliferation",0.019053,5.6,338.369,7
+"TGSH","GO:0045765",6,"regulation of angiogenesis",0.040431,5.75,338.369,7
+"TGSH","GO:0045766",7,"positive regulation of angiogenesis",0.031363,9.38,338.369,7
+"TGSH","GO:0050678",6,"regulation of epithelial cell proliferation",0.031363,9.38,338.369,7
+"TGSH","GO:0050679",7,"positive regulation of epithelial cell proliferation",0.011406,13.64,338.369,7
+"TGSH","GO:1904018",6,"positive regulation of vasculature development",0.031363,9.38,338.369,7

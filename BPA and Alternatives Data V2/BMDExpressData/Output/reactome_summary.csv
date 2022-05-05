@@ -1,0 +1,36 @@
+"Chemical","GO.Pathway.Gene.Set.Gene.ID","GO.Pathway.Gene.Set.Gene.Name","Fisher.s.Exact.Two.Tail","Percentage","BMD.Median","rank"
+"BPA","R-DRE-3700989","Transcriptional Regulation by TP53",0.01621,1.43,10.5824,1
+"BPA","R-DRE-212436","Generic Transcription Pathway",0.033686,0.82,270.5372,2
+"BPA","R-DRE-73857","RNA Polymerase II Transcription",0.042386,0.76,270.5372,2
+"BPA","R-DRE-392499","Metabolism of proteins",0.029515,0.61,478.035,4
+"BPA","R-DRE-6798695","Neutrophil degranulation",0.041264,1,534.307,5
+"BPAF","R-DRE-6805567","Keratinization",0.0068891,12.5,0.664554,1
+"BPAF","R-DRE-6809371","Formation of the cornified envelope",0.0068891,12.5,0.664554,1
+"BPAF","R-DRE-351202","Metabolism of polyamines",0.035614,6.82,366.871,3
+"BPAF","R-DRE-69206","G1/S Transition",0.037943,5.19,485.437,4
+"BPAF","R-DRE-68867","Assembly of the pre-replicative complex",0.042101,6.38,506.759,5
+"BPAF","R-DRE-450531","Regulation of mRNA stability by proteins that bind AU-rich elements",0.016862,6.67,602.0575,6
+"DES","R-DRE-1852241","Organelle biogenesis and maintenance",0.0052415,3.31,43.1083,1
+"DES","R-DRE-68877","Mitotic Prometaphase",0.032377,2.52,48.2892,2
+"DES","R-DRE-2467813","Separation of Sister Chromatids",0.039732,2.33,53.8198,3
+"DES","R-DRE-69618","Mitotic Spindle Checkpoint",0.0095001,4,53.8198,3
+"DES","R-DRE-69278","Cell Cycle, Mitotic",0.011531,1.81,58.6015,5
+"DES","R-DRE-68886","M Phase",0.0030685,2.38,58.6015,5
+"DES","R-DRE-69620","Cell Cycle Checkpoints",0.023241,2.14,59.3043,7
+"DES","R-DRE-1640170","Cell Cycle",0.006667,1.79,63.3832,8
+"DES","R-DRE-2555396","Mitotic Metaphase and Anaphase",0.0019755,3.21,63.3832,8
+"DES","R-DRE-68882","Mitotic Anaphase",0.0019201,3.23,63.3832,8
+"EE2","R-DRE-2046104","alpha-linolenic (omega3) and linoleic (omega6) acid metabolism",0.00039144,27.27,0.299907,1
+"EE2","R-DRE-2046106","alpha-linolenic acid (ALA) metabolism",0.00039144,27.27,0.299907,1
+"EE2","R-DRE-8978868","Fatty acid metabolism",0.040928,4.26,0.3633955,3
+"EE2","R-DRE-195258","RHO GTPase Effectors",0.037047,3.35,0.389188,4
+"TGSH","R-DRE-429914","Deadenylation-dependent mRNA decay",0.040507,9.09,354.295,1
+"TGSH","R-DRE-445717","Aquaporin-mediated transport",0.034502,9.68,454.916,2
+"TGSH","R-DRE-556833","Metabolism of lipids",0.0010767,5.25,458.2445,3
+"TGSH","R-DRE-8957322","Metabolism of steroids",0.014169,8.06,465.835,4
+"TGSH","R-DRE-191273","Cholesterol biosynthesis",0.00093465,33.33,465.835,4
+"TGSH","R-DRE-199992","trans-Golgi Network Vesicle Budding",0.0019248,12.82,494.27,6
+"TGSH","R-DRE-432720","Lysosome Vesicle Biogenesis",0.012072,14.29,494.27,6
+"TGSH","R-DRE-211859","Biological oxidations",0.045672,5.36,496.0795,8
+"TGSH","R-DRE-1430728","Metabolism",0.014161,3.4,501.455,9
+"TGSH","R-DRE-8856825","Cargo recognition for clathrin-mediated endocytosis",0.045311,6.9,506.81,10

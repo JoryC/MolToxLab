@@ -26,33 +26,11 @@ tPoD_values <- read.table(file = "BMDExpressData/Output/tpod_values.txt", header
 #### BMD HISTOGRAM #####
 
 # load BMD values for histograms 
-filenames <- list.files("BMDExpressData/BMD/", pattern = ".txt") %>% setNames(chemnames)
-#check to make sure filenames match chemnames
-
-# first import "sloppy data' to identify what row starts with "Probe Id"
-row_start <- vector()
-for (i in chemnames) {
-  row_start[i] <-readLines(paste0("BMDExpressData/BMD/", filenames[i])) %>%
-    grepl("Probe Id.*", .) %>%
-    which()
-}
-
-# import data starting at correct line
-raw_hist_data <- list()
-for (i in chemnames) {
-  raw_hist_data[[i]] <- suppressWarnings(suppressMessages(  # suppresses annoying parsing error warnings/messages
-    read_delim(paste0("BMDExpressData/BMD/", filenames[i]),
-               skip=row_start[i]-1,
-               delim="\t",
-               col_select=c("Probe Id",
-                            "BMD",
-                            "BMDL",
-                            "BMDU",
-                            "fitPValue"),
-               show_col_types = FALSE)
-  )) %>%
-    as.data.frame()
-}
+raw_hist_data <- raw_importer(file_path = "BMDExpressData/BMD/", 
+                              file_type = ".txt", 
+                              start_phrase = "Probe Id") %>%
+  lapply(cleanupcolumns) %>%
+  setNames(chemnames)
 
 # Filter
 filtered_hist_data <- list()
@@ -144,50 +122,12 @@ multiplot(plotlist = histPlots, layout = matrix(c(1:length(histPlots),NA), nrow=
 
 
 #### REACTOME ACCUMULATION PLOT ####
-# 
-# # load reactome data
-# raw_reactome_data <- list()
-# filenames <- list.files("BMDExpressData/REACTOME")
-# for(i in 1:length(chemnames)){
-#   raw_reactome_data[[chemnames[i]]] <- read.table(paste0("BMDExpressData/REACTOME/",filenames[i]),
-#                                                   header = TRUE,
-#                                                   sep = "\t") %>%
-#     cleanupcolumns_reactome()
-# }
-
-filenames <- list.files("BMDExpressData/REACTOME", pattern = ".txt") %>% setNames(chemnames)
-#check to make sure filenames match chemnames
-
-# first import "sloppy data' to identify what row starts with "Probe Id"
-row_start <- vector()
-for (i in chemnames) {
-  row_start[i] <-readLines(paste0("BMDExpressData/REACTOME/", filenames[i])) %>%
-    grepl("GO/Pathway/Gene Set/Gene ID", .) %>%
-    which()
-}
-
-# import data starting at correct line
-raw_reactome_data <- list()
-for (i in chemnames) {
-  raw_reactome_data[[i]] <- suppressWarnings(suppressMessages(  # suppresses annoying parsing error warnings/messages
-    read_delim(paste0("BMDExpressData/REACTOME/", filenames[i]),
-               skip=row_start[i]-1,
-               delim="\t",
-               col_select=c("GO/Pathway/Gene Set/Gene ID",
-                            "GO/Pathway/Gene Set/Gene Name",
-                            "All Genes (Expression Data)",
-                            "Genes That Passed All Filters",
-                            "Fisher's Exact Two Tail",
-                            "Percentage",
-                            "BMD Mean",
-                            "BMD Median",
-                            "BMD List"),
-               show_col_types = FALSE)
-  )) %>%
-    as.data.frame() %>%
-    rename_all(make.names)
-}
-
+# import data
+raw_reactome_data <- raw_importer(file_path = "BMDExpressData/REACTOME/", 
+                                                file_type = ".txt", 
+                                                start_phrase = "GO/Pathway/Gene Set/Gene ID") %>%
+  lapply(cleanupcolumns_reactome) %>%
+  setNames(chemnames)
 
 # filter data
 filtered_reactome_data <- list()
@@ -330,49 +270,11 @@ multiplot(plotlist=reactomePlots, layout = matrix(c(1:length(reactomePlots),NA),
 
 
 #### GO TERM ACCUMULATION PLOT ..... NOT GROUPED  ####
-# 
-# # load GO data
-# raw_go_data <- list()
-# filenames <- list.files("BMDExpressData/GO_TERM_CSV")
-# for(i in 1:length(chemnames)){
-#   raw_go_data[[chemnames[i]]] <- read.csv(paste0("BMDExpressData/GO_TERM_CSV/",filenames[i]), header = TRUE) %>%
-#     cleanupcolumns_goterm()
-# }
-
-filenames <- list.files("BMDExpressData/GO_TERM", pattern = ".txt") %>% setNames(chemnames)
-#check to make sure filenames match chemnames
-
-# first import "sloppy data' to identify what row starts with "Probe Id"
-row_start <- vector()
-for (i in chemnames) {
-  row_start[i] <-readLines(paste0("BMDExpressData/GO_TERM/", filenames[i])) %>%
-    grepl("GO/Pathway/Gene Set/Gene ID", .) %>%
-    which()
-}
-
-# import data starting at correct line
-raw_go_data <- list()
-for (i in chemnames) {
-  raw_go_data[[i]] <- suppressWarnings(suppressMessages(  # suppresses annoying parsing error warnings/messages
-    read_delim(paste0("BMDExpressData/GO_TERM/", filenames[i]),
-               skip=row_start[i]-1,
-               delim="\t",
-               col_select=c("GO/Pathway/Gene Set/Gene ID",
-                            "GO Level",
-                            "GO/Pathway/Gene Set/Gene Name",
-                            "All Genes (Expression Data)",
-                            "Genes That Passed All Filters",
-                            "Fisher's Exact Two Tail",
-                            "Percentage",
-                            "BMD Mean",
-                            "BMD Median",
-                            "BMD List"),
-               show_col_types = FALSE)
-  )) %>%
-    as.data.frame() %>%
-    rename_all(make.names)
-}
-
+raw_go_data <- raw_importer(file_path = "BMDExpressData/GO_TERM/", 
+                            file_type = ".txt", 
+                            start_phrase = "GO/Pathway/Gene Set/Gene ID") %>%
+  lapply(cleanupcolumns_goterm) %>%
+  setNames(chemnames)
 
 # filter data
 filtered_go_data <- list()

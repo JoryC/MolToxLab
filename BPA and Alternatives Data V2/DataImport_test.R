@@ -1,6 +1,6 @@
+library(tidyverse)
 
-
-raw_importer <- function(file_path, file_type, start_phrase, keep_cols = NULL){
+raw_importer <- function(file_path, file_type, start_phrase){
   
   #read file names
   filenames <- list.files(file_path, pattern = file_type)
@@ -20,7 +20,6 @@ raw_importer <- function(file_path, file_type, start_phrase, keep_cols = NULL){
       read_delim(paste0(file_path, filenames[i]),
                  skip=row_start[i]-1,
                  delim="\t",
-                 col_select = keep_cols,
                  show_col_types = FALSE) %>%
         as.data.frame() %>%
         rename_all(make.names)
@@ -40,6 +39,9 @@ BMDtest <- raw_importer(file_path = "BMDExpressData/BMD/",
                  file_type = ".txt", 
                  start_phrase = "Probe Id") %>% 
   lapply(cleanupcolumns)
+
+
+
 
 REACtest <- raw_importer(file_path = "BMDExpressData/REACTOME/",
                          file_type = ".txt",

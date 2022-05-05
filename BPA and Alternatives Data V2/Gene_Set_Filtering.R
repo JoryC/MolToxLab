@@ -19,13 +19,12 @@ highestdoses <- unique(metadata[,c("chemical","dose")]) %>%
   summarise_all(max)
 
 ####Data Import####
-raw_BMD<- list()
-filenames <- list.files("BMDExpressData/BMD")
+raw_BMD <- raw_importer(file_path = "BMDExpressData/BMD/", 
+                              file_type = ".txt", 
+                              start_phrase = "Probe Id") %>%
+  lapply(cleanupcolumns) %>%
+  setNames(chemnames)
 
-for(i in 1:length(chemnames)){
-  raw_BMD[[chemnames[i]]] <- read.table(paste0("BMDExpressData/BMD/",filenames[i]), header = TRUE, sep = "\t") %>%
-    cleanupcolumns()
-}
 
 # Filter
 filtered_BMD <- list()
@@ -142,15 +141,18 @@ for(i in chemnames){
 
 
 #Geneset BMD
-geneset_BMD_df <- bind_rows(geneset_BMD, .id = 'Chemical')
-
-for(i in 1:nrow(geneset_BMD_df)){
-  geneset_BMD_df[i,"p-value"] <- fisher_p_value[geneset_BMD_df[i,"Chemical"]]
-}
-
-geneset_BMD_df <- geneset_BMD_df %>%
+geneset_BMD_df <- bind_rows(geneset_BMD, .id = 'Chemical') %>%
   group_by(Chemical) %>%
   summarise(across("ZFIN Gene ID", ~paste(., collapse = ", ")),
-            across(c("BMD", "BMDL", "BMDU"), median))
+            across(c("BMD", "BMDL", "BMDU"), median)) %>%
+  inner_join(x = ., 
+             y = (fisher_p_value %>% 
+                    as.data.frame %>% 
+                    t %>% 
+                    as.data.frame %>% 
+                    rownames_to_column(var = "Chemical") %>%
+                    rename("p_value" = V1)),
+             by = "Chemical")
+
 
 write.csv(geneset_BMD_df, "BMDExpressData/Output/geneset_BMD.csv", row.names = F)
