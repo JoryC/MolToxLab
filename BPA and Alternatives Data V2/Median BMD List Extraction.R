@@ -18,14 +18,12 @@ highestdoses <- unique(metadata[,c("chemical","dose")]) %>%
 
 ####GO Term BMD Extraction####
 #Import
-go_raw_data <- list()
-go_filenames <- list.files("BMDExpressData/GO_TERM_CSV")
-for (i in 1:length(chemnames)) {
-  go_raw_data[[chemnames[i]]] <-
-    read.csv(paste0("BMDExpressData/GO_TERM_CSV/", go_filenames[i]),
-             header = TRUE) %>%
-    cleanupcolumns_goterm()
-}
+go_raw_data <- raw_importer(file_path = "BMDExpressData/GO_TERM/", 
+                                           file_type = ".txt", 
+                                           start_phrase = "GO/Pathway/Gene Set/Gene ID") %>%
+  lapply(cleanupcolumns_goterm) %>%
+  setNames(chemnames)
+
 
 #Filtering
 go_raw_data_filtered <- list()
@@ -49,14 +47,11 @@ for(i in chemnames){
 
 ####Reactome BMD Extraction####
 #Import
-reactome_raw_data <- list()
-reactome_filenames <- list.files("BMDExpressData/REACTOME_CSV")
-for (i in 1:length(chemnames)) {
-  reactome_raw_data[[chemnames[i]]] <-
-    read.csv(paste0("BMDExpressData/REACTOME_CSV/", reactome_filenames[i]),
-             header = TRUE) %>%
-    cleanupcolumns_reactome()
-}
+reactome_raw_data <- raw_importer(file_path = "BMDExpressData/REACTOME/", 
+                                                    file_type = ".txt", 
+                                                    start_phrase = "GO/Pathway/Gene Set/Gene ID") %>%
+  lapply(cleanupcolumns_reactome) %>%
+  setNames(chemnames)
 
 #Filtering
 reactome_raw_data_filtered <- list()
@@ -81,13 +76,11 @@ for(i in chemnames){
 
 ####Full BMD list####
 
-BMD_raw_data <- list()
-BMD_filenames <- list.files("BMDExpressData/BMD")
-
-for(i in 1:length(chemnames)){
-  BMD_raw_data[[chemnames[i]]] <- read.table(paste0("BMDExpressData/BMD/",BMD_filenames[i]), header = TRUE, sep = "\t") %>%
-    cleanupcolumns()
-}
+BMD_raw_data <- raw_importer(file_path = "BMDExpressData/BMD/", 
+                             file_type = ".txt", 
+                             start_phrase = "Probe Id") %>%
+  lapply(cleanupcolumns) %>%
+  setNames(chemnames)
 
 # Filter
 all_BMD_list_logtransformed <- list()
