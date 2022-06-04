@@ -798,14 +798,47 @@ fishBehavDatBin5 %>%
   mutate(Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>%
   filter(Cycle != "Acclimation") %>%
   group_by(Cycle, Dose) %>%
-  summarise(totaldist = mean(totaldist, na.rm = TRUE)) %>%
-  ggplot(aes(x = Cycle, y = totaldist, fill = Dose)) +
+  mutate(sd = sd(totaldist, na.rm = TRUE)) %>%
+  mutate(totaldist = mean(totaldist, na.rm = TRUE)) %>%
+  summarise(totaldist, sd) %>%
+  ggplot(aes(x = Cycle, y = totaldist, fill = Dose, color = Dose)) +
   geom_col(position = "dodge") +
+  geom_errorbar(aes(ymin = totaldist, ymax = totaldist+sd), width = .5, position = position_dodge(.9)) +
   scale_fill_viridis_d() +
   ylab("Mean Total Distance") +
   xlab("")
   
 ```
+
+```{r sumtotaldistance_binnedDat, echo=FALSE}
+fishBehavDatBin5 %>%
+  filter(plate_id == "DMSO") %>%
+  mutate(Cycle = factor(
+    Cycle,
+    levels = c(
+      "Acclimation",
+      "Light_1",
+      "Dark_1",
+      "Light_2",
+      "Dark_2",
+      "Light_3",
+      "Dark_3"
+    ),
+    ordered = TRUE
+  )) %>%
+  mutate(Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>%
+  filter(Cycle != "Acclimation") %>%
+  group_by(Cycle, Dose) %>%
+  summarise(se = (sd(totaldist)/(sqrt(length(totaldist)))), totaldist = sum(totaldist, na.rm = TRUE)) %>%
+  ggplot(aes(x = Cycle, y = totaldist, fill = Dose, color = Dose)) +
+  geom_col(position = "dodge") +
+  geom_errorbar(aes(ymin = totaldist-se, ymax = totaldist+se), position = position_dodge(.9), width = .2) +
+  scale_fill_viridis_d() +
+  ylab("Sum of Total Distance") +
+  xlab("")
+  
+```
+
 
 
 ## Analysis
