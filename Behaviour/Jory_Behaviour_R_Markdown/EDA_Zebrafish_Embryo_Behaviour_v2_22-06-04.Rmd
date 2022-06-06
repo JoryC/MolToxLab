@@ -204,22 +204,22 @@ raw_data <- raw_data %>%
 nrow(raw_data)
 ```
 After filtering for just the false values, there are now `r nrow(raw_data)` rows.\ 
-There are `r nrow(raw_data) - (96*50*26)` extra observations in `raw_data` because there are some extra observations past 50 minutes.\ 
+There are `r nrow(raw_data) - (96*50*29)` extra observations in `raw_data` because there are some extra observations past 50 minutes.\ 
 ```{r nrow_raw_data_filtered_2, echo=TRUE, collapse=TRUE}
 raw_data <- raw_data %>%
   filter(end <= 3000) # Deleting observations past 50 mins (3000 seconds)
 nrow(raw_data)
-identical(as.numeric(nrow(raw_data)), (96 * 50 * 26)) # is the expected number of rows consistent with the observed number of rows after processing?
+identical(as.numeric(nrow(raw_data)), (96 * 50 * 29)) # is the expected number of rows consistent with the observed number of rows after processing?
 ```
 After ensuring there are no observations past the 50-minute mark, there are now `r nrow(raw_data)` rows, as expected.
 
 #### Treatment-level NAs
-It is expected that wells 10:12, 22:24, 34:36, 46:48, 58:60, 70:96 will all be `NA` in the `Treatment` column because these are all empty wells (Figure 2). Each plate has  `r (3*6) + (12*2)` empty wells. This means that all `NA` treatments should be `r 42*50*26` observations long. After removing `NA`s there should be `r nrow(raw_data)-(42*50*26)` rows in `raw_data`.
+It is expected that wells 10:12, 22:24, 34:36, 46:48, 58:60, 70:96 will all be `NA` in the `Treatment` column because these are all empty wells (Figure 2). Each plate has  `r (3*6) + (12*2)` empty wells. This means that all `NA` treatments should be `r 42*50*29` observations long. After removing `NA`s there should be `r nrow(raw_data)-(42*50*29)` rows in `raw_data`.
 ```{r removeNAs, echo=TRUE, collapse=TRUE}
 raw_data <- raw_data %>%
   filter(Treatment != is.na(Treatment))
 nrow(raw_data)
-identical(as.numeric(nrow(raw_data)), (54 * 50 * 26)) # Does the expected number of rows match the observed number of rows after filtering?
+identical(as.numeric(nrow(raw_data)), (54 * 50 * 29)) # Does the expected number of rows match the observed number of rows after filtering?
 ```
 
 #### Variable Distributions & Outliers
@@ -306,11 +306,11 @@ Again, it can also be seen that the distributions of observations for each varia
 There are a few outliers in the data but they are a bit difficult to see in figure 6. Notably, large swim activity duration (plot 5 in figure 6) has 27 outliers past ~40 seconds. Taking a closer look at those outliers...
 ```{r lardur_outliers, echo=FALSE, warning=FALSE, message=FALSE}
 raw_data %>%
-  filter(lardur > 40) %>%
+  filter(lardur >= 40) %>%
   select(plate_id, animal, Treatment, lardur) %>%
   group_by(plate_id, Treatment, animal) %>%
   summarise(distance = mean(lardur)) %>%
-  kable(align = 'lllc', col.names = c("Chemical", "Individual", "Dose", "Large Activity Duration (seconds)"), caption = "Table 2. Summary of outliers in large swim activity duration variable (> 40s), showing only unique individuals") %>%
+  kable(align = 'lllc', col.names = c("Chemical", "Dose", "Individual", "Large Activity Duration (seconds)"), caption = "Table 2. Summary of outliers in large swim activity duration variable (> 40s), showing only unique individuals") %>%
   kable_styling(full_width = TRUE) %>%
   scroll_box()
 ```
@@ -318,10 +318,11 @@ From table 2, it can be seen that many of the hyperactivity observations come fr
 \
 Chemicals observed in extremely hyperactive individuals:
 
-- Bisphenol A (BPA) -- estrogen receptor binder
 - Dimethylformamide -- liver toxicity
 - Fadrozole -- aromatase inhibitor (estrogen blocker)
+- Fluoxetine -- Selective serotonin re-uptake inhibitor
 - Flutamide -- androgen antagonist (testosterone blocker)
+- Malathion -- Cholinesterase inhibiot (neurotoxic)
 - Vinclozolin -- androgen antagonist (testosterone blocker)
 
 Behavioural perturbation (hyperactivity) suggests that it is possible that these chemicals can effect the nervous system of individuals early on in development. However, it is wise to be cautious and not draw any conclusions yet without any sort of statistical analyses.\
@@ -365,15 +366,16 @@ raw_data %>%
   kable_styling(full_width = TRUE) %>%
   scroll_box()
 ```
-We see there are 3 chemicals in the extreme outliers, and that most of the individual animals are from the highest dose treatment group:\
+We see there are 4 chemicals in the extreme outliers, and that most of the individual animals are from the highest dose treatment group:\
 \
 Chemicals observed in extremely hyperactive individuals:
 
-- Bisphenol A (BPA) -- estrogen receptor binder
+- 17beta-Estradiol -- ER binder (estrogenic)
+- 4-chloro 3-methylphenol -- perhaps very weak ER or perhaps non-endocrine
 - Fadrozole -- aromatase inhibitor (estrogen blocker)
 - Vinclozolin -- androgen antagonist (testosterone blocker)
 
-Again, we see 3 of the same chemicals that are potentially inducing hyperactivity in the same individuals. However, as previously stated, these individuals are not representative of the rest of the population within their respective dose groups and no conclusions can be drawn yet!\
+Again, we see 2 of the same chemicals that are potentially inducing hyperactivity in the same individuals (fadrozole & vinclozilin). However, as previously stated, these individuals are not representative of the rest of the population within their respective dose groups and no conclusions can be drawn yet!\
 \
 It is important to also consider determining outliers not just between plates in the larger data frame, but within the same plate. 
 ```{r plate_distribution_visualizer, include=FALSE}
@@ -401,20 +403,8 @@ df %>%
 ```
 
 ```{r within_plate_outliers, echo=FALSE, fig.align='center', fig.cap="Figure 8. Example of within-plate outlier quick plots", warning=FALSE, message=FALSE, fig.height= 8, out.height="150%", out.width="125%"}
-#Summary of outliers: TGSH > 2000, Clofib > 2000, 17beta_estradiol > 2500, 24DMP > 2500, DES > 2500, DMF > 2500, EE2 > 2500, Fluoxetine > 2500, BPA > 3000, Fadrozole > 3500, Vinclozolin > 4000
+#Summary of outliers: TGSH > 2000, Clofib > 2000, 17beta_estradiol > 2500, 24DMP > 2500, DES > 2500, DMF > 2500, EE2 > 2500, Fluoxetine > 2500, BPA > 2500, Fadrozole > 3500, Vinclozolin > 4500
 grid.arrange((
-  distVis(
-    df = raw_data,
-    chem = "BPA",
-    var = "totaldist",
-    time_start = 20
-  ) + geom_vline(
-    xintercept = 3000,
-    linetype = c("blank", "dashed", "blank", "blank", "blank", "blank"),
-    color = "red"
-  )
-),
-(
   distVis(
     df = raw_data,
     chem = "Fadrozole",
@@ -433,7 +423,7 @@ grid.arrange((
     var = "totaldist",
     time_start = 20
   ) + geom_vline(
-    xintercept = 4000,
+    xintercept = 4500,
     linetype = c("blank", "dashed", "blank", "blank", "blank", "blank"),
     color = "red"
   )
@@ -458,20 +448,23 @@ raw_data <- raw_data %>%
 
 out_1 <- raw_data %>%
   filter(plate_id == "Vinclozolin") %>%
-  filter(totaldist >= 4000)
+  filter(totaldist >= 4500)
 out_2 <- raw_data %>%
   filter(plate_id == "Fadrozole") %>%
   filter(totaldist >= 3500)
 out_3 <- raw_data %>%
-  filter(plate_id == "BPA") %>%
-  filter(totaldist >= 3000)
+  filter(plate_id == "Trenbolone") %>%
+  filter(totaldist > 3000)
 out_4 <- raw_data %>%
-  filter(plate_id %in% c("Fluoxetine", "EE2", "DMF", "DES", "24DMP", "17beta_estradiol")) %>%
-  filter(totaldist >= 2500)
+  filter(plate_id %in% c("34DCA", "BPA")) %>%
+  filter(totaldist >= 2600)
 out_5 <- raw_data %>%
+  filter(plate_id %in% c("Fluoxetine", "EE2", "DMF", "DES", "24DMP", "24DNP", "4C3MP", "Malathion")) %>%
+  filter(totaldist >= 2500)
+out_6 <- raw_data %>%
   filter(plate_id %in% c("TGSH", "Clofibric_Acid")) %>%
   filter(totaldist >= 2000)
-out_totaldist <- rbind(out_1, out_2, out_3, out_4, out_5)
+out_totaldist <- rbind(out_1, out_2, out_3, out_4, out_5, out_6)
 
 raw_data <- raw_data %>%
   mutate(outliers = if_else(condition = (do.call(paste0, .) %in% do.call(paste0, out_totaldist)), true = TRUE, false = FALSE))
@@ -484,13 +477,13 @@ out_totaldist %>%
   arrange(desc(n)) %>%
   kable(col.names = c("Chemical", "Dose", "Number of outlier observations (totaldist)"), align = 'llr', caption = "Table 4. Summary of outliers in `raw_data` grouped by chemical and dose group") %>%
   kable_styling(full_width = TRUE) %>%
-  row_spec(c(1,2,3,7,16,17,19,20), background = "#e5e8ed") %>%
+  # row_spec(c(1,2,3,7,16,17,19,20), background = "#e5e8ed") %>%
   scroll_box(height = "400px")
 ```
 From this summary table it can be seen that there are three chemicals that make up the majority of all the outliers based on this deeper-dive into the within-plates data. Those chemicals with the highest proportions of outliers were:
 
-- Bisphenol-A
 - Fadrozole
+- 4-chloro 3-methylphenol -- Very weak ER/non-endocrine
 - Phenol, 4,4'-sulfonylbis[2-(2-propenyl)- (TGSH)
 
 It can also be noted that the most represented dose group in the outliers is dose group 1 (the highest dose):
@@ -599,12 +592,17 @@ gg_smooth_AllChems <- function (data, y, ylab, min_start = 0, min_end = 50) {
   dark <- data.frame(start, end)
   data %>%
     filter(time_end >= min_start & time_end <= min_end) %>%
-    group_by(plate_id, Dose_mg_L, time_end) %>%
+    group_by(plate_id, Dose, time_end) %>%
     mutate_(meanvalue = interp(~ mean(na.omit(y)), y = as.name(y))) %>% # Must use lazy evaluation in the pipe and some depracated form of mutate_
+     mutate(Dose = factor(
+    Dose,
+    levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"),
+    ordered = TRUE
+  )) %>%
     summarise(meanvalue = unique(meanvalue)) %>%
-    ggplot(data = ., mapping = aes(x = time_end, y = meanvalue, group = Dose_mg_L)) +
+    ggplot(data = ., mapping = aes(x = time_end, y = meanvalue, group = Dose)) +
     geom_point(size = 0.1) +
-    geom_smooth(se = FALSE, aes(color = as.factor(Dose_mg_L))) +
+    geom_smooth(se = FALSE, aes(color = as.factor(Dose))) +
     scale_colour_viridis_d() +
     geom_rect(data = dark, inherit.aes = FALSE, # Adding dark rectangles to represent the dark cycles
               aes(xmin = start, xmax = end, ymin = -Inf, ymax = Inf),
@@ -617,7 +615,7 @@ gg_smooth_AllChems <- function (data, y, ylab, min_start = 0, min_end = 50) {
     xlab("Time [min]") +
     ylab(ylab) +
     xlim(min_start, min_end) +
-    guides(color = guide_legend(title = "Dose (mg/L)"))
+    guides(color = guide_legend(title = "Dose Group"))
 }
 
 #And to get a better look at what is driving the observed effects, this next function will show a within-plates point of view... plotting individual fish in each dose group
@@ -661,17 +659,17 @@ The main purpose of figures 10 through 12 is to scan for differences between dos
 
 #### Total Distance Variable -- `totaldist`
 
-Obvious observable dose differences from my naked eye:
+<!-- Obvious observable dose differences from my naked eye: -->
 
-- 1-octanol (+'ve)
-- 4-tert pentylphenol (4TPP) (+'ve)
-- bisphenol-A (BPA) (+'ve)
-- dimethylsulfoxide (DMSO) (+'ve)
-- ethinyl estradiol (EE2) (+'ve)
-- fadrozole (+'ve)
-- flutamide (+'ve)
-- prochloraz (-'ve)
-- vinclozolin (+'ve)
+<!-- - 1-octanol (+'ve) -->
+<!-- - 4-tert pentylphenol (4TPP) (+'ve) -->
+<!-- - bisphenol-A (BPA) (+'ve) -->
+<!-- - dimethylsulfoxide (DMSO) (+'ve) -->
+<!-- - ethinyl estradiol (EE2) (+'ve) -->
+<!-- - fadrozole (+'ve) -->
+<!-- - flutamide (+'ve) -->
+<!-- - prochloraz (-'ve) -->
+<!-- - vinclozolin (+'ve) -->
 
 
 ```{r ggplots_all_chems_totaldist, echo=FALSE, fig.align='center', fig.cap="Figure 10. Behavioural data from the `totaldist` endpoint from the last 30 minutes of the assay where light and dark cycles stimulate fish to be active, and calm. The different colours represent different dose groups and the deep purple line on each facet represents the control group. Doses that perturb swimming activity in fish stand out from the internal control groups and others. Faceted by chemical (n = 26)", warning=FALSE, message=FALSE, out.height="150%", out.width="250%", fig.width=11, fig.height=6}
@@ -680,14 +678,16 @@ gg_smooth_AllChems(data = fishBehavDat, y = "totaldist", ylab = "Total activity 
 
 #### Active Duration Variable -- `activedur`
 
-Obvious observable dose differences from my naked eye:
+<!-- Obvious observable dose differences from my naked eye: -->
 
-- 1-octanol (+'ve)
-- 3,4 - dichloroanaline (34DCA) (-'ve)
-- 4-tert pentylphenol (4TPP) (+'ve)
-- dimethylformamide (DMSO) (-'ve)
-- fadrozole (+'ve)
-- prochloraz (-'ve)
+<!-- - 17beta-estradiol -->
+<!-- - 24DNP -->
+<!-- - 1-octanol (+'ve) -->
+<!-- - 3,4 - dichloroanaline (34DCA) (-'ve) -->
+<!-- - 4-tert pentylphenol (4TPP) (+'ve) -->
+<!-- - dimethylformamide (DMSO) (-'ve) -->
+<!-- - fadrozole (+'ve) -->
+<!-- - prochloraz (-'ve) -->
 
 
 ```{r ggplots_all_chems_activedur, echo=FALSE, fig.align='center', fig.cap="Figure 11. Behavioural data from the `activedur` endpoint from the last 30 minutes of the assay where light and dark cycles stimulate fish to be active, and calm. The different colours represent different dose groups and the deep purple line on each facet represents the control group. Doses that perturb swimming activity in fish stand out from the internal control groups and others. Faceted by chemical (n = 26)", warning=FALSE, message=FALSE, out.height="150%", out.width="250%", fig.width=11, fig.height=6}
@@ -696,16 +696,16 @@ gg_smooth_AllChems(data = fishBehavDat, y = "activedur", ylab = "Active Duration
 
 #### Inactive Counts Variable -- `inact`
 
-Obvious observable dose differences from my naked eye:
+<!-- Obvious observable dose differences from my naked eye: -->
 
-- 1-octanol (-'ve)
-- 3,4 - dichloroanaline (34DCA) (-'ve)
-- 4-tert octophenol (4TOP) (-'ve)
-- 4-tert pentylphenol (4TPP) (-'ve)
-- dimethylformamide (DMSO) (-'ve)
-- fadrozole (-'ve)
-- fenitrothion (-'ve)
-- prochloraz (-'ve)
+<!-- - 1-octanol (-'ve) -->
+<!-- - 3,4 - dichloroanaline (34DCA) (-'ve) -->
+<!-- - 4-tert octophenol (4TOP) (-'ve) -->
+<!-- - 4-tert pentylphenol (4TPP) (-'ve) -->
+<!-- - dimethylformamide (DMSO) (-'ve) -->
+<!-- - fadrozole (-'ve) -->
+<!-- - fenitrothion (-'ve) -->
+<!-- - prochloraz (-'ve) -->
 
 Note: a negative change in inactivity counts represents hyperactivity
 ```{r ggplots_all_chems_inact, echo=FALSE, fig.align='center', fig.cap="Figure 12. Behavioural data from the `inact` endpoint from the last 30 minutes of the assay where light and dark cycles stimulate fish to be active, and calm. The different colours represent different dose groups and the deep purple line on each facet represents the control group. Doses that perturb swimming activity in fish stand out from the internal control groups and others. Faceted by chemical (n = 26)", warning=FALSE, message=FALSE,out.height="150%", out.width="250%", fig.width=11, fig.height=6}
@@ -720,7 +720,7 @@ Interesting chemicals from figure 10 through 12:
 - dimethylsulfoxide (DMSO)
 - fadrozole
 
-Figures 13 through 15 are just three examples of what should be done for every chemical to see if there are outlier individuals driving the effects or not. As well, when the smooth black line diverges from the red dashed horizontal line (the mean of all individuals across all dose groups), this means that the dose group is beginning to differ from the mean of the control group.
+Figures 13 through 15 are just three examples of what can be done for every chemical to see if there are outlier individuals driving the effects or not. As well, when the smooth black line diverges from the red dashed horizontal line (the mean of all individuals across all dose groups), this means that the dose group is beginning to differ from the mean of the control group.
 
 #### `totaldist` Variable
 
@@ -779,6 +779,37 @@ fishBehavDatBin5 <- fishBehavDat %>%
   ))
 ```
 
+<!-- # ```{r meantotaldist_BinnedDat, echo=FALSE} -->
+<!-- # fishBehavDatBin5 %>% -->
+<!-- #   filter(plate_id == "DMSO") %>% -->
+<!-- #   mutate(Cycle = factor( -->
+<!-- #     Cycle, -->
+<!-- #     levels = c( -->
+<!-- #       "Acclimation", -->
+<!-- #       "Light_1", -->
+<!-- #       "Dark_1", -->
+<!-- #       "Light_2", -->
+<!-- #       "Dark_2", -->
+<!-- #       "Light_3", -->
+<!-- #       "Dark_3" -->
+<!-- #     ), -->
+<!-- #     ordered = TRUE -->
+<!-- #   )) %>% -->
+<!-- #   mutate(Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>% -->
+<!-- #   filter(Cycle != "Acclimation") %>% -->
+<!-- #   group_by(Cycle, Dose) %>% -->
+<!-- #   mutate(sd = sd(totaldist, na.rm = TRUE)) %>% -->
+<!-- #   mutate(totaldist = mean(totaldist, na.rm = TRUE)) %>% -->
+<!-- #   summarise(totaldist, sd) %>% -->
+<!-- #   ggplot(aes(x = Cycle, y = totaldist, fill = Dose, color = Dose)) + -->
+<!-- #   geom_col(position = "dodge") + -->
+<!-- #   geom_errorbar(aes(ymin = totaldist, ymax = totaldist+sd), width = .5, position = position_dodge(.9)) + -->
+<!-- #   scale_fill_viridis_d() + -->
+<!-- #   ylab("Mean Total Distance") + -->
+<!-- #   xlab("") -->
+<!-- #    -->
+<!-- # ``` -->
+
 ```{r meantotaldist_BinnedDat, echo=FALSE}
 fishBehavDatBin5 %>%
   filter(plate_id == "DMSO") %>%
@@ -798,21 +829,36 @@ fishBehavDatBin5 %>%
   mutate(Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>%
   filter(Cycle != "Acclimation") %>%
   group_by(Cycle, Dose) %>%
-  mutate(sd = sd(totaldist, na.rm = TRUE)) %>%
-  mutate(totaldist = mean(totaldist, na.rm = TRUE)) %>%
-  summarise(totaldist, sd) %>%
+  summarise(se = sd(totaldist, na.rm = TRUE)/sqrt(length(totaldist)), totaldist = mean(totaldist, na.rm = TRUE)) %>%
   ggplot(aes(x = Cycle, y = totaldist, fill = Dose, color = Dose)) +
   geom_col(position = "dodge") +
-  geom_errorbar(aes(ymin = totaldist, ymax = totaldist+sd), width = .5, position = position_dodge(.9)) +
+  geom_errorbar(aes(ymin = totaldist, ymax = totaldist+se), width = .5, position = position_dodge(.9)) +
   scale_fill_viridis_d() +
   ylab("Mean Total Distance") +
   xlab("")
   
 ```
-
-```{r sumtotaldistance_binnedDat, echo=FALSE}
-fishBehavDatBin5 %>%
+```{r Dunnett's_test, include=FALSE}
+cycle_filter <- c("Light_1",
+      "Dark_1",
+      "Light_2",
+      "Dark_2",
+      "Light_3",
+      "Dark_3")
+temp <- fishBehavDatBin5 %>%
+  mutate(Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>%
   filter(plate_id == "DMSO") %>%
+  filter(Cycle != "Acclimation") %>%
+  group_by(Cycle, Dose) %>%
+  as.data.frame() %>%
+  filter(Cycle == cycle_filter[i])
+temp_dun <- DunnettTest(totaldist ~ Dose, data = temp)
+names(temp_dun)[1] <- cycle_filter[i]
+dun_list[i] <- temp_dun
+```
+
+```{r summary_all_chems , echo=FALSE}
+summary_fishBehavDatBin <- fishBehavDatBin5 %>%
   mutate(Cycle = factor(
     Cycle,
     levels = c(
@@ -828,16 +874,47 @@ fishBehavDatBin5 %>%
   )) %>%
   mutate(Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>%
   filter(Cycle != "Acclimation") %>%
-  group_by(Cycle, Dose) %>%
-  summarise(se = (sd(totaldist)/(sqrt(length(totaldist)))), totaldist = sum(totaldist, na.rm = TRUE)) %>%
-  ggplot(aes(x = Cycle, y = totaldist, fill = Dose, color = Dose)) +
-  geom_col(position = "dodge") +
-  geom_errorbar(aes(ymin = totaldist-se, ymax = totaldist+se), position = position_dodge(.9), width = .2) +
-  scale_fill_viridis_d() +
-  ylab("Sum of Total Distance") +
-  xlab("")
-  
+  group_by(plate_id, Cycle, Dose) %>%
+  summarise(se = sd(.$params$value, na.rm = TRUE)/sqrt(length(.$params$value)), value = mean(.$params$value, na.rm = TRUE))
 ```
+
+
+
+
+
+
+
+
+
+
+<!-- # ```{r sumtotaldistance_binnedDat, echo=FALSE} -->
+<!-- # fishBehavDatBin5 %>% -->
+<!-- #   filter(plate_id == "DMSO") %>% -->
+<!-- #   mutate(Cycle = factor( -->
+<!-- #     Cycle, -->
+<!-- #     levels = c( -->
+<!-- #       "Acclimation", -->
+<!-- #       "Light_1", -->
+<!-- #       "Dark_1", -->
+<!-- #       "Light_2", -->
+<!-- #       "Dark_2", -->
+<!-- #       "Light_3", -->
+<!-- #       "Dark_3" -->
+<!-- #     ), -->
+<!-- #     ordered = TRUE -->
+<!-- #   )) %>% -->
+<!-- #   mutate(Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>% -->
+<!-- #   filter(Cycle != "Acclimation") %>% -->
+<!-- #   group_by(Cycle, Dose) %>% -->
+<!-- #   summarise(sd = sd(totaldist, na.rm = TRUE), totaldist = sum(totaldist, na.rm = TRUE)) %>% -->
+<!-- #   ggplot(aes(x = Cycle, y = totaldist, fill = Dose, color = Dose)) + -->
+<!-- #   geom_col(position = "dodge") + -->
+<!-- #   geom_errorbar(aes(ymin = totaldist-sd, ymax = totaldist+sd), position = position_dodge(.9), width = .5) + -->
+<!-- #   scale_fill_viridis_d() + -->
+<!-- #   ylab("Sum of Total Distance") + -->
+<!-- #   xlab("") -->
+<!-- #    -->
+<!-- # ``` -->
 
 
 
@@ -940,15 +1017,19 @@ dunnett_comb <- dunnett_comb %>%
     true = TRUE,
     false = FALSE
   ))
+```
+
+```{r Dunnett_results, echo=FALSE}
 # Any significant results?
 dunnett_comb %>%
   filter(is.significant == TRUE) %>%
   select(.id, dose, diff, pval) %>%
-  kable()
-# Total Distance - Nope
-```
-```{r Dunnett_message, echo=TRUE}
-# There are no statistically significant results with p < 0.05
+  kable(
+    col.names = c("Chemical", "Dose", "Difference in similarity score (+/- 100)", "P-value"),
+    align = 'llcr',
+    caption = "Table 7. Summary table of significant Dunnett's test results (p < 0.05) from the `totaldist` variable after controling for within-group variability"
+  ) %>%
+  kable_styling()
 ```
 
 
@@ -1001,7 +1082,8 @@ simi_norm_tib %>%
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
   facet_wrap( ~ plate_id, strip.position = "top") +
   theme(strip.background = element_blank(),
-        panel.background = element_blank())
+        panel.background = element_blank()) +
+  ylim(-100, 100)
 ```
 After running an ANCOVA, it can be seen that 4TPP comes back as significant. However, Dunnett's test does not return any results, so it can't be determined from the Dunnett's test which dose group is statistically different from the controls.\
 \
@@ -1025,7 +1107,7 @@ set.seed(42069)
 
 simi_norm_tib_4rcurvep_act <- combi_run_rcurvep(
   simi_norm_tib_4rcurvep,
-  n_samples = 100,
+  n_samples = 10, #Increase this number to 100 or 1000 for better results (takes a long time to run)
   keep_sets = "act_set",
   TRSH = seq(5, 95, by = 5),
   RNGE = -1000000
@@ -1056,14 +1138,20 @@ bmr_output$outcome %>%
   scroll_box()
 ```
 
-From the bootstrapping method, it seems that the benchmark response threshold should be set to `r bmr_output$outcome$bmr_ori`, but be cautious of doing so. In the future, there will be a visualizaiton of all of the simulated curves to try to visually determine if the BMR is appropriate.
+```{r lowest_BMR, include=FALSE}
+bmr_vect <- c(bmr_output$outcome$bmr_exp, bmr_output$outcome$bmr_ori)
+bmr_thresh <- sort(bmr_vect) %>%
+  min()
+```
+
+From the bootstrapping method, it seems that the benchmark response threshold should be set to `r bmr_thresh`, but be cautious of doing so. In the future, there will be a visualizaiton of all of the simulated curves to try to visually determine if the BMR is appropriate.
 
 ```{r calculating_benchmark_dose, include = FALSE}
 bmd_dat <- combi_run_rcurvep(
   simi_norm_tib_4rcurvep, 
-  n_samples = 100, 
+  n_samples = 10, #Increase this number to 100 or 1000 for better results (takes a long time to run)
   keep_sets = "act_set", 
-  TRSH = 40,
+  TRSH = bmr_thresh,
   RNGE = -1000000
 )
 ```
