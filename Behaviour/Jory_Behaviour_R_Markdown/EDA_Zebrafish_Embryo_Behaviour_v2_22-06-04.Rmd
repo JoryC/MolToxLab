@@ -743,7 +743,7 @@ From these figures, I would conclude that individual effects could potentially b
 \
 The next step of the analysis to first convert the raw behavioural data into similarity scores, then see if there are any statistically significant effects of chemicals on the swim behaviour of fish (ANCOVA), and then a post-hoc Dunnett's test to see what doses are statistically different from the control dose group.
 
-Histogram
+#### Histogram
 ```{r binning_fishBehavDat, include=FALSE}
 fishBehavDatBin5 <- fishBehavDat %>%
   mutate(Cycle = if_else(
@@ -810,54 +810,52 @@ fishBehavDatBin5 <- fishBehavDat %>%
 <!-- #    -->
 <!-- # ``` -->
 
-```{r meantotaldist_BinnedDat, echo=FALSE}
-fishBehavDatBin5 %>%
-  filter(plate_id == "DMSO") %>%
-  mutate(Cycle = factor(
-    Cycle,
-    levels = c(
-      "Acclimation",
-      "Light_1",
-      "Dark_1",
-      "Light_2",
-      "Dark_2",
-      "Light_3",
-      "Dark_3"
-    ),
-    ordered = TRUE
-  )) %>%
-  mutate(Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>%
-  filter(Cycle != "Acclimation") %>%
-  group_by(Cycle, Dose) %>%
-  summarise(se = sd(totaldist, na.rm = TRUE)/sqrt(length(totaldist)), totaldist = mean(totaldist, na.rm = TRUE)) %>%
-  ggplot(aes(x = Cycle, y = totaldist, fill = Dose, color = Dose)) +
-  geom_col(position = "dodge") +
-  geom_errorbar(aes(ymin = totaldist, ymax = totaldist+se), width = .5, position = position_dodge(.9)) +
-  scale_fill_viridis_d() +
-  ylab("Mean Total Distance") +
-  xlab("")
-  
-```
-```{r Dunnett's_test, include=FALSE}
+
+```{r Dunnett's_test, echo=FALSE}
 cycle_filter <- c("Light_1",
       "Dark_1",
       "Light_2",
       "Dark_2",
       "Light_3",
       "Dark_3")
-temp <- fishBehavDatBin5 %>%
-  mutate(Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>%
-  filter(plate_id == "DMSO") %>%
-  filter(Cycle != "Acclimation") %>%
-  group_by(Cycle, Dose) %>%
-  as.data.frame() %>%
-  filter(Cycle == cycle_filter[i])
-temp_dun <- DunnettTest(totaldist ~ Dose, data = temp)
-names(temp_dun)[1] <- cycle_filter[i]
-dun_list[i] <- temp_dun
+
+dun_list <- NULL
+dun_list_2 <- NULL
+for (j in 1:length(chemicalNames)) {
+  for (i in 1:6) {
+    temp <- fishBehavDatBin5 %>%
+      mutate(Dose = factor(
+        Dose,
+        levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"),
+        ordered = TRUE
+      )) %>%
+      filter(plate_id == chemicalNames[j]) %>%
+      filter(Cycle != "Acclimation") %>%
+      group_by(Cycle, Dose) %>%
+      as.data.frame() %>%
+      filter(Cycle == cycle_filter[i])
+    temp_dun <- DunnettTest(totaldist ~ Dose, data = temp)
+    new_row <- matrix(data = c(0,0,0,1), nrow = 1, ncol = 4, )
+    row.names(new_row) <- "Control-Control"
+    colnames(new_row) <- c("diff", "lwr.ci", "upr.ci", "pval")
+    
+    dun_list[[cycle_filter[i]]] <- temp_dun[[1]] %>% 
+      as.data.frame() %>%
+      rbind(new_row) %>%
+      rownames_to_column(var = "Dose")
+    
+  }
+  dun_list_2[[chemicalNames[j]]] <- ldply(dun_list, .id = "Cycle")
+}
+
+dunnett_binned <- ldply(dun_list_2, .id = "plate_id")
+
+dunnett_binned$Dose = substr(dunnett_binned$Dose,
+                           start = 1,
+                           stop = nchar(dunnett_binned$Dose) - 8) #Here we are fixing the dose column... the dose column has the test dose related to the control... but we just want to see what the test dose is without it giving us redundant information about the comparison to the control for every observation...
 ```
 
-```{r summary_all_chems , echo=FALSE}
+```{r summary_all_chems, include=FALSE}
 summary_fishBehavDatBin <- fishBehavDatBin5 %>%
   mutate(Cycle = factor(
     Cycle,
@@ -875,46 +873,83 @@ summary_fishBehavDatBin <- fishBehavDatBin5 %>%
   mutate(Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>%
   filter(Cycle != "Acclimation") %>%
   group_by(plate_id, Cycle, Dose) %>%
-  summarise(se = sd(.$params$value, na.rm = TRUE)/sqrt(length(.$params$value)), value = mean(.$params$value, na.rm = TRUE))
+  summarise(se = sd(totaldist, na.rm = TRUE)/sqrt(length(totaldist)), value = mean(totaldist, na.rm = TRUE))
 ```
 
+```{r dunnett_summary_all_chems, echo=FALSE}
+dunnett_binned$Cycle <-
+  factor(
+    dunnett_binned$Cycle,
+    levels = c(
+      "Acclimation",
+      "Light_1",
+      "Dark_1",
+      "Light_2",
+      "Dark_2",
+      "Light_3",
+      "Dark_3"
+    ),
+    ordered = TRUE
+  )
+dunnett_summary_all_chems <-
+  right_join(dunnett_binned, summary_fishBehavDatBin)
+dunnett_summary_all_chems$Dose <- factor(dunnett_summary_all_chems$Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)
+```
 
-
-
-
-
-
-
-
-
-<!-- # ```{r sumtotaldistance_binnedDat, echo=FALSE} -->
-<!-- # fishBehavDatBin5 %>% -->
-<!-- #   filter(plate_id == "DMSO") %>% -->
-<!-- #   mutate(Cycle = factor( -->
-<!-- #     Cycle, -->
-<!-- #     levels = c( -->
-<!-- #       "Acclimation", -->
-<!-- #       "Light_1", -->
-<!-- #       "Dark_1", -->
-<!-- #       "Light_2", -->
-<!-- #       "Dark_2", -->
-<!-- #       "Light_3", -->
-<!-- #       "Dark_3" -->
-<!-- #     ), -->
-<!-- #     ordered = TRUE -->
-<!-- #   )) %>% -->
-<!-- #   mutate(Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>% -->
-<!-- #   filter(Cycle != "Acclimation") %>% -->
-<!-- #   group_by(Cycle, Dose) %>% -->
-<!-- #   summarise(sd = sd(totaldist, na.rm = TRUE), totaldist = sum(totaldist, na.rm = TRUE)) %>% -->
-<!-- #   ggplot(aes(x = Cycle, y = totaldist, fill = Dose, color = Dose)) + -->
-<!-- #   geom_col(position = "dodge") + -->
-<!-- #   geom_errorbar(aes(ymin = totaldist-sd, ymax = totaldist+sd), position = position_dodge(.9), width = .5) + -->
-<!-- #   scale_fill_viridis_d() + -->
-<!-- #   ylab("Sum of Total Distance") + -->
-<!-- #   xlab("") -->
-<!-- #    -->
-<!-- # ``` -->
+```{r meantotaldist_BinnedDat, echo=FALSE}
+for (k in 1:length(chemicalNames)) {
+  p <- dunnett_summary_all_chems %>%
+    filter(plate_id == chemicalNames[k]) %>%
+    ggplot(aes(
+      x = Cycle,
+      y = value,
+      fill = Dose,
+    )) +
+    geom_col(position = "dodge") +
+    geom_errorbar(aes(ymin = value + se, ymax = value + se),
+                  width = .5,
+                  position = position_dodge(0.9)) +
+    geom_linerange(aes(ymin = value, ymax = value + se, group = Dose), position = position_dodge(width = 0.9)) +
+    scale_fill_viridis_d() +
+    scale_colour_viridis_d() +
+    geom_text(
+      aes(
+        label = if_else(
+          condition = pval > 0.1,
+          true = "",
+          false = if_else(
+            condition = pval <= 0.1 &
+              pval > 0.05,
+            true = ".",
+            if_else(
+              condition = pval <= 0.05 &
+                pval > 0.01,
+              true = "*",
+              false = if_else(
+                condition = pval <= 0.01 &
+                  pval > 0.001,
+                true = "**",
+                false = if_else(pval <= 0.001 &
+                                  pval > 0, true = "***", false = "")
+              )
+            )
+          )
+        ),
+        group = Dose,
+        y = value + se + 50
+      ),
+      position = position_dodge(width = 0.9),
+      color = "black",
+      size = 3.75
+    ) +
+    ylab("Mean Total Distance") +
+    xlab("") +
+    labs(title = chemicalNames[k]) +
+    theme_classic()
+  
+  print(p)
+}
+```
 
 
 
