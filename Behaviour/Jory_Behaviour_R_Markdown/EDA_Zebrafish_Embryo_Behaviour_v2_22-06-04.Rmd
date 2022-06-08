@@ -1283,7 +1283,7 @@ for (k in 1:length(chemicalNames)) {
 }
 ```
 
-## Analysis - Part 2
+## Analysis
 
 ```{r pre_processing_4_pipeline, include=FALSE}
 lfishBehavDat <- fishBehavDat %>%
@@ -1536,16 +1536,26 @@ sum_bmd_dat$act_summary %>%
 
 From table 8 it can be seen that this method was not very effective on the current data set likely due to the very low doses used in the chemical exposure study. However, by using the low confidence BMDs, some additional figures will be made to illustrate where the dose-response data is crossing the benchmark response threshold to calculate the BMD.\
 
+\
+This concludes the report. Thank you for reading.\
+\
+Stay updated! Check out my [github repo](https://github.com/JoryC/MolToxLab).
 
-## Analysis
+##Analysis - editting
 
 ```{r pre_processing_4_pipeline, include=FALSE}
 lfishBehavDat <- fishBehavDat %>%
   mutate(value = .[[params$value]], dose = Dose_mg_L) %>%
   filter(time_end > 20) %>% # For the analysis, we don't want the 20 minute acclimation period
-  mutate(time_end = time_end-20) %>% # Display time 1-30 minutes
-  select(plate_id, embryo_id, is_VC, time_end, value) %>%
-  na.omit() # Pipeline is picky about the data frame
+  mutate(time_end = time_end-20) %>%
+  group_by(plate_id, dose, embryo_id) %>%
+  summarise(value = mean(value, na.rm = TRUE)) %>%
+  mutate(time_end = 1, is_VC = if_else(condition = dose == 0, true = TRUE, false = FALSE)) %>%
+  as.data.frame() %>%
+  ungroup() %>%
+  select(plate_id, embryo_id, is_VC, time_end, value)
+  
+  
 lfishBehavDat <- split(as.data.frame(lfishBehavDat), ~ plate_id) # Split into lists
 ```
 
@@ -1556,7 +1566,7 @@ The general workflow is to first, calculate similarity scores (pearson's correla
 This report has been paramaterized to easily adjust what variables (columns) will be analyzed and what similarity metric will be used to calculate the similarity scores (pearson, spearman, euclidean, and cosine).
 
 ```{r simi_endpoints, include = FALSE}
-simi_endps <- list(seq(1, 30, by = 1)) #One per minute
+simi_endps <- list(seq(1, 1, by = 1)) #One per minute
 names(simi_endps) <- params$metric
 simi_endpoints <- list()
 for (i in chemicalNames) {
