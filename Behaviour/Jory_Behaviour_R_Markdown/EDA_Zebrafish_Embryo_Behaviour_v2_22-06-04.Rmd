@@ -1,5 +1,5 @@
 ---
-title: "EDA Zebrafish Embryo Behaviour Assay"
+title: "Exploratory Data Analysis: Zebrafish Embryo Behaviour Assay"
 author: "Jory Curry"
 date: "`r format(Sys.time(), '%d %B %Y')`"
 output: 
@@ -533,9 +533,9 @@ However, removing these outliers from the data set could be artificially masking
 <!-- ``` -->
 
 ### Evaluating Data Quality
-Figure 6 showed that the `emptydur` variable can be used reliably to filter out observations with poor data quality. The 'empty duration' variable ranges from 0s to 60s and indicates how long the observation was not able to detect a fish in the well. An arbitrary cutoff value of `r 60*0.05` seconds will be used to determine if an observation was of poor-quality and therefore, should be converted to `NA`. By doing this, the confidence in the accuracy of observations can be increased across the entire data set.
+Figure 6 showed that the `emptydur` variable can be used reliably to filter out observations with poor data quality. The 'empty duration' variable ranges from 0s to 60s and indicates how long the observation was not able to detect a fish in the well. An arbitrary cutoff value of `r 60*0.25` seconds will be used to determine if an observation was of poor-quality and therefore, should be converted to `NA`. By doing this, the confidence in the accuracy of observations can be increased across the entire data set.
 ```{r poor_quality_cutoff, echo=FALSE}
-qualityCutoff <- (60*0.05)
+qualityCutoff <- (round(60*0.33))
 raw_data <- raw_data %>%
   mutate(poorQual = if_else(condition = emptydur >= qualityCutoff, true = TRUE, false = FALSE)) %>%
   mutate(across(
@@ -1563,10 +1563,13 @@ sum_bmd_dat$act_summary %>%
   select(chemical, lowest_conc, highest_conc, POD_cil, POD_med, POD_ciu, hit_confidence) %>%
   kable(col.names = c("Chemical", "Low Dose", "High Dose", "BMD - low confidence", "BMD", "BMD - high confidence", "Hit Confidence"), caption = "Table 8. Summary of all the benchmark doses (BMDs) of every chemical") %>%
   kable_styling() %>%
+  row_spec(which(sum_bmd_dat$act_summary$POD_med < sum_bmd_dat$act_summary$highest_conc), bold = TRUE, background = "gray") %>%
   scroll_box()
 ```
 
 From table 8 it can be seen that this method was not very effective on the current data set likely due to the very low doses used in the chemical exposure study. However, by using the low confidence BMDs, some additional figures will be made to illustrate where the dose-response data is crossing the benchmark response threshold to calculate the BMD.\
+\
+It is notable that certain chemicals had a BMD successfully calculated (highlighted in gray), including 4TPP which came back as statistically signficant from the ANCOVA, but not Malathion.
 
 
 ## Analysis - Similarity - Light bin
@@ -1825,10 +1828,10 @@ sum_bmd_dat$act_summary %>%
   select(chemical, lowest_conc, highest_conc, POD_cil, POD_med, POD_ciu, hit_confidence) %>%
   kable(col.names = c("Chemical", "Low Dose", "High Dose", "BMD - low confidence", "BMD", "BMD - high confidence", "Hit Confidence"), caption = "Table 8. Summary of all the benchmark doses (BMDs) of every chemical") %>%
   kable_styling() %>%
+   row_spec(which(sum_bmd_dat$act_summary$POD_med < sum_bmd_dat$act_summary$highest_conc), bold = TRUE, background = "gray") %>%
   scroll_box()
 ```
 
-From table 8 it can be seen that this method was not very effective on the current data set likely due to the very low doses used in the chemical exposure study. However, by using the low confidence BMDs, some additional figures will be made to illustrate where the dose-response data is crossing the benchmark response threshold to calculate the BMD.\
 
 
 ## Analysis - Similarity - Dark Cycle
@@ -1908,7 +1911,8 @@ ancova_comb %>%
     align = 'llrr',
     caption = "Table 6. Summary table of significant ANCOVA results (p < 0.05) from the `totaldist` variable after controling for within-group variability"
   ) %>%
-  kable_styling()
+  kable_styling() %>%
+  scroll_box()
 # Total distance - 17beta_estradiol and Glyphosate
 ```
 
@@ -2008,7 +2012,7 @@ simi_norm_tib %>%
         panel.background = element_blank()) +
   ylim(-100, 100)
 ```
-After running an ANCOVA, it can be seen that 17beta estradiol and Glyphosate come back as significant. However, Dunnett's test does not return any results, so it can't be determined from the Dunnett's test which dose group is statistically different from the controls.\
+After running an ANCOVA, it can be seen that 1-decanol, fadrozole, fluoxetine and malathion all come back as significant. However, Dunnett's test does not return any results, so it can't be determined from the Dunnett's test which dose group is statistically different from the controls.\
 \
 However, it should still be possible to calculate a benchmark dose for each chemical.
 
@@ -2026,14 +2030,14 @@ simi_norm_tib_4rcurvep <- simi_norm_tib %>%
 Since we do not know what the benchmark response is for each one of the chemicals, a method will be used that can estimate a benchmark response based off of the given data. This method uses bootstrapping to 100s to 1000s of curves that will help determine what a good estimate is for the benchmark response. This process can be a bit time-intensive to run.
 
 ```{r estimating_BMR, echo=FALSE, warning=FALSE, message=FALSE}
-set.seed(420)
+set.seed(9)
 
 simi_norm_tib_4rcurvep_act <- combi_run_rcurvep(
   simi_norm_tib_4rcurvep,
   n_samples = 10, #Increase this number to 100 or 1000 for better results (takes a long time to run)
   keep_sets = "act_set",
   TRSH = seq(5, 95, by = 5),
-  RNGE = -1000000
+  RNGE = 1000000 # Changing direction for dark cycle since most fish are becoming more active during the dark and with increasing chemical exposure doses...
 )
 ```
 
@@ -2091,6 +2095,7 @@ sum_bmd_dat$act_summary %>%
   select(chemical, lowest_conc, highest_conc, POD_cil, POD_med, POD_ciu, hit_confidence) %>%
   kable(col.names = c("Chemical", "Low Dose", "High Dose", "BMD - low confidence", "BMD", "BMD - high confidence", "Hit Confidence"), caption = "Table 8. Summary of all the benchmark doses (BMDs) of every chemical") %>%
   kable_styling() %>%
+      row_spec(which(sum_bmd_dat$act_summary$POD_med < sum_bmd_dat$act_summary$highest_conc), bold = TRUE, background = "gray") %>%
   scroll_box()
 ```
 
