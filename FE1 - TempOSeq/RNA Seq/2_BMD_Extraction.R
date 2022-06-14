@@ -22,16 +22,58 @@ highestdoses <- unique(metadata[,c("chemical","dose")]) %>%
 
 
 ####Data Import####
-raw_data <- list()
-filenames <- list.files("BMDExpressData/BMD")
 
-for (i in 1:length(chemnames)) {
-  raw_data[[chemnames[i]]] <-
-    read.table(paste0("BMDExpressData/BMD/", filenames[i]),
-               header = TRUE,
-               sep = "\t") %>%
-    cleanupcolumns()
+# OLD IMPORT
+
+#raw_data <- list()
+#filenames <- list.files("BMDExpressData/BMD", pattern = ".txt")
+
+#for (i in 1:length(chemnames)) {
+#  raw_data[[chemnames[i]]] <-
+#    read.table(paste0("BMDExpressData/BMD/", filenames[i]),
+#               sep = "/t")
+    # cleanupcolumns()
+#}
+
+
+
+# NEW IMPORT
+
+filenames <- list.files("BMDExpressData/BMD/", pattern = ".txt") %>% setNames(chemnames)
+#check to make sure filenames match chemnames
+
+# first import "sloppy data' to identify what row starts with "Probe Id"
+row_start <- vector()
+for (i in chemnames) {
+  row_start[i] <-readLines(paste0("BMDExpressData/BMD/", filenames[i])) %>%
+  grepl("Probe ID.*", .) %>%
+    which()
 }
+
+# import data starting at correct line
+raw_data <- list()
+for (i in chemnames) {
+  raw_data[[i]] <- suppressWarnings(suppressMessages(  # suppresses annoying parsing error warnings/messages
+    read_delim(paste0("BMDExpressData/BMD/", filenames[i]),
+               skip=row_start[i]-1,
+               delim="\t",
+               col_select=c("Probe ID",
+                            "Best BMD",
+                            "Best BMDL",
+                            "Best BMDU",
+                            "Best fitPValue"),
+               show_col_types = FALSE) %>%
+      rename("Probe Id" ="Probe ID", "BMD"="Best BMD","BMDL"="Best BMDL","BMDU"="Best BMDU","fitPValue"="Best fitPValue")
+  )) %>%
+    as.data.frame()
+}
+
+
+# need to rename the columns to work with script (did BMDExpress change the column names?)
+
+
+
+
 
 #### FILTER DATA ####
 
@@ -107,49 +149,52 @@ for(i in 1:length(raw_data)){
 
 ####Data Export####
 
-#export tPoDs
-# write.table(tpod_values, file = "BMDExpressData/Output/tpod_values.txt", quote = FALSE, sep = "\t")
+# export tPoDs
+write.table(tpod_values, file = "BMDExpressData/Output/tpod_values.txt", 
+            quote = FALSE, 
+            row.names = F,
+            sep = "\t")
 
-
-##Export parameters
-#save tPoD figures? T or F. If F, will only display then
-savefigures <- F
-#plot all plots together?
-multiplot <- TRUE
-
-if(multiplot == TRUE && savefigures == TRUE){
-  png(filename = paste0("tPoD Figures/multiplot_tPoD.png"), width = 1000*length(chemnames), height = 500)
-}
-
-if(multiplot == TRUE){
-  par(mfrow = c(1,length(chemnames)))
-} else {
-  par(mfrow = c(1,1))
-}
-
-for(i in 1:length(raw_data_filtered)){
-  #i<-1
-  if(savefigures == TRUE && multiplot == FALSE){
-    png(filename = paste0("tPoD Figures/", chemnames[i], "_tPoD.png"), width = 1000, height = 500)
-  }
-  hist(raw_data_filtered[[i]]$logBMD,
-       breaks=histBreaks[[i]],
-       prob=TRUE,
-       main=names(raw_data_filtered)[i],
-       xlim = c(log10(lowestdoses$dose[i]),log10(highestdoses$dose[i])),
-       xlab = "logBMD"
-       )
-  lines(density(raw_data_filtered[[i]]$logBMD, bw=dataModes[[i]]$bw), col=hsv(0.5,1,0.8,0.4), lwd=3)
-  abline(v=log10(lowestdoses[i,"dose"]), col="red", lwd = 3)
-  abline(v=tpod_values[i, "first_mode"], col = "blue", lwd = 3)
-  abline(v=tpod_values[i, "10th_percentile"], col = "green", lwd = 3)
-  abline(v=tpod_values[i, "20th_gene"], col = "purple", lwd = 3)
-  if(savefigures == TRUE && multiplot == FALSE){
-    dev.off()
-  }
-}
-if(savefigures == TRUE && multiplot == TRUE){
-  dev.off()
-}
-
-
+# 
+# ##Export parameters
+# #save tPoD figures? T or F. If F, will only display then
+# savefigures <- F
+# #plot all plots together?
+# multiplot <- TRUE
+# 
+# if(multiplot == TRUE && savefigures == TRUE){
+#   png(filename = paste0("tPoD Figures/multiplot_tPoD.png"), width = 1000*length(chemnames), height = 500)
+# }
+# 
+# if(multiplot == TRUE){
+#   par(mfrow = c(1,length(chemnames)))
+# } else {
+#   par(mfrow = c(1,1))
+# }
+# 
+# for(i in 1:length(raw_data_filtered)){
+#   #i<-1
+#   if(savefigures == TRUE && multiplot == FALSE){
+#     png(filename = paste0("tPoD Figures/", chemnames[i], "_tPoD.png"), width = 1000, height = 500)
+#   }
+#   hist(raw_data_filtered[[i]]$logBMD,
+#        breaks=histBreaks[[i]],
+#        prob=TRUE,
+#        main=names(raw_data_filtered)[i],
+#        xlim = c(log10(lowestdoses$dose[i]),log10(highestdoses$dose[i])),
+#        xlab = "logBMD"
+#        )
+#   lines(density(raw_data_filtered[[i]]$logBMD, bw=dataModes[[i]]$bw), col=hsv(0.5,1,0.8,0.4), lwd=3)
+#   abline(v=log10(lowestdoses[i,"dose"]), col="red", lwd = 3)
+#   abline(v=tpod_values[i, "first_mode"], col = "blue", lwd = 3)
+#   abline(v=tpod_values[i, "10th_percentile"], col = "green", lwd = 3)
+#   abline(v=tpod_values[i, "20th_gene"], col = "purple", lwd = 3)
+#   if(savefigures == TRUE && multiplot == FALSE){
+#     dev.off()
+#   }
+# }
+# if(savefigures == TRUE && multiplot == TRUE){
+#   dev.off()
+# }
+# 
+# 

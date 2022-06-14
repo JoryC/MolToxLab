@@ -1,4 +1,34 @@
 #### BMD Functions ####
+# Import Files
+raw_importer <- function(file_path, file_type, start_phrase){
+  
+  #read file names
+  filenames <- list.files(file_path, pattern = file_type)
+  
+  #collect the starting row for each file
+  row_start <- vector()
+  for(i in 1:length(filenames)){
+    row_start[i] <- readLines(paste0(file_path, filenames[i])) %>%
+      grepl(start_phrase, .) %>%
+      which()
+  }
+  
+  #importing the data
+  raw_data <- list()
+  for (i in 1:length(filenames)) {
+    raw_data[[filenames[i]]] <- suppressWarnings(suppressMessages(  # suppresses annoying parsing error warnings/messages
+      read_delim(paste0(file_path, filenames[i]),
+                 skip=row_start[i]-1,
+                 delim="\t",
+                 show_col_types = FALSE) %>%
+        as.data.frame() %>%
+        rename_all(make.names)
+      
+    ))
+  }
+  return(raw_data)
+}
+
 # Clean up columns during import
 cleanupcolumns <- function(x){
   x %>%
