@@ -1,7 +1,5 @@
 #### Git ####
 
-////////////////////Wow//////////////////////
-
 
 #### Basic Workflow ####
 #Git is a Version control system tool
@@ -130,7 +128,7 @@ git checkout -- .           #Revert all files in a directory to their previous v
 #Undo all your changes and unstage
 git reset       #Will unstage everything
 git reset HEAD data         #will unsstage any files in the data directory
-git reser HEAD path/to/file         #unstage a file and its changes
+git reset HEAD path/to/file         #unstage a file and its changes
 
 
 

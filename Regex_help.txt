@@ -1,0 +1,48 @@
+#Regular Expressions
+#regex or regexp are a set of characters used to check patterns in strings
+. ------------------------ #Replaces any character
+^ ------------------------ #Matches start of string
+$ ------------------------ #Matches end of string
+* ------------------------ #Matches up zero or more times the preceeding character(s)
+\ ------------------------ #Represents special characters
+() ----------------------- #Groups regular expressions
+? ------------------------ #Matches up exactly one character
+
+    #Interval Regular Expressions
+    {n} ---------------------- #Matches the preceeding character(s) appearing 'n' times exactly
+    {n,m} -------------------- #Matches the preceeding character(s) appearing 'n' times but not more than m times
+    {n,} --------------------- #matches the preceeding character only when it appears 'n' times or more
+
+    #Extended regular expressions
+    \+ ----------------------- #Matches one or more occurence of the previous character
+    \? ----------------------- #Matches zero or one occurence of the previous character
+
+    #Brace Expansion
+    {0..10} ------------------ #Sequence
+    {a..z} ------------------- #Sequence
+    {aa, bb, cc, dd} --------- #Comma seperated list
+
+#Data Types                        R
+    #Text------------------------character
+    #integer---------------------integer
+    #Decimal---------------------numeric
+    #Binary----------------------logical
+    #Category--------------------factor
+    #Date------------------------Date
+
+
+#Command Line filtering and sorting
+man grep        #pass flag -E to use regular expresions
+man sort
+man awk        #Search files for lines that contain certain patterns https://www.gnu.org/software/gawk/manual/gawk.html#Getting-Started
+man sed        #Stream editor https://www.gnu.org/software/sed/manual/sed.html#Command_002dLine-Options
+man spell
+man wc      #Word count
+man tr      #Translate
+
+    #Awk
+    awk 'program' input-file1 input-file2 ...       #One-shot throwaway program
+    sek -f program-file input-file1 input-file2 ...
+
+#Examine data types (integer, character, double, factor, etc) with dplyr
+glipmse()
