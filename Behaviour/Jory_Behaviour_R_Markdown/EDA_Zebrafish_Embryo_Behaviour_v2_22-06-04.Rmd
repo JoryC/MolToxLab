@@ -1396,10 +1396,10 @@ dunnett_list_nobin <- sapply(simi_norm_nobin, combineddunnett) %>%
 dunnett_temp <-
   list() #Take Dunnett's test results without any of the fancy summary information and shove it into a named list
 for (i in chemicalNames) {
-  dunnett_list[[i]][,"pval"] <- p.adjust(dunnett_list[[i]][,"pval"], method = "fdr")
+  dunnett_list_nobin[[i]][,"pval"] <- p.adjust(dunnett_list_nobin[[i]][,"pval"], method = "fdr")
   
-  dunnett_temp[[names(dunnett_list[i])]] <-
-    dunnett_list[[i]] %>% as.data.frame() %>% rownames_to_column(var = "dose") #Coerce to a data frame temporarily so what we can take the row names of the reults and turn them into a variable with rownames_to_column
+  dunnett_temp[[names(dunnett_list_nobin[i])]] <-
+    dunnett_list_nobin[[i]] %>% as.data.frame() %>% rownames_to_column(var = "dose") #Coerce to a data frame temporarily so what we can take the row names of the reults and turn them into a variable with rownames_to_column
 }
 dunnett_comb <-
   ldply(dunnett_temp) #this function combines all of the lists together and gives them a variable name according to the chemical
@@ -1434,7 +1434,7 @@ dunnett_comb %>%
 doseData <- doseData %>%
   mutate(dose = Dose) #Renaming dose variable to inner_join
 simi_norm_tib <-
-  as_tibble(rbindlist(simi_norm)) #Convert from list to tibble
+  as_tibble(rbindlist(simi_norm_nobin)) #Convert from list to tibble
 simi_norm_tib <- simi_norm_tib %>%
   inner_join(doseData) %>%
   mutate(is_VC = as.integer(is_VC)) %>%
@@ -1539,6 +1539,7 @@ bmr_output$outcome %>%
 
 
 ```{r 59lowest_BMR, include=FALSE}
+bmr_output$outcome[which(is.na(bmr_output$outcome))] = 0
 bmr_thresh <- bmr_output$outcome %>%
     mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
     pull(bmr)
@@ -1615,6 +1616,7 @@ bmr_output$outcome %>%
 
 
 ```{r 59.1lowest_BMR, include=FALSE}
+bmr_output$outcome[which(is.na(bmr_output$outcome))] = 0
 bmr_thresh <- bmr_output$outcome %>%
     mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
     pull(bmr)
@@ -1684,31 +1686,31 @@ for (i in chemicalNames) {
 ```
 
 ```{r 65normalized_data, include=FALSE}
-simi_norm <- lapply(simi_endpoints, simi_normalize)
+simi_norm_L <- lapply(simi_endpoints, simi_normalize)
 ```
 
 ```{r 66summary statistics, include=FALSE}
 for(i in chemicalNames) {
-  simi_norm[[i]]$dose <- as.factor(simi_norm[[i]]$dose)
-  simi_norm[[i]][, "Group"] = factor(rep(c("A", "B", "C"), times = (nrow(simi_norm[[i]]) /
+  simi_norm_L[[i]]$dose <- as.factor(simi_norm_L[[i]]$dose)
+  simi_norm_L[[i]][, "Group"] = factor(rep(c("A", "B", "C"), times = (nrow(simi_norm_L[[i]]) /
                                                                       9), each = 3))
 } # Adding Group column and factoring dose variable
 #Obtaining Summary Statistics
-summarystats_list <- lapply(simi_norm, summarystats)
+summarystats_list_L <- lapply(simi_norm_L, summarystats)
 ```
 
 ### ANCOVA
 
 ```{r 67ANCOVA, echo=FALSE}
-ancova_list <- sapply(simi_norm, combinedancova)
+ancova_list_L <- sapply(simi_norm_L, combinedancova)
 #4TPP similarity scores statistically significant from each other
 
 for (i in chemicalNames){
-ancova_list[[i]]$`Pr(>F)` <- p.adjust(ancova_list[[i]]$`Pr(>F)`, method = "fdr")
+ancova_list_L[[i]]$`Pr(>F)` <- p.adjust(ancova_list_L[[i]]$`Pr(>F)`, method = "fdr")
 } # p value adjustment
 
-ancova_comb <- as_tibble(ldply(ancova_list))
-ancova_comb <- ancova_comb %>%
+ancova_comb_L <- as_tibble(ldply(ancova_list_L))
+ancova_comb_L <- ancova_comb_L %>%
   na.omit() %>%
   # mutate(`Pr(>F)` = p.adjust(`Pr(>F)`, method = "fdr")) %>% #p value adjustment
   mutate(is.significant = if_else(
@@ -1717,7 +1719,7 @@ ancova_comb <- ancova_comb %>%
     false = FALSE
   ))
 #Any significant results?
-ancova_comb %>%
+ancova_comb_L %>%
   filter(is.significant == TRUE)  %>%
   select(.id, Df, `F value`, `Pr(>F)`) %>%
   kable(
@@ -1732,24 +1734,24 @@ ancova_comb %>%
 #### Dunnett's Test
 
 ```{r 68Dunnett, include=FALSE}
-dunnett_list <- sapply(simi_norm, combineddunnett) %>%
+dunnett_list_L <- sapply(simi_norm_L, combineddunnett) %>%
   setNames(., chemicalNames) %>%
   as.array()
 #Dunnett's Test requires a bunch of wrangling
 dunnett_temp <-
   list() #Take Dunnett's test results without any of the fancy summary information and shove it into a named list
 for (i in chemicalNames) {
-  dunnett_temp[[names(dunnett_list[i])]] <-
-    dunnett_list[[i]] %>% as.data.frame() %>% rownames_to_column(var = "dose") #Coerce to a data frame temporarily so what we can take the row names of the reults and turn them into a variable with rownames_to_column
+  dunnett_temp[[names(dunnett_list_L[i])]] <-
+    dunnett_list_L[[i]] %>% as.data.frame() %>% rownames_to_column(var = "dose") #Coerce to a data frame temporarily so what we can take the row names of the reults and turn them into a variable with rownames_to_column
   dunnett_temp[[i]][,5] <- p.adjust(dunnett_temp[[i]][,5], method = "fdr") # p value adjustment
 }
-dunnett_comb <-
+dunnett_comb_L <-
   ldply(dunnett_temp) #this function combines all of the lists together and gives them a variable name according to the chemical
-dunnett_comb$dose = substr(dunnett_comb$dose,
+dunnett_comb_L$dose = substr(dunnett_comb_L$dose,
                            start = 1,
-                           stop = nchar(dunnett_comb$dose) - 6) #Here we are fixing the dose column... the dose column has the test dose related to the control... but we just want to see what the test dose is without it giving us redundant information about the comparison to the control for every observation...
-dunnett_comb <- as_tibble(dunnett_comb)
-dunnett_comb <- dunnett_comb %>%
+                           stop = nchar(dunnett_comb_L$dose) - 6) #Here we are fixing the dose column... the dose column has the test dose related to the control... but we just want to see what the test dose is without it giving us redundant information about the comparison to the control for every observation...
+dunnett_comb_L <- as_tibble(dunnett_comb_L)
+dunnett_comb_L <- dunnett_comb_L %>%
   mutate(pval = p.adjust(pval, method = "fdr")) %>% # P value adjustment
   na.omit() %>%
   mutate(is.significant = if_else(
@@ -1761,7 +1763,7 @@ dunnett_comb <- dunnett_comb %>%
 
 ```{r 69Dunnett_results, echo=FALSE}
 # Any significant results?
-dunnett_comb %>%
+dunnett_comb_L %>%
   filter(is.significant == TRUE) %>%
   select(.id, dose, diff, pval) %>%
   kable(
@@ -1776,9 +1778,9 @@ dunnett_comb %>%
 ```{r 70normalized_data_to_tibble, include=FALSE}
 doseData <- doseData %>%
   mutate(dose = Dose) #Renaming dose variable to inner_join
-simi_norm_tib <-
-  as_tibble(rbindlist(simi_norm)) #Convert from list to tibble
-simi_norm_tib <- simi_norm_tib %>%
+simi_norm_tib_L <-
+  as_tibble(rbindlist(simi_norm_L)) #Convert from list to tibble
+simi_norm_tib_L <- simi_norm_tib_L %>%
   inner_join(doseData) %>%
   mutate(is_VC = as.integer(is_VC)) %>%
   select(plate_id,
@@ -1791,7 +1793,7 @@ simi_norm_tib <- simi_norm_tib %>%
 ```
 
 ```{r 71normalized_data_ggplot, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap="Figure 18. Dose response relationship of normalized pearson's similarity scores from 26 different chemicals -- `totaldsit` variable", fig.width=10, fig.height=7.5, out.height="100%", out.width="125%"}
-simi_norm_tib %>%
+simi_norm_tib_L %>%
   mutate(dose = factor(
     dose,
     levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"),
@@ -1831,10 +1833,8 @@ However, it should still be possible to calculate a benchmark dose for each chem
 
 #### Benchmark Dose
 
-##### Negative Direction
-
 ```{r 72prep_4_rcurvep, include=FALSE}
-simi_norm_tib_4rcurvep <- simi_norm_tib %>%
+simi_norm_tib_4rcurvep_L <- simi_norm_tib_L %>%
   rename(resp = endpoint_value_norm,
          chemical = plate_id) %>%
   filter(is_VC == 0) %>%
@@ -1844,11 +1844,13 @@ simi_norm_tib_4rcurvep <- simi_norm_tib %>%
 
 Since we do not know what the benchmark response is for each one of the chemicals, a method will be used that can estimate a benchmark response based off of the given data. This method uses bootstrapping to 100s to 1000s of curves that will help determine what a good estimate is for the benchmark response. This process can be a bit time-intensive to run.
 
-```{r 73estimating_BMR, echo=FALSE, warning=FALSE, message=FALSE}
-set.seed(420)
+##### Negative Direction
 
-simi_norm_tib_4rcurvep_act <- combi_run_rcurvep(
-  simi_norm_tib_4rcurvep,
+```{r 73estimating_BMR, echo=FALSE, warning=FALSE, message=FALSE}
+set.seed(923)
+
+simi_norm_tib_4rcurvep_act_L_neg <- combi_run_rcurvep(
+  simi_norm_tib_4rcurvep_L,
   n_samples = 10, #Increase this number to 100 or 1000 for better results (takes a long time to run)
   keep_sets = "act_set",
   TRSH = seq(5, 95, by = 5),
@@ -1858,7 +1860,7 @@ simi_norm_tib_4rcurvep_act <- combi_run_rcurvep(
 
 ```{r 74estimating_BMR_2, echo=FALSE, fig.cap= "Figure 19. Summary of Benchmark response estimation", fig.align='center', warning=FALSE, message=FALSE}
 bmr_output <-
-  estimate_dataset_bmr(simi_norm_tib_4rcurvep_act, plot = TRUE)
+  estimate_dataset_bmr(simi_norm_tib_4rcurvep_act_L_neg, plot = TRUE)
 ```
 
 ```{r 75estimating_BMR_3, echo=FALSE}
@@ -1882,6 +1884,7 @@ bmr_output$outcome %>%
 
 
 ```{r 76lowest_BMR, include=FALSE}
+bmr_output$outcome[which(is.na(bmr_output$outcome))] = 0
 bmr_thresh <- bmr_output$outcome %>%
     mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
     pull(bmr)
@@ -1890,8 +1893,8 @@ bmr_thresh <- bmr_output$outcome %>%
 From the bootstrapping method, it seems that the benchmark response threshold should be set to `r bmr_thresh`, but be cautious of doing so. In the future, there will be a visualizaiton of all of the simulated curves to try to visually determine if the BMR is appropriate.
 
 ```{r 77calculating_benchmark_dose, include = FALSE}
-bmd_dat <- combi_run_rcurvep(
-  simi_norm_tib_4rcurvep, 
+bmd_dat_L_neg <- combi_run_rcurvep(
+  simi_norm_tib_4rcurvep_L, 
   n_samples = 10, #Increase this number to 100 or 1000 for better results (takes a long time to run)
   keep_sets = "act_set", 
   TRSH = bmr_thresh,
@@ -1900,17 +1903,17 @@ bmd_dat <- combi_run_rcurvep(
 ```
 
 ```{r 78calculating_benchmark_dose_2, echo=FALSE, collapse=TRUE}
-sum_bmd_dat <- summarize_rcurvep_output(bmd_dat)
-sum_bmd_dat
+sum_bmd_dat_L_neg <- summarize_rcurvep_output(bmd_dat_L_neg)
+sum_bmd_dat_L_neg
 ```
 
 ```{r 79calculating_benchmark_dose_3, echo=FALSE}
-sum_bmd_dat$act_summary %>%
+sum_bmd_dat_L_neg$act_summary %>%
   mutate(lowest_conc = 10^(lowest_conc), highest_conc = 10^(highest_conc), POD_cil = 10^(POD_cil), POD_med = 10^(POD_med), POD_ciu = 10^(POD_ciu)) %>%
   select(chemical, lowest_conc, highest_conc, POD_cil, POD_med, POD_ciu, hit_confidence) %>%
   kable(col.names = c("Chemical", "Low Dose", "High Dose", "BMD - low confidence", "BMD", "BMD - high confidence", "Hit Confidence"), caption = "Table 13. Summary of all the benchmark doses (BMDs) of every chemical") %>%
   kable_styling() %>%
-   row_spec(which(sum_bmd_dat$act_summary$POD_med < sum_bmd_dat$act_summary$highest_conc), bold = TRUE, background = "gray") %>%
+   row_spec(which(sum_bmd_dat_L_neg$act_summary$POD_med < sum_bmd_dat_L_neg$act_summary$highest_conc), bold = TRUE, background = "gray") %>%
   scroll_box()
 ```
 
@@ -1918,10 +1921,10 @@ sum_bmd_dat$act_summary %>%
 ##### Positive Direction
 
 ```{r 73.1estimating_BMR, echo=FALSE, warning=FALSE, message=FALSE}
-set.seed(420)
+set.seed(500)
 
-simi_norm_tib_4rcurvep_act <- combi_run_rcurvep(
-  simi_norm_tib_4rcurvep,
+simi_norm_tib_4rcurvep_act_L_pos <- combi_run_rcurvep(
+  simi_norm_tib_4rcurvep_L,
   n_samples = 10, #Increase this number to 100 or 1000 for better results (takes a long time to run)
   keep_sets = "act_set",
   TRSH = seq(5, 95, by = 5),
@@ -1929,9 +1932,18 @@ simi_norm_tib_4rcurvep_act <- combi_run_rcurvep(
 )
 ```
 
+<!-- # ```{r 73.1.2estimating_BMR_Hill_and_cnstnt_model, echo=FALSE, warning=FALSE, message=FALSE} -->
+<!-- # test <- run_fit(simi_norm_tib_4rcurvep_L) -->
+<!-- # ``` -->
+
+
+<!-- # ```{r 73.1.1ExtraCleaningStep, echo = FALSE} -->
+<!-- # clean_act <- summarize_rcurvep_output(simi_norm_tib_4rcurvep_act_L_pos, clean_only = TRUE) -->
+<!-- # ``` -->
+
 ```{r 74.1estimating_BMR_2, echo=FALSE, fig.cap= "Figure 19. Summary of Benchmark response estimation", fig.align='center', warning=FALSE, message=FALSE}
 bmr_output <-
-  estimate_dataset_bmr(simi_norm_tib_4rcurvep_act, plot = TRUE)
+  estimate_dataset_bmr(simi_norm_tib_4rcurvep_act_L_pos, plot = TRUE)
 ```
 
 ```{r 75.1estimating_BMR_3, echo=FALSE}
@@ -1955,6 +1967,7 @@ bmr_output$outcome %>%
 
 
 ```{r 76.1lowest_BMR, include=FALSE}
+bmr_output$outcome[which(is.na(bmr_output$outcome))] = 0
 bmr_thresh <- bmr_output$outcome %>%
     mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
     pull(bmr)
@@ -1963,27 +1976,27 @@ bmr_thresh <- bmr_output$outcome %>%
 From the bootstrapping method, it seems that the benchmark response threshold should be set to `r bmr_thresh`, but be cautious of doing so. In the future, there will be a visualizaiton of all of the simulated curves to try to visually determine if the BMR is appropriate.
 
 ```{r 77.1calculating_benchmark_dose, include = FALSE}
-bmd_dat <- combi_run_rcurvep(
-  simi_norm_tib_4rcurvep, 
+bmd_dat_L_pos <- combi_run_rcurvep(
+  simi_norm_tib_4rcurvep_L, 
   n_samples = 10, #Increase this number to 100 or 1000 for better results (takes a long time to run)
   keep_sets = "act_set", 
-  TRSH = bmr_thresh,
+  TRSH = 50,
   RNGE = -1000000
 )
 ```
 
 ```{r 78.1calculating_benchmark_dose_2, echo=FALSE, collapse=TRUE}
-sum_bmd_dat <- summarize_rcurvep_output(bmd_dat)
-sum_bmd_dat
+sum_bmd_dat_L_pos <- summarize_rcurvep_output(bmd_dat_L_pos)
+sum_bmd_dat_L_pos
 ```
 
 ```{r 79.1calculating_benchmark_dose_3, echo=FALSE}
-sum_bmd_dat$act_summary %>%
+sum_bmd_dat_L_pos$act_summary %>%
   mutate(lowest_conc = 10^(lowest_conc), highest_conc = 10^(highest_conc), POD_cil = 10^(POD_cil), POD_med = 10^(POD_med), POD_ciu = 10^(POD_ciu)) %>%
   select(chemical, lowest_conc, highest_conc, POD_cil, POD_med, POD_ciu, hit_confidence) %>%
   kable(col.names = c("Chemical", "Low Dose", "High Dose", "BMD - low confidence", "BMD", "BMD - high confidence", "Hit Confidence"), caption = "Table 13. Summary of all the benchmark doses (BMDs) of every chemical") %>%
   kable_styling() %>%
-   row_spec(which(sum_bmd_dat$act_summary$POD_med < sum_bmd_dat$act_summary$highest_conc), bold = TRUE, background = "gray") %>%
+   row_spec(which(sum_bmd_dat_L_pos$act_summary$POD_med < sum_bmd_dat_L_pos$act_summary$highest_conc), bold = TRUE, background = "gray") %>%
   scroll_box()
 ```
 
@@ -2021,31 +2034,30 @@ for (i in chemicalNames) {
 ```
 
 ```{r 82normalized_data, include=FALSE}
-simi_norm <- lapply(simi_endpoints, simi_normalize)
+simi_norm_D <- lapply(simi_endpoints, simi_normalize)
 ```
 
 ```{r 83summary statistics, include=FALSE}
 for(i in chemicalNames) {
-  simi_norm[[i]]$dose <- as.factor(simi_norm[[i]]$dose)
-  simi_norm[[i]][,"Group"] = factor(rep(c("A", "B", "C"), times = (nrow(simi_norm[[i]])/9), each = 3))
+  simi_norm_D[[i]]$dose <- as.factor(simi_norm_D[[i]]$dose)
+  simi_norm_D[[i]][,"Group"] = factor(rep(c("A", "B", "C"), times = (nrow(simi_norm_D[[i]])/9), each = 3))
 } # Adding Group column and factoring dose variable
 #Obtaining Summary Statistics
-summarystats_list <- lapply(simi_norm, summarystats
-)
+summarystats_list_D <- lapply(simi_norm_D, summarystats)
 ```
 
 ### ANCOVA
 
 ```{r 84ANCOVA, echo=FALSE}
-ancova_list <- sapply(simi_norm, combinedancova)
+ancova_list_D <- sapply(simi_norm_D, combinedancova)
 #4TPP similarity scores statistically significant from each other
 
 for (i in chemicalNames){
-ancova_list[[i]]$`Pr(>F)` <- p.adjust(ancova_list[[i]]$`Pr(>F)`, method = "fdr")
+ancova_list_D[[i]]$`Pr(>F)` <- p.adjust(ancova_list_D[[i]]$`Pr(>F)`, method = "fdr")
 } # p value adjustment
 
-ancova_comb <- as_tibble(ldply(ancova_list))
-ancova_comb <- ancova_comb %>%
+ancova_comb_D <- as_tibble(ldply(ancova_list_D))
+ancova_comb_D <- ancova_comb_D %>%
   na.omit() %>%
   # mutate(`Pr(>F)` = p.adjust(`Pr(>F)`, method = "fdr")) %>% #p value adjustment
   mutate(is.significant = if_else(
@@ -2054,7 +2066,7 @@ ancova_comb <- ancova_comb %>%
     false = FALSE
   ))
 #Any significant results?
-ancova_comb %>%
+ancova_comb_D %>%
   filter(is.significant == TRUE)  %>%
   select(.id, Df, `F value`, `Pr(>F)`) %>%
   kable(
@@ -2070,24 +2082,24 @@ ancova_comb %>%
 #### Dunnett's Test
 
 ```{r 85Dunnett, include=FALSE}
-dunnett_list <- sapply(simi_norm, combineddunnett) %>%
+dunnett_list_D <- sapply(simi_norm_D, combineddunnett) %>%
   setNames(., chemicalNames) %>%
   as.array()
 #Dunnett's Test requires a bunch of wrangling
 dunnett_temp <-
   list() #Take Dunnett's test results without any of the fancy summary information and shove it into a named list
 for (i in chemicalNames) {
-  dunnett_temp[[names(dunnett_list[i])]] <-
-    dunnett_list[[i]] %>% as.data.frame() %>% rownames_to_column(var = "dose") #Coerce to a data frame temporarily so what we can take the row names of the reults and turn them into a variable with rownames_to_column
+  dunnett_temp[[names(dunnett_list_D[i])]] <-
+    dunnett_list_D[[i]] %>% as.data.frame() %>% rownames_to_column(var = "dose") #Coerce to a data frame temporarily so what we can take the row names of the reults and turn them into a variable with rownames_to_column
   dunnett_temp[[i]][,5] <- p.adjust(dunnett_temp[[i]][,5], method = "fdr") # p value adjustment
 }
-dunnett_comb <-
+dunnett_comb_D <-
   ldply(dunnett_temp) #this function combines all of the lists together and gives them a variable name according to the chemical
-dunnett_comb$dose = substr(dunnett_comb$dose,
+dunnett_comb_D$dose = substr(dunnett_comb_D$dose,
                            start = 1,
-                           stop = nchar(dunnett_comb$dose) - 6) #Here we are fixing the dose column... the dose column has the test dose related to the control... but we just want to see what the test dose is without it giving us redundant information about the comparison to the control for every observation...
-dunnett_comb <- as_tibble(dunnett_comb)
-dunnett_comb <- dunnett_comb %>%
+                           stop = nchar(dunnett_comb_D$dose) - 6) #Here we are fixing the dose column... the dose column has the test dose related to the control... but we just want to see what the test dose is without it giving us redundant information about the comparison to the control for every observation...
+dunnett_comb_D <- as_tibble(dunnett_comb_D)
+dunnett_comb_D <- dunnett_comb_D %>%
   mutate(pval = p.adjust(pval, method = "fdr")) %>% # P value adjustment
   na.omit() %>%
   mutate(is.significant = if_else(
@@ -2099,7 +2111,7 @@ dunnett_comb <- dunnett_comb %>%
 
 ```{r 86Dunnett_results, echo=FALSE}
 # Any significant results?
-dunnett_comb %>%
+dunnett_comb_D %>%
   filter(is.significant == TRUE) %>%
   select(.id, dose, diff, pval) %>%
   kable(
@@ -2114,9 +2126,9 @@ dunnett_comb %>%
 ```{r 87normalized_data_to_tibble, include=FALSE}
 doseData <- doseData %>%
   mutate(dose = Dose) #Renaming dose variable to inner_join
-simi_norm_tib <-
-  as_tibble(rbindlist(simi_norm)) #Convert from list to tibble
-simi_norm_tib <- simi_norm_tib %>%
+simi_norm_tib_D <-
+  as_tibble(rbindlist(simi_norm_D)) #Convert from list to tibble
+simi_norm_tib_D <- simi_norm_tib_D %>%
   inner_join(doseData) %>%
   mutate(is_VC = as.integer(is_VC)) %>%
   select(plate_id,
@@ -2129,7 +2141,7 @@ simi_norm_tib <- simi_norm_tib %>%
 ```
 
 ```{r 88normalized_data_ggplot, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap="Figure 20. Dose response relationship of normalized pearson's similarity scores from 26 different chemicals -- `totaldsit` variable", fig.width=10, fig.height=7.5, out.height="100%", out.width="125%"}
-simi_norm_tib %>%
+simi_norm_tib_D %>%
   mutate(dose = factor(
     dose,
     levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"),
@@ -2167,10 +2179,10 @@ After running an ANCOVA, it can be seen that 1-decanol, fadrozole, fluoxetine an
 \
 However, it should still be possible to calculate a benchmark dose for each chemical.
 
-### Benchmark Dose
+#### Benchmark Dose
 
 ```{r 89prep_4_rcurvep, include=FALSE}
-simi_norm_tib_4rcurvep <- simi_norm_tib %>%
+simi_norm_tib_4rcurvep_D <- simi_norm_tib_D %>%
   rename(resp = endpoint_value_norm,
          chemical = plate_id) %>%
   filter(is_VC == 0) %>%
@@ -2178,23 +2190,25 @@ simi_norm_tib_4rcurvep <- simi_norm_tib %>%
   select(endpoint, chemical, conc, resp)
 ```
 
+##### Negative Direction
+
 Since we do not know what the benchmark response is for each one of the chemicals, a method will be used that can estimate a benchmark response based off of the given data. This method uses bootstrapping to 100s to 1000s of curves that will help determine what a good estimate is for the benchmark response. This process can be a bit time-intensive to run.
 
 ```{r 90estimating_BMR, echo=FALSE, warning=FALSE, message=FALSE}
-set.seed(9)
+set.seed(874)
 
-simi_norm_tib_4rcurvep_act <- combi_run_rcurvep(
-  simi_norm_tib_4rcurvep,
+simi_norm_tib_4rcurvep_act_D_neg <- combi_run_rcurvep(
+  simi_norm_tib_4rcurvep_D,
   n_samples = 10, #Increase this number to 100 or 1000 for better results (takes a long time to run)
   keep_sets = "act_set",
   TRSH = seq(5, 95, by = 5),
-  RNGE = 1000000 # Changing direction for dark cycle since most fish are becoming more active during the dark and with increasing chemical exposure doses...
+  RNGE = -1000000
 )
 ```
 
 ```{r 91estimating_BMR_2, echo=FALSE, fig.cap= "Figure 21. Summary of Benchmark response estimation", fig.align='center', warning=FALSE, message=FALSE}
 bmr_output <-
-  estimate_dataset_bmr(simi_norm_tib_4rcurvep_act, plot = TRUE)
+  estimate_dataset_bmr(simi_norm_tib_4rcurvep_act_D_neg, plot = TRUE)
 ```
 
 ```{r 92estimating_BMR_3, echo=FALSE}
@@ -2218,16 +2232,17 @@ bmr_output$outcome %>%
 
 
 ```{r 93lowest_BMR, include=FALSE}
-bmr_vect <- c(bmr_output$outcome$bmr_exp, bmr_output$outcome$bmr_ori)
-bmr_thresh <- sort(bmr_vect) %>%
-  min()
+bmr_output$outcome[which(is.na(bmr_output$outcome))] = 0
+bmr_thresh <- bmr_output$outcome %>%
+    mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
+    pull(bmr)
 ```
 
 From the bootstrapping method, it seems that the benchmark response threshold should be set to `r bmr_thresh`, but be cautious of doing so. In the future, there will be a visualizaiton of all of the simulated curves to try to visually determine if the BMR is appropriate.
 
 ```{r 94calculating_benchmark_dose, include = FALSE}
-bmd_dat <- combi_run_rcurvep(
-  simi_norm_tib_4rcurvep, 
+bmd_dat_D_neg <- combi_run_rcurvep(
+  simi_norm_tib_4rcurvep_D, 
   n_samples = 10, #Increase this number to 100 or 1000 for better results (takes a long time to run)
   keep_sets = "act_set", 
   TRSH = bmr_thresh,
@@ -2236,21 +2251,94 @@ bmd_dat <- combi_run_rcurvep(
 ```
 
 ```{r 95calculating_benchmark_dose_2, echo=FALSE, collapse=TRUE}
-sum_bmd_dat <- summarize_rcurvep_output(bmd_dat)
-sum_bmd_dat
+sum_bmd_dat_D_neg <- summarize_rcurvep_output(bmd_dat_D_neg)
+sum_bmd_dat_D_neg
 ```
 
 ```{r 96calculating_benchmark_dose_3, echo=FALSE}
-sum_bmd_dat$act_summary %>%
+sum_bmd_dat_D_neg$act_summary %>%
   mutate(lowest_conc = 10^(lowest_conc), highest_conc = 10^(highest_conc), POD_cil = 10^(POD_cil), POD_med = 10^(POD_med), POD_ciu = 10^(POD_ciu)) %>%
   select(chemical, lowest_conc, highest_conc, POD_cil, POD_med, POD_ciu, hit_confidence) %>%
   kable(col.names = c("Chemical", "Low Dose", "High Dose", "BMD - low confidence", "BMD", "BMD - high confidence", "Hit Confidence"), caption = "Table 17. Summary of all the benchmark doses (BMDs) of every chemical") %>%
   kable_styling() %>%
-      row_spec(which(sum_bmd_dat$act_summary$POD_med < sum_bmd_dat$act_summary$highest_conc), bold = TRUE, background = "gray") %>%
+      row_spec(which(sum_bmd_dat_D_neg$act_summary$POD_med < sum_bmd_dat_D_neg$act_summary$highest_conc), bold = TRUE, background = "gray") %>%
+  scroll_box()
+```
+
+##### Positive Direction
+
+Since we do not know what the benchmark response is for each one of the chemicals, a method will be used that can estimate a benchmark response based off of the given data. This method uses bootstrapping to 100s to 1000s of curves that will help determine what a good estimate is for the benchmark response. This process can be a bit time-intensive to run.
+
+```{r 90.1estimating_BMR, echo=FALSE, warning=FALSE, message=FALSE}
+set.seed(243)
+
+simi_norm_tib_4rcurvep_act_D_pos <- combi_run_rcurvep(
+  simi_norm_tib_4rcurvep_D,
+  n_samples = 10, #Increase this number to 100 or 1000 for better results (takes a long time to run)
+  keep_sets = "act_set",
+  TRSH = seq(5, 95, by = 5),
+  RNGE = 1000000
+)
+```
+
+```{r 91.1estimating_BMR_2, echo=FALSE, fig.cap= "Figure 21. Summary of Benchmark response estimation", fig.align='center', warning=FALSE, message=FALSE}
+bmr_output <-
+  estimate_dataset_bmr(simi_norm_tib_4rcurvep_act_D_pos, plot = TRUE)
+```
+
+```{r 92.1estimating_BMR_3, echo=FALSE}
+bmr_output$outcome %>%
+  select(endpoint, qc, cor_exp_fit, cor_lm_fit, bmr_exp, bmr_ori) %>%
+  kable(
+    col.names = c(
+      "Endpoint",
+      "Quality Control Message",
+      "Correlation of expotential fit",
+      "Correlation of linear model fit",
+      "BMR of exponential model",
+      "BMR of linear model"
+    ),
+    align = 'llrrrr',
+    caption = "Table 16. Summary of the estimated BMR"
+  ) %>%
+  kable_styling() %>%
   scroll_box()
 ```
 
 
+```{r 93.1lowest_BMR, include=FALSE}
+bmr_output$outcome[which(is.na(bmr_output$outcome))] = 0
+bmr_thresh <- bmr_output$outcome %>%
+    mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
+    pull(bmr)
+```
+
+From the bootstrapping method, it seems that the benchmark response threshold should be set to `r bmr_thresh`, but be cautious of doing so. In the future, there will be a visualizaiton of all of the simulated curves to try to visually determine if the BMR is appropriate.
+
+```{r 94.1calculating_benchmark_dose, include = FALSE}
+bmd_dat_D_pos <- combi_run_rcurvep(
+  simi_norm_tib_4rcurvep_D, 
+  n_samples = 10, #Increase this number to 100 or 1000 for better results (takes a long time to run)
+  keep_sets = "act_set", 
+  TRSH = bmr_thresh,
+  RNGE = -1000000
+)
+```
+
+```{r 95.1calculating_benchmark_dose_2, echo=FALSE, collapse=TRUE}
+sum_bmd_dat_D_pos <- summarize_rcurvep_output(bmd_dat_D_pos)
+sum_bmd_dat_D_pos
+```
+
+```{r 96.1calculating_benchmark_dose_3, echo=FALSE}
+sum_bmd_dat_D_pos$act_summary %>%
+  mutate(lowest_conc = 10^(lowest_conc), highest_conc = 10^(highest_conc), POD_cil = 10^(POD_cil), POD_med = 10^(POD_med), POD_ciu = 10^(POD_ciu)) %>%
+  select(chemical, lowest_conc, highest_conc, POD_cil, POD_med, POD_ciu, hit_confidence) %>%
+  kable(col.names = c("Chemical", "Low Dose", "High Dose", "BMD - low confidence", "BMD", "BMD - high confidence", "Hit Confidence"), caption = "Table 17. Summary of all the benchmark doses (BMDs) of every chemical") %>%
+  kable_styling() %>%
+      row_spec(which(sum_bmd_dat_D_pos$act_summary$POD_med < sum_bmd_dat_D_pos$act_summary$highest_conc), bold = TRUE, background = "gray") %>%
+  scroll_box()
+```
 ##Analysis - Area under curve - editting
 
 ##Questions
