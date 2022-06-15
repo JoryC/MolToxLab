@@ -7,6 +7,7 @@ output:
     code_folding: show
     toc: true
     toc_float: true
+    toc_depth: 5
     theme: readable
 params:
   metric: pearson
@@ -1334,38 +1335,38 @@ This report has been paramaterized to easily adjust what variables (columns) wil
 ```{r 47simi_endpoints, include = FALSE}
 simi_endps <- list(seq(1, 30, by = 1)) #One per minute
 names(simi_endps) <- params$metric
-simi_endpoints <- list()
+simi_endpoints_nobin <- list()
 for (i in chemicalNames) {
   temp <-
     create_simi_endpoints(lfishBehavDat[[i]],
                           segments = simi_endps,
                           metric = params$metric)
-  simi_endpoints[[i]] <- temp[[1]]
+  simi_endpoints_nobin[[i]] <- temp[[1]]
   rm(temp)
 }
 ```
 
 ```{r 48normalized_data, include=FALSE}
-simi_norm <- lapply(simi_endpoints, simi_normalize)
+simi_norm_nobin <- lapply(simi_endpoints_nobin, simi_normalize)
 ```
 
 ```{r 49summary statistics, include=FALSE}
 for(i in chemicalNames) {
-  simi_norm[[i]]$dose <- as.factor(simi_norm[[i]]$dose)
-  simi_norm[[i]][, "Group"] = factor(rep(c("A", "B", "C"), times = (nrow(simi_norm[[i]]) /
+  simi_norm_nobin[[i]]$dose <- as.factor(simi_norm_nobin[[i]]$dose)
+  simi_norm_nobin[[i]][, "Group"] = factor(rep(c("A", "B", "C"), times = (nrow(simi_norm_nobin[[i]]) /
                                                                       9), each = 3))
 } # Adding Group column and factoring dose variable
 #Obtaining Summary Statistics
-summarystats_list <- lapply(simi_norm, summarystats)
+summarystats_list_nobin <- lapply(simi_norm_nobin, summarystats)
 ```
 
 ### ANCOVA
 
 ```{r 50ANCOVA, echo=FALSE}
-ancova_list <- sapply(simi_norm, combinedancova)
+ancova_list_nobin <- sapply(simi_norm_nobin, combinedancova)
 #4TPP similarity scores statistically significant from each other
-ancova_comb <- as_tibble(ldply(ancova_list))
-ancova_comb <- ancova_comb %>%
+ancova_comb_nobin <- as_tibble(ldply(ancova_list_nobin))
+ancova_comb_nobin <- ancova_comb_nobin %>%
   na.omit() %>%
   mutate(is.significant = if_else(
     condition = `Pr(>F)` < 0.05,
@@ -1373,7 +1374,7 @@ ancova_comb <- ancova_comb %>%
     false = FALSE
   ))
 #Any significant results?
-ancova_comb %>%
+ancova_comb_nobin %>%
   filter(is.significant == TRUE)  %>%
   select(.id, Df, `F value`, `Pr(>F)`) %>%
   kable(
@@ -1388,7 +1389,7 @@ ancova_comb %>%
 #### Dunnett's Test
 
 ```{r 51Dunnett, include=FALSE}
-dunnett_list <- sapply(simi_norm, combineddunnett) %>%
+dunnett_list_nobin <- sapply(simi_norm_nobin, combineddunnett) %>%
   setNames(., chemicalNames) %>%
   as.array()
 #Dunnett's Test requires a bunch of wrangling
@@ -1485,7 +1486,7 @@ After running an ANCOVA, it can be seen that Malathion comes back as significant
 \
 However, it could still be possible to calculate a benchmark dose for each chemical.
 
-### Benchmark Dose
+#### Benchmark Dose
 
 ```{r 55prep_4_rcurvep, include=FALSE}
 simi_norm_tib_4rcurvep <- simi_norm_tib %>%
@@ -1498,13 +1499,15 @@ simi_norm_tib_4rcurvep <- simi_norm_tib %>%
 
 Since we do not know what the benchmark response is for each one of the chemicals, a method will be used that can estimate a benchmark response based off of the given data. This method uses bootstrapping to 100s to 1000s of curves that will help determine what a good estimate is for the benchmark response. This process can be a bit time-intensive to run.
 
+##### Negative Direction
+
 ```{r 56estimating_BMR, echo=FALSE, warning=FALSE, message=FALSE}
 set.seed(42069)
 
 simi_norm_tib_4rcurvep_act <- combi_run_rcurvep(
   simi_norm_tib_4rcurvep,
   n_samples = 10, #Increase this number to 100 or 1000 for better results (takes a long time to run)
-  keep_sets = "act_set",
+  keep_sets = c("act_set", "resp_set", "fp_set"),
   TRSH = seq(5, 95, by = 5),
   RNGE = -1000000
 )
@@ -1536,15 +1539,15 @@ bmr_output$outcome %>%
 
 
 ```{r 59lowest_BMR, include=FALSE}
-bmr_vect <- c(bmr_output$outcome$bmr_exp, bmr_output$outcome$bmr_ori)
-bmr_thresh <- sort(bmr_vect) %>%
-  min()
+bmr_thresh <- bmr_output$outcome %>%
+    mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
+    pull(bmr)
 ```
 
 From the bootstrapping method, it seems that the benchmark response threshold should be set to `r bmr_thresh`, but be cautious of doing so. In the future, there will be a visualizaiton of all of the simulated curves to try to visually determine if the BMR is appropriate.
 
 ```{r 60calculating_benchmark_dose, include = FALSE}
-bmd_dat <- combi_run_rcurvep(
+bmd_dat_nobin_neg <- combi_run_rcurvep(
   simi_norm_tib_4rcurvep, 
   n_samples = 10, #Increase this number to 100 or 1000 for better results (takes a long time to run)
   keep_sets = "act_set", 
@@ -1554,17 +1557,93 @@ bmd_dat <- combi_run_rcurvep(
 ```
 
 ```{r 61calculating_benchmark_dose_2, echo=FALSE, collapse=TRUE}
-sum_bmd_dat <- summarize_rcurvep_output(bmd_dat)
-sum_bmd_dat
+sum_bmd_dat_nobin_neg <- summarize_rcurvep_output(bmd_dat_nobin_neg)
+sum_bmd_dat_nobin_neg
 ```
 
 ```{r 62calculating_benchmark_dose_3, echo=FALSE}
-sum_bmd_dat$act_summary %>%
+sum_bmd_dat_nobin_neg$act_summary %>%
   mutate(lowest_conc = 10^(lowest_conc), highest_conc = 10^(highest_conc), POD_cil = 10^(POD_cil), POD_med = 10^(POD_med), POD_ciu = 10^(POD_ciu)) %>%
   select(chemical, lowest_conc, highest_conc, POD_cil, POD_med, POD_ciu, hit_confidence) %>%
   kable(col.names = c("Chemical", "Low Dose", "High Dose", "BMD - low confidence", "BMD", "BMD - high confidence", "Hit Confidence"), caption = "Table 9. Summary of all the benchmark doses (BMDs) of every chemical") %>%
   kable_styling() %>%
-  row_spec(which(sum_bmd_dat$act_summary$POD_med < sum_bmd_dat$act_summary$highest_conc), bold = TRUE, background = "gray") %>%
+  row_spec(which(sum_bmd_dat_nobin_neg$act_summary$POD_med < sum_bmd_dat_nobin_neg$act_summary$highest_conc), bold = TRUE, background = "gray") %>%
+  scroll_box()
+```
+
+From table 8 it can be seen that this method was not very effective on the current data set likely due to the very low doses used in the chemical exposure study. However, by using the low confidence BMDs, some additional figures will be made to illustrate where the dose-response data is crossing the benchmark response threshold to calculate the BMD.\
+\
+It is notable that certain chemicals had a BMD successfully calculated (highlighted in gray), however, malathion fails to get a BMD calculated.
+
+##### Positive Direction
+
+```{r 56.1estimating_BMR, echo=FALSE, warning=FALSE, message=FALSE}
+set.seed(46902)
+
+simi_norm_tib_4rcurvep_act <- combi_run_rcurvep(
+  simi_norm_tib_4rcurvep,
+  n_samples = 10, #Increase this number to 100 or 1000 for better results (takes a long time to run)
+  keep_sets = c("act_set", "resp_set", "fp_set"),
+  TRSH = seq(5, 95, by = 5),
+  RNGE = 1000000
+)
+```
+
+```{r 57.1estimating_BMR_2, echo=FALSE, fig.cap= "Figure 17. Summary of Benchmark response estimation", fig.align='center', warning=FALSE, message=FALSE}
+bmr_output <-
+  estimate_dataset_bmr(simi_norm_tib_4rcurvep_act, plot = TRUE)
+```
+
+```{r 58.1estimating_BMR_3, echo=FALSE}
+bmr_output$outcome %>%
+  select(endpoint, qc, cor_exp_fit, cor_lm_fit, bmr_exp, bmr_ori) %>%
+  kable(
+    col.names = c(
+      "Endpoint",
+      "Quality Control Message",
+      "Correlation of expotential fit",
+      "Correlation of linear model fit",
+      "BMR of exponential model",
+      "BMR of linear model"
+    ),
+    align = 'llrrrr',
+    caption = "Table 8. Summary of the estimated BMR"
+  ) %>%
+  kable_styling() %>%
+  scroll_box()
+```
+
+
+```{r 59.1lowest_BMR, include=FALSE}
+bmr_thresh <- bmr_output$outcome %>%
+    mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
+    pull(bmr)
+```
+
+From the bootstrapping method, it seems that the benchmark response threshold should be set to `r bmr_thresh`, but be cautious of doing so. In the future, there will be a visualizaiton of all of the simulated curves to try to visually determine if the BMR is appropriate.
+
+```{r 60.1calculating_benchmark_dose, include = FALSE}
+bmd_dat_nobin_pos <- combi_run_rcurvep(
+  simi_norm_tib_4rcurvep, 
+  n_samples = 10, #Increase this number to 100 or 1000 for better results (takes a long time to run)
+  keep_sets = "act_set", 
+  TRSH = bmr_thresh,
+  RNGE = 1000000
+)
+```
+
+```{r 61.1calculating_benchmark_dose_2, echo=FALSE, collapse=TRUE}
+sum_bmd_dat_nobin_pos <- summarize_rcurvep_output(bmd_dat_nobin_pos)
+sum_bmd_dat_nobin_pos
+```
+
+```{r 62.1calculating_benchmark_dose_3, echo=FALSE}
+sum_bmd_dat_nobin_pos$act_summary %>%
+  mutate(lowest_conc = 10^(lowest_conc), highest_conc = 10^(highest_conc), POD_cil = 10^(POD_cil), POD_med = 10^(POD_med), POD_ciu = 10^(POD_ciu)) %>%
+  select(chemical, lowest_conc, highest_conc, POD_cil, POD_med, POD_ciu, hit_confidence) %>%
+  kable(col.names = c("Chemical", "Low Dose", "High Dose", "BMD - low confidence", "BMD", "BMD - high confidence", "Hit Confidence"), caption = "Table 9. Summary of all the benchmark doses (BMDs) of every chemical") %>%
+  kable_styling() %>%
+  row_spec(which(sum_bmd_dat_nobin_pos$act_summary$POD_med < sum_bmd_dat_nobin_pos$act_summary$highest_conc), bold = TRUE, background = "gray") %>%
   scroll_box()
 ```
 
@@ -1750,7 +1829,9 @@ After running an ANCOVA, it can be seen that 17beta estradiol and Glyphosate com
 \
 However, it should still be possible to calculate a benchmark dose for each chemical.
 
-### Benchmark Dose
+#### Benchmark Dose
+
+##### Negative Direction
 
 ```{r 72prep_4_rcurvep, include=FALSE}
 simi_norm_tib_4rcurvep <- simi_norm_tib %>%
@@ -1801,9 +1882,9 @@ bmr_output$outcome %>%
 
 
 ```{r 76lowest_BMR, include=FALSE}
-bmr_vect <- c(bmr_output$outcome$bmr_exp, bmr_output$outcome$bmr_ori)
-bmr_thresh <- sort(bmr_vect) %>%
-  min()
+bmr_thresh <- bmr_output$outcome %>%
+    mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
+    pull(bmr)
 ```
 
 From the bootstrapping method, it seems that the benchmark response threshold should be set to `r bmr_thresh`, but be cautious of doing so. In the future, there will be a visualizaiton of all of the simulated curves to try to visually determine if the BMR is appropriate.
@@ -1834,12 +1915,81 @@ sum_bmd_dat$act_summary %>%
 ```
 
 
+##### Positive Direction
+
+```{r 73.1estimating_BMR, echo=FALSE, warning=FALSE, message=FALSE}
+set.seed(420)
+
+simi_norm_tib_4rcurvep_act <- combi_run_rcurvep(
+  simi_norm_tib_4rcurvep,
+  n_samples = 10, #Increase this number to 100 or 1000 for better results (takes a long time to run)
+  keep_sets = "act_set",
+  TRSH = seq(5, 95, by = 5),
+  RNGE = 1000000
+)
+```
+
+```{r 74.1estimating_BMR_2, echo=FALSE, fig.cap= "Figure 19. Summary of Benchmark response estimation", fig.align='center', warning=FALSE, message=FALSE}
+bmr_output <-
+  estimate_dataset_bmr(simi_norm_tib_4rcurvep_act, plot = TRUE)
+```
+
+```{r 75.1estimating_BMR_3, echo=FALSE}
+bmr_output$outcome %>%
+  select(endpoint, qc, cor_exp_fit, cor_lm_fit, bmr_exp, bmr_ori) %>%
+  kable(
+    col.names = c(
+      "Endpoint",
+      "Quality Control Message",
+      "Correlation of expotential fit",
+      "Correlation of linear model fit",
+      "BMR of exponential model",
+      "BMR of linear model"
+    ),
+    align = 'llrrrr',
+    caption = "Table 12. Summary of the estimated BMR"
+  ) %>%
+  kable_styling() %>%
+  scroll_box()
+```
+
+
+```{r 76.1lowest_BMR, include=FALSE}
+bmr_thresh <- bmr_output$outcome %>%
+    mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
+    pull(bmr)
+```
+
+From the bootstrapping method, it seems that the benchmark response threshold should be set to `r bmr_thresh`, but be cautious of doing so. In the future, there will be a visualizaiton of all of the simulated curves to try to visually determine if the BMR is appropriate.
+
+```{r 77.1calculating_benchmark_dose, include = FALSE}
+bmd_dat <- combi_run_rcurvep(
+  simi_norm_tib_4rcurvep, 
+  n_samples = 10, #Increase this number to 100 or 1000 for better results (takes a long time to run)
+  keep_sets = "act_set", 
+  TRSH = bmr_thresh,
+  RNGE = -1000000
+)
+```
+
+```{r 78.1calculating_benchmark_dose_2, echo=FALSE, collapse=TRUE}
+sum_bmd_dat <- summarize_rcurvep_output(bmd_dat)
+sum_bmd_dat
+```
+
+```{r 79.1calculating_benchmark_dose_3, echo=FALSE}
+sum_bmd_dat$act_summary %>%
+  mutate(lowest_conc = 10^(lowest_conc), highest_conc = 10^(highest_conc), POD_cil = 10^(POD_cil), POD_med = 10^(POD_med), POD_ciu = 10^(POD_ciu)) %>%
+  select(chemical, lowest_conc, highest_conc, POD_cil, POD_med, POD_ciu, hit_confidence) %>%
+  kable(col.names = c("Chemical", "Low Dose", "High Dose", "BMD - low confidence", "BMD", "BMD - high confidence", "Hit Confidence"), caption = "Table 13. Summary of all the benchmark doses (BMDs) of every chemical") %>%
+  kable_styling() %>%
+   row_spec(which(sum_bmd_dat$act_summary$POD_med < sum_bmd_dat$act_summary$highest_conc), bold = TRUE, background = "gray") %>%
+  scroll_box()
+```
+
+
 
 ## Analysis - Similarity - Dark Cycle
-
-
-Note to self: find out why some embryos are being flagged as outliers/poor quality data but only in the dark cycle...
-
 
 ```{r 80pre_processing_4_pipeline_L, include=FALSE}
 lfishBehavDatBinD <- fishBehavDatBinLD %>%
@@ -2103,3 +2253,6 @@ sum_bmd_dat$act_summary %>%
 
 ##Analysis - Area under curve - editting
 
+##Questions
+- if some chemicals have a positive direction of effect, and other have a negative direction of effect, should the data be subset depending on the direction of the effect? (all positive, or all negative)
+- in the combi_run_rcurvep output, what is thee definition of EC50 vs C50, POD & AUC/wAUC, wAUC vs AUC vs wAUC_prev?
