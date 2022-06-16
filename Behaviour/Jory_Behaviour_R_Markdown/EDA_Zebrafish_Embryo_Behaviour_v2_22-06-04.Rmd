@@ -5,9 +5,10 @@ date: "`r format(Sys.time(), '%d %B %Y')`"
 output: 
   html_document:
     code_folding: show
+    df_print: paged
     toc: true
-    toc_float: true
     toc_depth: 5
+    toc_float: true
     theme: readable
 params:
   metric: pearson
@@ -41,7 +42,7 @@ source("Functions/behavioural_endpoint_calc.R")
 ```
 
 
-# Rmd Report Assignment - BIOL5502
+# Toxicology Behavioural Analysis Report
 
 ## Version Control
 ```{r 3version_control, comment="", class.source ='fold-hide'}
@@ -661,17 +662,17 @@ yintercept <- mean(na.omit(filter(.data = data, plate_id == chemical)[[y]], Dose
 
 <!-- #### Total Distance Variable -- `totaldist` -->
 
-<!-- <!-- Obvious observable dose differences from my naked eye: --> -->
+<!-- Obvious observable dose differences from my naked eye: -->
 
-<!-- <!-- - 1-octanol (+'ve) --> -->
-<!-- <!-- - 4-tert pentylphenol (4TPP) (+'ve) --> -->
-<!-- <!-- - bisphenol-A (BPA) (+'ve) --> -->
-<!-- <!-- - dimethylsulfoxide (DMSO) (+'ve) --> -->
-<!-- <!-- - ethinyl estradiol (EE2) (+'ve) --> -->
-<!-- <!-- - fadrozole (+'ve) --> -->
-<!-- <!-- - flutamide (+'ve) --> -->
-<!-- <!-- - prochloraz (-'ve) --> -->
-<!-- <!-- - vinclozolin (+'ve) --> -->
+<!-- - 1-octanol (+'ve) -->
+<!-- - 4-tert pentylphenol (4TPP) (+'ve) -->
+<!-- - bisphenol-A (BPA) (+'ve) -->
+<!-- - dimethylsulfoxide (DMSO) (+'ve) -->
+<!-- - ethinyl estradiol (EE2) (+'ve) -->
+<!-- - fadrozole (+'ve) -->
+<!-- - flutamide (+'ve) -->
+<!-- - prochloraz (-'ve) -->
+<!-- - vinclozolin (+'ve) -->
 
 
 <!-- ```{r ggplots_all_chems_totaldist, echo=FALSE, fig.align='center', fig.cap="Figure 10. Behavioural data from the `totaldist` endpoint from the last 30 minutes of the assay where light and dark cycles stimulate fish to be active, and calm. The different colours represent different dose groups and the deep purple line on each facet represents the control group. Doses that perturb swimming activity in fish stand out from the internal control groups and others. Faceted by chemical (n = 26)", warning=FALSE, message=FALSE, out.height="150%", out.width="250%", fig.width=11, fig.height=6} -->
@@ -680,16 +681,16 @@ yintercept <- mean(na.omit(filter(.data = data, plate_id == chemical)[[y]], Dose
 
 <!-- #### Active Duration Variable -- `activedur` -->
 
-<!-- <!-- Obvious observable dose differences from my naked eye: --> -->
+<!-- Obvious observable dose differences from my naked eye: -->
 
-<!-- <!-- - 17beta-estradiol --> -->
-<!-- <!-- - 24DNP --> -->
-<!-- <!-- - 1-octanol (+'ve) --> -->
-<!-- <!-- - 3,4 - dichloroanaline (34DCA) (-'ve) --> -->
-<!-- <!-- - 4-tert pentylphenol (4TPP) (+'ve) --> -->
-<!-- <!-- - dimethylformamide (DMSO) (-'ve) --> -->
-<!-- <!-- - fadrozole (+'ve) --> -->
-<!-- <!-- - prochloraz (-'ve) --> -->
+<!-- - 17beta-estradiol -->
+<!-- - 24DNP -->
+<!-- - 1-octanol (+'ve) -->
+<!-- - 3,4 - dichloroanaline (34DCA) (-'ve) -->
+<!-- - 4-tert pentylphenol (4TPP) (+'ve) -->
+<!-- - dimethylformamide (DMSO) (-'ve) -->
+<!-- - fadrozole (+'ve) -->
+<!-- - prochloraz (-'ve) -->
 
 
 <!-- ```{r ggplots_all_chems_activedur, echo=FALSE, fig.align='center', fig.cap="Figure 11. Behavioural data from the `activedur` endpoint from the last 30 minutes of the assay where light and dark cycles stimulate fish to be active, and calm. The different colours represent different dose groups and the deep purple line on each facet represents the control group. Doses that perturb swimming activity in fish stand out from the internal control groups and others. Faceted by chemical (n = 26)", warning=FALSE, message=FALSE, out.height="150%", out.width="250%", fig.width=11, fig.height=6} -->
@@ -698,16 +699,16 @@ yintercept <- mean(na.omit(filter(.data = data, plate_id == chemical)[[y]], Dose
 
 <!-- #### Inactive Counts Variable -- `inact` -->
 
-<!-- <!-- Obvious observable dose differences from my naked eye: --> -->
+<!-- Obvious observable dose differences from my naked eye: -->
 
-<!-- <!-- - 1-octanol (-'ve) --> -->
-<!-- <!-- - 3,4 - dichloroanaline (34DCA) (-'ve) --> -->
-<!-- <!-- - 4-tert octophenol (4TOP) (-'ve) --> -->
-<!-- <!-- - 4-tert pentylphenol (4TPP) (-'ve) --> -->
-<!-- <!-- - dimethylformamide (DMSO) (-'ve) --> -->
-<!-- <!-- - fadrozole (-'ve) --> -->
-<!-- <!-- - fenitrothion (-'ve) --> -->
-<!-- <!-- - prochloraz (-'ve) --> -->
+<!-- - 1-octanol (-'ve) -->
+<!-- - 3,4 - dichloroanaline (34DCA) (-'ve) -->
+<!-- - 4-tert octophenol (4TOP) (-'ve) -->
+<!-- - 4-tert pentylphenol (4TPP) (-'ve) -->
+<!-- - dimethylformamide (DMSO) (-'ve) -->
+<!-- - fadrozole (-'ve) -->
+<!-- - fenitrothion (-'ve) -->
+<!-- - prochloraz (-'ve) -->
 
 <!-- Note: a negative change in inactivity counts represents hyperactivity -->
 <!-- ```{r ggplots_all_chems_inact, echo=FALSE, fig.align='center', fig.cap="Figure 12. Behavioural data from the `inact` endpoint from the last 30 minutes of the assay where light and dark cycles stimulate fish to be active, and calm. The different colours represent different dose groups and the deep purple line on each facet represents the control group. Doses that perturb swimming activity in fish stand out from the internal control groups and others. Faceted by chemical (n = 26)", warning=FALSE, message=FALSE,out.height="150%", out.width="250%", fig.width=11, fig.height=6} -->
@@ -747,7 +748,6 @@ yintercept <- mean(na.omit(filter(.data = data, plate_id == chemical)[[y]], Dose
 
 #### Bar Graphs
 
-##### Binned by individual 5-minute cycles
 ```{r 32binning_fishBehavDat, include=FALSE}
 fishBehavDatBin5 <- fishBehavDat %>%
   mutate(Cycle = if_else(
@@ -894,6 +894,7 @@ dunnett_summary_all_chems$Dose <- factor(dunnett_summary_all_chems$Dose, levels 
 
 
 ```{r 36meantotaldist_BinnedDat, echo=FALSE}
+p_list <- list()
 for (k in 1:length(chemicalNames)) {
   p <- dunnett_summary_all_chems %>%
     filter(plate_id == chemicalNames[k]) %>%
@@ -943,12 +944,21 @@ for (k in 1:length(chemicalNames)) {
     xlab("") +
     labs(title = chemicalNames[k]) +
     theme_classic()
-  
-  print(p)
+
+  p_list[[chemicalNames[k]]] <- list(p, chemicalNames[k])
+  # print(p)
 }
 ```
 
-##### Binned by cycle type (light or dark - 2 bins - 15mins each)
+##### Plots Binned by individual 5-minute cycles {.tabset}
+```{r 36.1meantotaldist_BinnedDat, echo = FALSE, results = 'asis'}
+for (i in seq_along(p_list)){
+  temp <- p_list[[i]]
+  cat("######", temp[[2]], " \n")
+  print(temp[[1]])
+  cat(' \n\n')
+}
+```
 
 ```{r 37binning_fishBehavDatLD, include=FALSE}
 fishBehavDatBinLD <- fishBehavDat %>%
@@ -1073,6 +1083,7 @@ dunnett_summary_all_chems_LD$Dose <- factor(dunnett_summary_all_chems_LD$Dose, l
 
 
 ```{r 41meantotaldist_BinnedDatLD, echo=FALSE}
+p_list <- list()
 for (k in 1:length(chemicalNames)) {
   p <- dunnett_summary_all_chems_LD %>%
     filter(plate_id == chemicalNames[k]) %>%
@@ -1123,7 +1134,18 @@ for (k in 1:length(chemicalNames)) {
     labs(title = chemicalNames[k]) +
     theme_classic()
   
-  print(p)
+  p_list[[chemicalNames[k]]] <- list(p, chemicalNames[k])
+  # print(p)
+}
+```
+
+##### Plots Binned by cycle type (light or dark - 2 bins - 15mins each) {.tabset}
+```{r 41.1meantotaldist_BinnedDat, echo = FALSE, results = 'asis'}
+for (i in seq_along(p_list)){
+  temp <- p_list[[i]]
+  cat("######", temp[[2]], " \n")
+  print(temp[[1]])
+  cat(' \n\n')
 }
 ```
 
@@ -1254,6 +1276,7 @@ dunnett_summary_all_chems_no_bin$Dose <- factor(dunnett_summary_all_chems_no_bin
 <!-- # ``` -->
 
 ```{r 45meantotaldist, echo=FALSE}
+p_list <- list()
 for (k in 1:length(chemicalNames)) {
   p <- dunnett_summary_all_chems_no_bin %>%
     filter(plate_id == chemicalNames[k]) %>%
@@ -1304,7 +1327,18 @@ for (k in 1:length(chemicalNames)) {
     labs(title = chemicalNames[k]) +
     theme_classic()
   
-  print(p)
+  p_list[[chemicalNames[k]]] <- list(p, chemicalNames[k])
+  # print(p)
+}
+```
+
+##### Plots Not Binned by cycle {.tabset}
+```{r 45.1meantotaldist_BinnedDat, echo = FALSE, results = 'asis'}
+for (i in seq_along(p_list)){
+  temp <- p_list[[i]]
+  cat("######", temp[[2]], " \n")
+  print(temp[[1]])
+  cat(' \n\n')
 }
 ```
 Chemicals with no observable dose-response effects that should be removed from the analysis
@@ -1981,7 +2015,7 @@ bmd_dat_L_pos <- combi_run_rcurvep(
   n_samples = 10, #Increase this number to 100 or 1000 for better results (takes a long time to run)
   keep_sets = "act_set", 
   TRSH = 50,
-  RNGE = -1000000
+  RNGE = 1000000
 )
 ```
 
@@ -2321,7 +2355,7 @@ bmd_dat_D_pos <- combi_run_rcurvep(
   n_samples = 10, #Increase this number to 100 or 1000 for better results (takes a long time to run)
   keep_sets = "act_set", 
   TRSH = bmr_thresh,
-  RNGE = -1000000
+  RNGE = 1000000
 )
 ```
 
@@ -2330,7 +2364,7 @@ sum_bmd_dat_D_pos <- summarize_rcurvep_output(bmd_dat_D_pos)
 sum_bmd_dat_D_pos
 ```
 
-```{r 96.1calculating_benchmark_dose_3, echo=FALSE}
+```{r 96.1calculating_benchmark_dose_3, include=FALSE}
 sum_bmd_dat_D_pos$act_summary %>%
   mutate(lowest_conc = 10^(lowest_conc), highest_conc = 10^(highest_conc), POD_cil = 10^(POD_cil), POD_med = 10^(POD_med), POD_ciu = 10^(POD_ciu)) %>%
   select(chemical, lowest_conc, highest_conc, POD_cil, POD_med, POD_ciu, hit_confidence) %>%
@@ -2339,6 +2373,39 @@ sum_bmd_dat_D_pos$act_summary %>%
       row_spec(which(sum_bmd_dat_D_pos$act_summary$POD_med < sum_bmd_dat_D_pos$act_summary$highest_conc), bold = TRUE, background = "gray") %>%
   scroll_box()
 ```
+
+##Similarity Score Analysis Summary
+
+```{r summary_table_ss_1, echo = FALSE}
+sum_bmd_dat_D_neg$act_summary <- sum_bmd_dat_D_neg$act_summary %>%
+  mutate(Bin = "Dark")
+sum_bmd_dat_D_pos$act_summary <- sum_bmd_dat_D_pos$act_summary %>%
+  mutate(Bin = "Dark")
+
+sum_bmd_dat_L_neg$act_summary <- sum_bmd_dat_L_neg$act_summary %>%
+  mutate(Bin = "Light")
+sum_bmd_dat_L_pos$act_summary <- sum_bmd_dat_L_pos$act_summary %>%
+  mutate(Bin = "Light")
+
+sum_bmd_dat_nobin_neg$act_summary <- sum_bmd_dat_nobin_neg$act_summary %>%
+  mutate(Bin = "None")
+sum_bmd_dat_nobin_pos$act_summary <- sum_bmd_dat_nobin_pos$act_summary %>%
+  mutate(Bin = "None")
+
+ss_summary <- rbind(sum_bmd_dat_D_neg$act_summary, sum_bmd_dat_D_pos$act_summary, sum_bmd_dat_L_neg$act_summary, sum_bmd_dat_L_pos$act_summary, sum_bmd_dat_nobin_neg$act_summary, sum_bmd_dat_nobin_pos$act_summary) %>%
+  arrange(chemical, desc(hit_confidence))
+```
+
+```{r Summary_Table, echo = FALSE}
+ss_summary %>%
+  mutate(lowest_conc = 10^(lowest_conc), highest_conc = 10^(highest_conc), POD_cil = 10^(POD_cil), POD_med = 10^(POD_med), POD_ciu = 10^(POD_ciu), RNGE = RNGE/1000000) %>%
+  select(chemical, Bin, RNGE, TRSH, lowest_conc, highest_conc, POD_cil, POD_med, POD_ciu, hit_confidence) %>%
+  kable(col.names = c("Chemical", "Bin",  "Direction", "BMR Threshold", "Low Dose", "High Dose", "BMDL", "BMD", "BMDU", "Hit Confidence"), caption = "Table xx. Summary of all the benchmark doses (BMDs) of every chemical, binning method, and direction") %>%
+  kable_styling() %>%
+      row_spec(which((ss_summary$hit_confidence >= 0.5) & (ss_summary$POD_med < ss_summary$highest_conc)), bold = TRUE, background = "gray") %>%
+  scroll_box()
+```
+
 ##Analysis - Area under curve - editting
 
 ##Questions
