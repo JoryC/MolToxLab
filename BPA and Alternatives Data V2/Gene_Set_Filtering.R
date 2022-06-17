@@ -43,8 +43,8 @@ geneset <- read.csv("Custom Gene Sets/estrogen_genes.csv", stringsAsFactors = F)
 
 #Biomart#
 #import Biomart dataset
-mart <- useMart('ENSEMBL_MART_ENSEMBL')
-mart <- useDataset('drerio_gene_ensembl', mart)
+premart <- useMart('ENSEMBL_MART_ENSEMBL')
+mart <- useDataset('drerio_gene_ensembl', premart)
 
 #retrieve gene symbol and ensembl id
 annotLookup <- getBM(

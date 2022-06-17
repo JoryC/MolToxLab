@@ -131,12 +131,12 @@ QCplots[["readcount"]]<- readcount %>%
   geom_jitter(position = position_jitter(width = 0.2, height = 0, seed = 42069),
               colour = "black") +
   labs(x = "Chemical", y = "Pre-Filtered Read Count", title = "Read Count") +
-  scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x),
-                limits = c(10^7, 10^8),
+  scale_y_log10(breaks = c(10^4, 10^5, 10^6, 10^7, 10^8),
+                limits = c(10^3.5, 10^8),
                 labels = trans_format("log10", math_format(10^.x))) +
-  # annotation_logticks(sides="l") +
+  annotation_logticks(sides="l") +
   theme_classic()
-# print(QCplots[["readcount"]])
+print(QCplots[["readcount"]])
 
 #number of genes per sample
 QCplots[["ngene_plot"]] <-
@@ -145,6 +145,7 @@ QCplots[["ngene_plot"]] <-
   geom_boxplot(outlier.shape = NA, width = 0.5) +
   geom_jitter(position = position_jitter(width = 0.2, height = 0, seed = 42069),
               colour = "black") +
+  ylim(0,30000)+
   labs(x = "Chemical", y = "Gene Count per Sample", title = "Gene Count") +
   theme_classic()
 
@@ -157,7 +158,7 @@ QCplots[["nCov5_plot"]] <-
   geom_boxplot(outlier.shape = NA, width = 0.5) +
   geom_jitter(position = position_jitter(width = 0.2, height = 0, seed = 42069),
               colour = "black") +
-  ylim(20000, NA) +
+  ylim(0, 25000) +
   labs(x = "Chemical", y = "nCov5", title = "nCov5") +
   theme_classic()
 
@@ -170,11 +171,11 @@ QCplots[["nSig80_plot"]] <-
   geom_boxplot(outlier.shape = NA, width = 0.5) +
   geom_jitter(position = position_jitter(width = 0.2,height = 0, seed = 42069),
               colour = "black") +
-  ylim(2000, NA) +
+  ylim(0, 4000) +
   labs(x = "Chemical", y = "nSig80", title = "nSig80") +
   theme_classic()
 
-multiplot(plotlist = QCplots, layout = matrix(c(1:4), nrow=2, byrow=TRUE))
+multiplot(plotlist = QCplots, layout = matrix(c(1:4), nrow=4, byrow=TRUE))
 
 
 QC_sample_summary <- nestData %>% 
