@@ -1369,6 +1369,71 @@ The general workflow is to first, calculate similarity scores (Pearson's correla
 
 Similarity endpoints are calculated by iteratively performing pairwise comparisons between chemical-treated fish across the duration of the experiment, and all of the chemically treated treated embryos (e.g. embryo_id Dose1_1 vs embryo_id Control_1, embryo_id Dose1_1 vs embryo_id Control_2, embryo_id Dose1_1 vs embryo_id Control_3... embryo_id Dose1_1 vs embryo_id Control_9). After nine iterations (Control group n = 9), the mean Pearson's correlation coefficient is used as the similarity endpoint.
 
+```{r 46.1Visual_of_how_to_calculate_simi_enpoints, echo = FALSE}
+p1 <- fishBehavDat %>%
+  filter(plate_id == "BPA", time_end > 20, Dose == "Dose2") %>%
+  mutate(time_end = time_end-20) %>%
+  ggplot(aes(x = time_end, y = totaldist, color = embryo_id)) +
+  geom_line() +
+  geom_point()
+p2 <- fishBehavDat %>%
+  filter(plate_id == "BPA", time_end > 20, Dose == "Control") %>%
+  mutate(time_end = time_end-20) %>%
+  ggplot(aes(x = time_end, y = totaldist, color = embryo_id)) +
+  geom_line() +
+  geom_point() +
+  scale_color_grey()
+
+grid.arrange(p1, p2)
+```
+```{r 46.2Visual_of_how_to_calculate_simi_enpoints, echo = FALSE}
+ cor_dat <- fishBehavDat %>%
+  filter(plate_id == "BPA", time_end > 20, embryo_id %in% c("Dose2_1", "Control_1", "Control_2", "Control_3", "Control_4", "Control_5", "Control_6", "Control_7", "Control_8", "Control_9")) %>%
+  select(embryo_id, time_end, totaldist) %>%
+  arrange(embryo_id) %>%
+  pivot_wider(., names_from = "embryo_id", values_from = "totaldist") %>%
+  summarise(cor = cor(x = as.matrix(.), method = "pearson", use = "pairwise.complete.obs"))
+cor_dat <- as.data.frame(cor_dat[11,])
+cor_dat <- as_tibble(cor_dat[,1]) %>%
+  select(-time_end) %>%
+  round(., digits = 2)
+
+p1 <- fishBehavDat %>%
+  filter(plate_id == "BPA", time_end > 20, Dose %in% c("Dose2", "Control"), embryo_id %in% c("Dose2_1", "Control_1")) %>%
+  mutate(time_end = time_end-20) %>%
+  ggplot(aes(x = time_end, y = totaldist, color = embryo_id)) +
+  geom_line() +
+  geom_point() +
+  scale_color_manual(values=c("#444444", "#F8766D")) +
+  geom_text(label = paste("Pearson's r = ", as.character(cor_dat$Control_1)), mapping = aes(x = 10, y = 100), inherit.aes = FALSE)
+
+p2 <- fishBehavDat %>%
+  filter(plate_id == "BPA", time_end > 20, Dose %in% c("Dose2", "Control"), embryo_id %in% c("Dose2_1", "Control_9")) %>%
+  mutate(time_end = time_end-20) %>%
+  ggplot(aes(x = time_end, y = totaldist, color = embryo_id)) +
+  geom_line() +
+  geom_point() +
+  scale_color_manual(values=c("#c9c9c9", "#F8766D")) +
+  geom_text(label = paste("Pearson's r = ", as.character(cor_dat$Control_9)), mapping = aes(x = 10, y = 100), inherit.aes = FALSE)
+
+grid.arrange(p1, p2)
+```
+
+```{r 46.2Visual_of_how_to_calculate_simi_enpoints, echo = FALSE}
+cor_dat_long <- cor_dat %>%
+    select(-Dose2_1) %>%
+    pivot_longer(cols = 1:9,names_to = "embryo_id", values_to = "totaldist")
+mean_cor_dat <- mean(cor_dat_long$totaldist)
+
+cor_dat_long %>%
+  ggplot(mapping = aes(x = "Dose2_1", y = totaldist)) +
+  geom_point() +
+  geom_point(aes(y = mean_cor_dat), color = "blue", size = 3) +
+  xlab("embryo_id") +
+  ylab("Pearson's r")
+```
+
+
 ```{r 47simi_endpoints, include = FALSE}
 simi_endps <- list(seq(1, 30, by = 1)) #One per minute
 names(simi_endps) <- params$metric
