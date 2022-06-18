@@ -1448,6 +1448,10 @@ for (i in chemicalNames) {
 }
 ```
 
+Responses on each plate are normalized using the following equation: `Response = (Vchemical/Vvehicle_control)*100-100`, where Vchemical is the response of the chemical-treated embryo, Vvehicle_control is the median value of the response of the internal plate control embryos. Therefore, response less than 0 from chemical-treated embryos decrease the similarity of their movements when compared to the control embryos. Response greater than 0 increase their similarity to the vehicle control embryos.\
+For this reason, it makes the most sense to use a negative direction for the BMD calculation.\
+It may also make sense to filter only chemicals that induce dissimilar movement patterns when compared to the vehicle control for the benchmark concentration analysis.
+
 ```{r 48normalized_data, include=FALSE}
 simi_norm_nobin <- lapply(simi_endpoints_nobin, simi_normalize)
 ```
@@ -1466,7 +1470,11 @@ summarystats_list_nobin <- lapply(simi_norm_nobin, summarystats)
 
 ```{r 50ANCOVA, echo=FALSE}
 ancova_list_nobin <- sapply(simi_norm_nobin, combinedancova)
-#4TPP similarity scores statistically significant from each other
+
+for (i in 1:length(chemicalNames)){
+  ancova_list_nobin[[i]]$`Pr(>F)` <- p.adjust(p = ancova_list_nobin[[i]]$`Pr(>F)`, method = "fdr")
+}
+
 ancova_comb_nobin <- as_tibble(ldply(ancova_list_nobin))
 ancova_comb_nobin <- ancova_comb_nobin %>%
   na.omit() %>%
@@ -1599,7 +1607,7 @@ simi_norm_tib_4rcurvep <- simi_norm_tib %>%
   select(endpoint, chemical, conc, resp)
 ```
 
-Since we do not know what the benchmark response is for each one of the chemicals, a method will be used that can estimate a benchmark response based off of the given data. This method uses bootstrapping to 100s to 1000s of curves that will help determine what a good estimate is for the benchmark response. This process can be a bit time-intensive to run.
+Since we do not know what the benchmark response is for each one of the chemicals, a method will be used that can estimate a benchmark response based off of the given data. The RcurveP package provides an automated process to tselect an appropriate BMR based off of the data. This method uses bootstrapping to 100s to 1000s of curves that will help determine what a good estimate is for the benchmark response. This process can be a bit time-intensive to run.
 
 ##### Negative Direction
 
