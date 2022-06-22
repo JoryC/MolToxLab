@@ -501,39 +501,8 @@ out_totaldist %>%
 ```
 This suggests that the effects of chemical exposure could be behaving monotonically:
 
-```{r 27outlier_summary_tally_by_dose_group, echo=FALSE, warning=FALSE, message=FALSE, fig.cap="Figure 9. Monotonic relationship of outlier observations (totaldist) and dose groups", fig.align='center'}
-out_totaldist %>%
-  mutate(Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>%
-  group_by(Dose) %>%
-  tally() %>%
-  ggplot(aes(x = Dose, y = n, group = 1)) +
-  geom_point() +
-  geom_smooth(method = "lm", se = FALSE, linetype = "dashed", color = "black") +
-  ylab("Frequency")
-```
-However, removing these outliers from the data set could be artificially masking the most extreme effects of exposure on individuals (especially in the highest dose). Therefore, the outliers will be kept in the data set for now to avoid removing any observations that could be the result of chemical exposure. They will be flagged as outliers in `raw_data`.
-
-<!-- ### What is the best variable to use for analysis? -->
-<!-- For the remaining downstream analysis, it should be determined if the effects of chemical exposure are behaving as expected. It is expected that effects will behave monotonically. Therefore, these should be an increasing or decreasing trend on the effect endpoint (variable) as the dose increases. -->
-<!-- ```{r totaldist_test, echo=FALSE, warning=FALSE, message=FALSE, fig.cap="Figure 10. Monotonic relationship of (totaldist) and dose groups", fig.align='center'} -->
-<!-- norm_to <- raw_data %>% -->
-<!--     filter(Dose == "Control") %>% -->
-<!--     group_by(plate_id) %>% -->
-<!--     summarise(cntrl_mean = rep(mean(totaldist), each = 6)) %>% -->
-<!--     mutate(Dose = factor(x = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>% -->
-<!--   select(plate_id, Dose, cntrl_mean) -->
-<!-- temp_dat <- raw_data %>% -->
-<!--   mutate(Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>% -->
-<!--   group_by(plate_id, Dose) %>% -->
-<!--   summarize(mean = mean(totaldist)) -->
-<!-- norm_dat <- right_join(temp_dat, norm_to) %>% -->
-<!--   mutate(norm_mean = mean - cntrl_mean) -->
-<!-- norm_dat %>% -->
-<!--   ggplot(aes(x = Dose, y = norm_mean, group = 1)) + -->
-<!--   geom_point() + -->
-<!--   geom_smooth(method = "lm", se = FALSE, linetype = "dashed", color = "black") + -->
-<!--   facet_wrap(~ plate_id) -->
-<!-- ``` -->
+However, removing these outliers from the data set could be artificially masking the most extreme effects of exposure on individuals (especially in the highest dose). Therefore, the outliers will be kept in the data set for now to avoid removing any observations that could be the result of chemical exposure. They will be flagged as outliers in `raw_data`.\
+\
 
 ### Evaluating Data Quality
 Figure 6 showed that the `emptydur` variable can be used reliably to filter out observations with poor data quality. The 'empty duration' variable ranges from 0s to 60s and indicates how long the observation was not able to detect a fish in the well. An arbitrary cutoff value of `r round(60*0.33)` seconds will be used to determine if an observation was of poor-quality and therefore, should be converted to `NA`. By doing this, the confidence in the accuracy of observations can be increased across the entire data set.
@@ -585,6 +554,78 @@ fishBehavDat <- raw_data %>%
   ) %>%
   inner_join(doseData) %>% # join dose info
   select(plate_id, embryo_id, replicate, Dose, Dose_mg_L, is_VC, Group, time_end, inact, smlct, larct, inadur, smldur, lardur, activedur, smldist, lardist, totaldist, outliers)
+```
+
+
+#### Testing for Monotonicity {.tabset}
+```{r 27outlier_summary_tally_by_dose_group, include=FALSE, warning=FALSE, message=FALSE, fig.cap="Figure 9. Monotonic relationship of outlier observations (totaldist) and dose groups", fig.align='center'}
+lm_eqn <- function(df){
+    m <- lm(y ~ x, df);
+    eq <- substitute(italic(y) == a + b %.% italic(x)*","~~italic(r)^2~"="~r2, 
+         list(a = format(unname(coef(m)[1]), digits = 2),
+              b = format(unname(coef(m)[2]), digits = 2),
+             r2 = format(summary(m)$r.squared, digits = 3)))
+    as.character(as.expression(eq));
+}
+
+p_1_dat <- out_totaldist %>%
+  mutate(Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>%
+  group_by(Dose) %>%
+  tally() %>%
+  mutate(x = Dose, y = n)
+p_0.1 <- ggplot(data = p_1_dat, aes(x = x, y = y, group = 1)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, linetype = "dashed", color = "black") +
+  ylab("Frequency")
+p_1 <- p_0.1 + geom_text(x = 2.5, y = 30, label = lm_eqn(p_1_dat), parse = TRUE) +
+  theme_minimal() +
+  theme(axis.title.x = element_blank(), panel.border = element_rect(colour = "grey50", fill = NA))
+
+p_2_dat <- fishBehavDat %>%
+  mutate(Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>%
+  filter(totaldist < 6000) %>%
+  mutate(x = Dose, y = totaldist) %>%
+   group_by(x) %>%
+  select(x, y, plate_id)
+p_2 <- ggplot(data = p_2_dat, aes(x = x, y = y, group = 1)) +
+  geom_smooth(method = "lm", se = FALSE, linetype = "dashed", color = "black") +
+  ylab("Average Total Distance") +
+  ggtitle(label = parse(text = lm_eqn(p_2_dat))) +
+  theme_minimal() +
+  theme(axis.title.x = element_blank(), panel.border = element_rect(colour = "grey50", fill = NA))
+
+p_2_dat_lm <- list()
+for (i in chemicalNames) {
+  temp <- p_2_dat %>%
+    filter(plate_id == i) %>%
+    mutate(lm = as.character(lm_eqn(.)))
+  p_2_dat_lm[[i]] <- temp
+}
+p_2_dat_lm <- ldply(p_2_dat_lm)
+p_2_dat_lm <- p_2_dat_lm %>%
+  group_by(plate_id, lm) %>%
+  summarise(mean_y = mean(y))
+
+p_3 <- ggplot(data = p_2_dat, aes(x = x, y = y, group = 1)) +
+  geom_smooth(method = "lm", se = FALSE, linetype = "dashed", color = "black") +
+  ylab("Average Total Distance") +
+  xlab("Dose") +
+  facet_wrap(~plate_id, scales = "free") +
+  theme_minimal() +
+  theme(axis.text.x = element_blank(), panel.border = element_rect(colour = "grey50", fill = NA))
+p_3 <- p_3 + geom_text(data = p_2_dat_lm, mapping = aes(label = lm, y = mean_y), x = 2.5, parse = TRUE, inherit.aes = FALSE, size = 2)
+
+p_list <- list(p_1, p_2, p_3)
+names(p_list) <- c("Outliers", "All Data", "Chemical Data")
+```
+
+```{r 27.1Monotonicity, echo = FALSE, results = 'asis'}
+for (i in seq_along(p_list)){
+  temp <- p_list[[i]]
+  cat("#####", names(p_list)[i], " \n")
+  print(temp)
+  cat(' \n\n')
+}
 ```
 
 ```{r 31custom_ggplot_functions, include=FALSE, class.source ='fold-hide'}
