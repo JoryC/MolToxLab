@@ -1,0 +1,389 @@
+---
+title: "Similarity Endpoint: Euclidean"
+author: "Jory Curry"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  html_document:
+    code_folding: show
+    df_print: paged
+    toc: true
+    toc_depth: 5
+    toc_float: true
+    theme: readable
+params:
+  metric: euclidean
+  value: totaldist
+  sample_size: 10
+---
+```{r 1setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen = 9)
+```
+
+```{r 2libraries, include=FALSE}
+library(knitr)
+library(kableExtra)
+library(gridExtra)
+library(rlang)
+library(Rcurvep)
+library(DescTools)
+library(plyr)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(readr)
+library(stringr)
+library(tibble)
+library(data.table)
+library(car)
+library(lazyeval)
+source("Functions/cal_auc_simi_endpoints.R")
+source("Functions/behavioural_endpoint_calc.R")
+```
+
+```{r read_in_data}
+fishBehavDat <- readRDS(file = "Data/fishBehavDat.rds")
+```
+
+## Analysis - Similarity Scores
+
+### No bins
+
+```{r 46pre_processing_4_pipeline, include=FALSE}
+lfishBehavDat <- fishBehavDat %>%
+  # filter(plate_id %in% c("BPAF", "24DMP")) %>%
+  mutate(value = .[[params$value]], dose = Dose_mg_L) %>%
+  filter(time_end > 20) %>% # For the analysis, we don't want the 20 minute acclimation period
+  mutate(time_end = time_end-20) %>% # Display time 1-30 minutes
+  select(plate_id, embryo_id, is_VC, time_end, value) %>%
+  na.omit() # Pipeline is picky about the data frame
+lfishBehavDat <- split(as.data.frame(lfishBehavDat), ~ plate_id) # Split into lists
+# chemicalNames <- chemicalNames[-which(chemicalNames %in% c("BPAF", "24DMP"))]
+```
+
+The analysis pipeline included in this report was adapted from [Hsieh et al 2019](https://pubmed.ncbi.nlm.nih.gov/30321397/). It is still a work in progress.\
+\
+The general workflow is to first, calculate similarity scores (Euclidean) for observations, normalize data to the median of control group, then perform statistical analyses and post-hoc tests (ANCOVA, Dunnett's test). Finally, a benchmark dose (BMD) is calculated for each chemical using the [Rcurvep package](https://github.com/moggces/Rcurvep).\
+\
+
+Similarity endpoints are calculated by iteratively performing pairwise comparisons between chemical-treated fish across the duration of the experiment, and all of the chemically treated treated embryos (e.g. embryo_id Dose1_1 vs embryo_id Control_1, embryo_id Dose1_1 vs embryo_id Control_2, embryo_id Dose1_1 vs embryo_id Control_3... embryo_id Dose1_1 vs embryo_id Control_9). After nine iterations (Control group n = 9), the mean Pearson's correlation coefficient is used as the similarity endpoint.
+
+```{r 46.1Visual_of_how_to_calculate_simi_enpoints, echo = FALSE}
+p1 <- fishBehavDat %>%
+  filter(plate_id == "BPA", time_end > 20, Dose == "Dose2") %>%
+  mutate(time_end = time_end-20) %>%
+  ggplot(aes(x = time_end, y = totaldist, color = embryo_id)) +
+  geom_line() +
+  geom_point()
+p2 <- fishBehavDat %>%
+  filter(plate_id == "BPA", time_end > 20, Dose == "Control") %>%
+  mutate(time_end = time_end-20) %>%
+  ggplot(aes(x = time_end, y = totaldist, color = embryo_id)) +
+  geom_line() +
+  geom_point() +
+  scale_color_grey()
+
+grid.arrange(p1, p2)
+```
+```{r 46.2Visual_of_how_to_calculate_simi_enpoints, echo = FALSE}
+ cor_dat <- fishBehavDat %>%
+  filter(plate_id == "BPA", time_end > 20, embryo_id %in% c("Dose2_1", "Control_1", "Control_2", "Control_3", "Control_4", "Control_5", "Control_6", "Control_7", "Control_8", "Control_9")) %>%
+  select(embryo_id, time_end, totaldist) %>%
+  arrange(embryo_id) %>%
+  pivot_wider(., names_from = "embryo_id", values_from = "totaldist") %>%
+  summarise(cor = cor(x = as.matrix(.), method = "pearson", use = "pairwise.complete.obs"))
+cor_dat <- as.data.frame(cor_dat[11,])
+cor_dat <- as_tibble(cor_dat[,1]) %>%
+  select(-time_end) %>%
+  round(., digits = 2)
+
+p1 <- fishBehavDat %>%
+  filter(plate_id == "BPA", time_end > 20, Dose %in% c("Dose2", "Control"), embryo_id %in% c("Dose2_1", "Control_1")) %>%
+  mutate(time_end = time_end-20) %>%
+  ggplot(aes(x = time_end, y = totaldist, color = embryo_id)) +
+  geom_line() +
+  geom_point() +
+  scale_color_manual(values=c("#444444", "#F8766D")) +
+  geom_text(label = paste("Pearson's r = ", as.character(cor_dat$Control_1)), mapping = aes(x = 10, y = 100), inherit.aes = FALSE)
+
+p2 <- fishBehavDat %>%
+  filter(plate_id == "BPA", time_end > 20, Dose %in% c("Dose2", "Control"), embryo_id %in% c("Dose2_1", "Control_9")) %>%
+  mutate(time_end = time_end-20) %>%
+  ggplot(aes(x = time_end, y = totaldist, color = embryo_id)) +
+  geom_line() +
+  geom_point() +
+  scale_color_manual(values=c("#c9c9c9", "#F8766D")) +
+  geom_text(label = paste("Pearson's r = ", as.character(cor_dat$Control_9)), mapping = aes(x = 10, y = 100), inherit.aes = FALSE)
+
+grid.arrange(p1, p2)
+```
+
+```{r 46.2Visual_of_how_to_calculate_simi_enpoints, echo = FALSE}
+cor_dat_long <- cor_dat %>%
+    select(-Dose2_1) %>%
+    pivot_longer(cols = 1:9,names_to = "embryo_id", values_to = "totaldist")
+mean_cor_dat <- mean(cor_dat_long$totaldist)
+
+cor_dat_long %>%
+  ggplot(mapping = aes(x = "Dose2_1", y = totaldist)) +
+  geom_point() +
+  geom_point(aes(y = mean_cor_dat), color = "blue", size = 3) +
+  xlab("embryo_id") +
+  ylab("Pearson's r")
+```
+
+
+```{r 47simi_endpoints, include = FALSE}
+simi_endps <- list(seq(1, 30, by = 1)) #One per minute
+names(simi_endps) <- params$metric
+simi_endpoints_nobin <- list()
+for (i in chemicalNames) {
+  temp <-
+    create_simi_endpoints(lfishBehavDat[[i]],
+                          segments = simi_endps,
+                          metric = params$metric)
+  simi_endpoints_nobin[[i]] <- temp[[1]]
+  rm(temp)
+}
+```
+
+Responses on each plate are normalized using the following equation: `Response = (Vchemical/Vvehicle_control)*100-100`, where Vchemical is the response of the chemical-treated embryo, Vvehicle_control is the median value of the response of the internal plate control embryos. Therefore, response less than 0 from chemical-treated embryos decrease the similarity of their movements when compared to the control embryos. Response greater than 0 increase their similarity to the vehicle control embryos.\
+For this reason, it makes the most sense to use a negative direction for the BMD calculation.\
+It may also make sense to filter only chemicals that induce dissimilar movement patterns when compared to the vehicle control for the benchmark concentration analysis.
+
+```{r 48normalized_data, include=FALSE}
+simi_norm_nobin <- lapply(simi_endpoints_nobin, simi_normalize)
+```
+
+```{r 49summary statistics, include=FALSE}
+for(i in chemicalNames) {
+  simi_norm_nobin[[i]]$dose <- as.factor(simi_norm_nobin[[i]]$dose)
+  simi_norm_nobin[[i]][, "Group"] = factor(rep(c("A", "B", "C"), times = (nrow(simi_norm_nobin[[i]]) /
+                                                                      9), each = 3))
+} # Adding Group column and factoring dose variable
+#Obtaining Summary Statistics
+summarystats_list_nobin <- lapply(simi_norm_nobin, summarystats)
+```
+
+#### ANCOVA
+
+```{r 50ANCOVA, echo=FALSE}
+ancova_list_nobin <- sapply(simi_norm_nobin, combinedancova)
+
+for (i in 1:length(chemicalNames)){
+  ancova_list_nobin[[i]]$`Pr(>F)` <- p.adjust(p = ancova_list_nobin[[i]]$`Pr(>F)`, method = "fdr")
+}
+
+ancova_comb_nobin <- as_tibble(ldply(ancova_list_nobin))
+ancova_comb_nobin <- ancova_comb_nobin %>%
+  na.omit() %>%
+  mutate(is.significant = if_else(
+    condition = `Pr(>F)` < 0.05,
+    true = TRUE,
+    false = FALSE
+  ))
+#Any significant results?
+ancova_comb_nobin %>%
+  filter(is.significant == TRUE)  %>%
+  select(.id, Df, `F value`, `Pr(>F)`) %>%
+  kable(
+    col.names = c("Chemical", "Degrees of Freedom", "F-Value", "P-value"),
+    align = 'llrr',
+    caption = "Table 6. Summary table of significant ANCOVA results (p < 0.05) from the `totaldist` variable after controling for within-group variability"
+  ) %>%
+  kable_styling()
+# Total distance - Yep, 4TPP is significant... be cautious look at the raw data
+```
+
+##### Dunnett's Test
+
+```{r 51Dunnett, include=FALSE}
+dunnett_list_nobin <- sapply(simi_norm_nobin, combineddunnett) %>%
+  setNames(., chemicalNames) %>%
+  as.array()
+#Dunnett's Test requires a bunch of wrangling
+dunnett_temp <-
+  list() #Take Dunnett's test results without any of the fancy summary information and shove it into a named list
+for (i in chemicalNames) {
+  dunnett_list_nobin[[i]][,"pval"] <- p.adjust(dunnett_list_nobin[[i]][,"pval"], method = "fdr")
+  
+  dunnett_temp[[names(dunnett_list_nobin[i])]] <-
+    dunnett_list_nobin[[i]] %>% as.data.frame() %>% rownames_to_column(var = "dose") #Coerce to a data frame temporarily so what we can take the row names of the reults and turn them into a variable with rownames_to_column
+}
+dunnett_comb <-
+  ldply(dunnett_temp) #this function combines all of the lists together and gives them a variable name according to the chemical
+dunnett_comb$dose = substr(dunnett_comb$dose,
+                           start = 1,
+                           stop = nchar(dunnett_comb$dose) - 6) #Here we are fixing the dose column... the dose column has the test dose related to the control... but we just want to see what the test dose is without it giving us redundant information about the comparison to the control for every observation...
+dunnett_comb <- as_tibble(dunnett_comb)
+dunnett_comb <- dunnett_comb %>%
+  na.omit() %>%
+  mutate(is.significant = if_else(
+    condition = pval < 0.05,
+    true = TRUE,
+    false = FALSE
+  ))
+```
+
+```{r 52Dunnett_results, echo=FALSE}
+# Any significant results?
+dunnett_comb %>%
+  filter(is.significant == TRUE) %>%
+  select(.id, dose, diff, pval) %>%
+  kable(
+    col.names = c("Chemical", "Dose", "Difference in similarity score (+/- 100)", "P-value"),
+    align = 'llcr',
+    caption = "Table 7. Summary table of significant Dunnett's test results (p < 0.05) from the `totaldist` variable after controling for within-group variability"
+  ) %>%
+  kable_styling()
+```
+
+
+```{r 53normalized_data_to_tibble, include=FALSE}
+doseData <- doseData %>%
+  mutate(dose = Dose) #Renaming dose variable to inner_join
+simi_norm_tib <-
+  as_tibble(rbindlist(simi_norm_nobin)) #Convert from list to tibble
+simi_norm_tib <- simi_norm_tib %>%
+  inner_join(doseData) %>%
+  mutate(is_VC = as.integer(is_VC)) %>%
+  select(plate_id,
+         dose,
+         Dose_mg_L,
+         is_VC,
+         Group,
+         endpoint,
+         endpoint_value_norm)
+```
+
+```{r 54normalized_data_ggplot, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap="Figure 16. Dose response relationship of normalized pearson's similarity scores from 26 different chemicals -- `totaldsit` variable", fig.width=10, fig.height=7.5, out.height="100%", out.width="125%"}
+simi_norm_tib %>%
+  mutate(dose = factor(
+    dose,
+    levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"),
+    ordered = TRUE
+  )) %>%
+  group_by(plate_id, dose, Group) %>%
+  summarise(dose = dose,
+            endpoint_value_norm = endpoint_value_norm,
+            Group = Group) %>%
+  ggplot(aes(x = dose, y = endpoint_value_norm, group = 1)) +
+  geom_boxplot(
+    aes(x = dose, y = endpoint_value_norm, group = dose),
+    outlier.shape = NA,
+    width = 0.5
+  ) +
+  # geom_jitter(position = position_jitter(width = 0.2,
+  #                                        height = 0, seed = 42069),
+  #             colour = "black") +
+  geom_jitter(position = position_jitter(
+    width = 0.2,
+    height = 0,
+    seed = 42069
+  ),
+  size = 0.5) +
+  geom_smooth(se = FALSE) +
+  labs(x = "Dose (mg/L)", y = "Response") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+  facet_wrap( ~ plate_id, strip.position = "top") +
+  theme(strip.background = element_blank(),
+        panel.background = element_blank()) +
+  ylim(-100, 100)
+```
+After running an ANCOVA, it can be seen that Malathion comes back as significant. However, Dunnett's test does not return any results, so it can't be determined from the Dunnett's test which dose group is statistically different from the controls.\
+\
+However, it could still be possible to calculate a benchmark dose for each chemical.
+
+#### Benchmark Dose
+
+```{r 55prep_4_rcurvep, include=FALSE}
+simi_norm_tib_4rcurvep <- simi_norm_tib %>%
+  rename(resp = endpoint_value_norm,
+         chemical = plate_id) %>%
+  filter(is_VC == 0) %>%
+  mutate(conc = log10(Dose_mg_L)) %>%
+  select(endpoint, chemical, conc, resp)
+```
+
+Since we do not know what the benchmark response is for each one of the chemicals, a method will be used that can estimate a benchmark response based off of the given data. The RcurveP package provides an automated process to select an appropriate BMR based off of the data. From Hsieh et al. 2019 manuscript: "The pooled variance of potency of all chemicals per [threshold value (i.e. 5 through 95)] was calculated. The BMR was considered as the [threshold value] at which the potency variance was sufficiently reduced and was the lowest threshold that potency variance was stabilized".
+
+##### Negative Direction
+
+```{r 56estimating_BMR, echo=FALSE, warning=FALSE, message=FALSE}
+set.seed(42069)
+
+simi_norm_tib_4rcurvep_act <- combi_run_rcurvep(
+  simi_norm_tib_4rcurvep,
+  n_samples = params$sample_size, #Increase this number to 100 or 1000 for better results (takes a long time to run)
+  keep_sets = c("act_set", "resp_set", "fp_set"),
+  TRSH = seq(5, 95, by = 5),
+  RNGE = -1000000
+)
+```
+
+```{r 57estimating_BMR_2, echo=FALSE, fig.cap= "Figure 17. Summary of Benchmark response estimation", fig.align='center', warning=FALSE, message=FALSE}
+bmr_output <-
+  estimate_dataset_bmr(simi_norm_tib_4rcurvep_act, plot = TRUE)
+```
+
+```{r 58estimating_BMR_3, echo=FALSE}
+bmr_output$outcome %>%
+  select(endpoint, qc, cor_exp_fit, cor_lm_fit, bmr_exp, bmr_ori) %>%
+  kable(
+    col.names = c(
+      "Endpoint",
+      "Quality Control Message",
+      "Correlation of expotential fit",
+      "Correlation of linear model fit",
+      "BMR of exponential model",
+      "BMR of linear model"
+    ),
+    align = 'llrrrr',
+    caption = "Table 8. Summary of the estimated BMR"
+  ) %>%
+  kable_styling() %>%
+  scroll_box()
+```
+
+
+```{r 59lowest_BMR, include=FALSE}
+bmr_output$outcome[which(is.na(bmr_output$outcome))] = 0
+bmr_thresh <- bmr_output$outcome %>%
+    mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
+    pull(bmr)
+```
+
+From the bootstrapping method, it seems that the benchmark response threshold should be set to `r bmr_thresh`, but be cautious of doing so. In the future, there will be a visualization of all of the simulated curves to try to visually determine if the BMR is appropriate.
+
+```{r 60calculating_benchmark_dose, include = FALSE}
+bmd_dat_nobin_neg <- combi_run_rcurvep(
+  simi_norm_tib_4rcurvep, 
+  n_samples = params$sample_size, #Increase this number to 100 or 1000 for better results (takes a long time to run)
+  keep_sets = "act_set", 
+  TRSH = bmr_thresh,
+  RNGE = -1000000
+)
+```
+
+```{r 61calculating_benchmark_dose_2, echo=FALSE, collapse=TRUE}
+sum_bmd_dat_nobin_neg <- summarize_rcurvep_output(bmd_dat_nobin_neg)
+sum_bmd_dat_nobin_neg
+```
+
+From the Hsieh et al 2019 manuscript: The BMD value is the median value (over all `r params$sample_size` simulated curves) of the dose that crosses the BMR. The lower and upper bounds of the 95% confidence intervals were categorized as the BMDL and BMDU respectively. Hit confidences represent the percentage of simulated curves (out of `r params$sample_size`) that were not flat after curve fitting.
+
+
+```{r 62calculating_benchmark_dose_3, echo=FALSE}
+sum_bmd_dat_nobin_neg$act_summary %>%
+  mutate(lowest_conc = 10^(lowest_conc), highest_conc = 10^(highest_conc), POD_cil = 10^(POD_cil), POD_med = 10^(POD_med), POD_ciu = 10^(POD_ciu)) %>%
+  select(chemical, lowest_conc, highest_conc, POD_cil, POD_med, POD_ciu, hit_confidence) %>%
+  kable(col.names = c("Chemical", "Low Dose", "High Dose", "BMD - low confidence", "BMD", "BMD - high confidence", "Hit Confidence"), caption = "Table 9. Summary of all the benchmark doses (BMDs) of every chemical") %>%
+  kable_styling() %>%
+  row_spec(which(sum_bmd_dat_nobin_neg$act_summary$POD_med < sum_bmd_dat_nobin_neg$act_summary$highest_conc), bold = TRUE, background = "gray") %>%
+  scroll_box()
+```
+
+From table 8 it can be seen that this method was not very effective on the current data set likely due to the very low doses used in the chemical exposure study. However, by using the low confidence BMDs, some additional figures will be made to illustrate where the dose-response data is crossing the benchmark response threshold to calculate the BMD.\
+\
+It is notable that certain chemicals had a BMD successfully calculated (highlighted in gray), however, malathion fails to get a BMD calculated.
