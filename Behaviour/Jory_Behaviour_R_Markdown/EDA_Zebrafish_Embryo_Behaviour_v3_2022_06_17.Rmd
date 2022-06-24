@@ -610,16 +610,84 @@ p_3 <- ggplot(data = p_2_dat, aes(x = x, y = y, group = 1)) +
   geom_smooth(method = "lm", se = FALSE, linetype = "dashed", color = "black") +
   ylab("Average Total Distance") +
   xlab("Dose") +
-  facet_wrap(~plate_id, scales = "free") +
+  facet_wrap(~plate_id) +
   theme_minimal() +
   theme(axis.text.x = element_blank(), panel.border = element_rect(colour = "grey50", fill = NA))
-p_3 <- p_3 + geom_text(data = p_2_dat_lm, mapping = aes(label = lm, y = mean_y), x = 2.5, parse = TRUE, inherit.aes = FALSE, size = 2)
+p_3 <- p_3 + geom_text(data = p_2_dat_lm, mapping = aes(label = lm, y = mean_y+100), x = 2.5, parse = TRUE, inherit.aes = FALSE, size = 2)
 
-p_list <- list(p_1, p_2, p_3)
-names(p_list) <- c("Outliers", "All Data", "Chemical Data")
+simi_endpoints_nobin_spearman_tibble <- readRDS("./Data/simi_endpoints_nobin_spearman_tibble.RDS") %>% 
+  mutate(Dose = str_split(string = embryo_id, pattern = "_", simplify = TRUE)[,1]) %>%
+  inner_join(doseData) %>%
+  mutate(x = Dose_mg_L, y = endpoint_value)
+
+# p_4_dat_lm <- list()
+# for (i in chemicalNames) {
+#   temp <- simi_endpoints_nobin_spearman_tibble %>%
+#     filter(plate_id == i) %>%
+#     mutate(lm = as.character(lm_eqn(.)))
+#   p_4_dat_lm[[i]] <- temp
+# }
+# p_4_dat_lm <- ldply(p_4_dat_lm)
+# p_4_dat_lm <- p_4_dat_lm %>%
+#   group_by(plate_id, lm) %>%
+#   summarise(mean_y = mean(y))
+
+p_4_dat_lm <- list()
+for (i in chemicalNames) {
+  temp <- simi_endpoints_nobin_spearman_tibble %>%
+    filter(plate_id == i) %>%
+    mutate(lm = predict(lm(.$y ~ .$x)))
+  p_4_dat_lm[[i]] <- temp
+}
+p_4_dat_lm <- ldply(p_4_dat_lm)
+
+p_4 <- simi_endpoints_nobin_spearman_tibble %>%
+  filter(x > 0, y > 0) %>%
+  ggplot(aes(x = x, y = y, group = 1)) +
+  geom_smooth(method = lm, se = FALSE, linetype = "dashed", color = "black") +
+  geom_smooth(data = p_4_dat_lm, inherit.aes = FALSE, aes(x = x, y = lm)) +
+  geom_point() +
+  scale_x_log10() +
+  facet_wrap(~plate_id, scales = "free") +
+  ylab("Spearman's ρ") +
+  xlab("Dose") +
+  theme_minimal() +
+  theme(axis.text.x = element_blank(), panel.border = element_rect(colour = "grey50", fill = NA))
+# p_4 <- p_4 + geom_text(data = p_2_dat_lm, mapping = aes(label = lm, x = log(min(filter(.data = simi_endpoints_nobin_spearman_tibble, x > 0, y > 0)$x))), y = 0.2, parse = TRUE, inherit.aes = FALSE, size = 2)
+
+simi_endpoints_nobin_pearson_tibble <- readRDS("./Data/simi_endpoints_nobin_pearson_tibble.RDS") %>% 
+  mutate(Dose = str_split(string = embryo_id, pattern = "_", simplify = TRUE)[,1]) %>%
+  inner_join(doseData) %>%
+  mutate(x = Dose_mg_L, y = endpoint_value)
+
+p_5_dat_lm <- list()
+for (i in chemicalNames) {
+  temp <- simi_endpoints_nobin_pearson_tibble %>%
+    filter(plate_id == i) %>%
+    mutate(lm = predict(lm(.$y ~ .$x)))
+  p_5_dat_lm[[i]] <- temp
+}
+p_5_dat_lm <- ldply(p_5_dat_lm)
+
+p_5 <- simi_endpoints_nobin_pearson_tibble %>%
+  filter(x > 0, y > 0) %>%
+  ggplot(aes(x = x, y = y, group = 1)) +
+  geom_smooth(method = lm, se = FALSE, linetype = "dashed", color = "black") +
+  geom_smooth(data = p_5_dat_lm, inherit.aes = FALSE, aes(x = x, y = lm)) +
+  geom_point() +
+  scale_x_log10() +
+  facet_wrap(~plate_id, scales = "free") +
+  ylab("Pearson's r") +
+  xlab("Dose") +
+  theme_minimal() +
+  theme(axis.text.x = element_blank(), panel.border = element_rect(colour = "grey50", fill = NA))
+# p_4 <- p_4 + geom_text(data = p_2_dat_lm, mapping = aes(label = lm, x = log(min(filter(.data = simi_endpoints_nobin_spearman_tibble, x > 0, y > 0)$x))), y = 0.2, parse = TRUE, inherit.aes = FALSE, size = 2)
+
+p_list <- list(p_1, p_2, p_3, p_4, p_5)
+names(p_list) <- c("Outliers", "All Untransformed Data (Linear)", "Faceted Untransformed Data (Linear)", "Faceted Transformed Data -- Spearman (Log-Log)", "Faceted Transformed Data -- Pearson (Log-Log)")
 ```
 
-```{r 27.1Monotonicity, echo = FALSE, results = 'asis'}
+```{r 27.1Monotonicity, echo = FALSE, results = 'asis', warning=FALSE, message=FALSE, fig.cap="Figure 9. Monotonic relationship of outlier observations (totaldist) and dose groups"}
 for (i in seq_along(p_list)){
   temp <- p_list[[i]]
   cat("#####", names(p_list)[i], " \n")
@@ -627,6 +695,8 @@ for (i in seq_along(p_list)){
   cat(' \n\n')
 }
 ```
+
+
 
 ```{r 31custom_ggplot_functions, include=FALSE, class.source ='fold-hide'}
 #Function for visualizing the 'variable' for each dose with a geom_smooth, faceted by chemical... each geom_smooth represents the mean of 9 fish from that dose group. All 50 minutes of the experiment by default
@@ -1383,10 +1453,25 @@ for (i in seq_along(p_list)){
   cat(' \n\n')
 }
 ```
-Chemicals with no observable dose-response effects that should be removed from the analysis
+\
+\
+Chemicals with no observable dose-response effects that could be removed from the analysis
 
 - BPAF
 - 24DMP
+
+
+
+
+From the many plots above, it can be seen that there are a few chemicals that appear to have a flat dose-response relationship for all metrics investigated:
+
+- 17-beta estradiol
+- 24DMP
+- 4TOP (potential effects in light only)
+- BPAF
+- Fenitrothion (perhaps non-monotonic potential effect)
+
+Therefore, they could be removed before conducting a benchmark dose analysis
 
 ## Analysis - Similarity Scores
 
@@ -1428,6 +1513,7 @@ p2 <- fishBehavDat %>%
 
 grid.arrange(p1, p2)
 ```
+
 ```{r 46.2Visual_of_how_to_calculate_simi_enpoints, echo = FALSE}
  cor_dat <- fishBehavDat %>%
   filter(plate_id == "BPA", time_end > 20, embryo_id %in% c("Dose2_1", "Control_1", "Control_2", "Control_3", "Control_4", "Control_5", "Control_6", "Control_7", "Control_8", "Control_9")) %>%
