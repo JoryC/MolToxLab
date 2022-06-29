@@ -2094,78 +2094,126 @@ sum_bmd_dat_nobin_neg <- rbind(sum_bmd_dat_nobin_neg_pearson$act_summary, sum_bm
 ```
 
 ```{r 61.1simulated_curveps, include = FALSE}
-simulated_curves_pearson <- sum_bmd_dat_nobin_neg_pearson$result$resp_set
-simulated_curve_bmds_pearson <- sum_bmd_dat_nobin_neg_pearson$act_summary %>%
-  group_by(chemical) %>%
-  summarise(POD_med = POD_med, POD_cil = POD_cil, hit_confidence = hit_confidence, lowest_conc = lowest_conc)
+# simulated_curves_pearson <- sum_bmd_dat_nobin_neg_pearson$result$resp_set
+# simulated_curve_bmds_pearson <- sum_bmd_dat_nobin_neg_pearson$act_summary %>%
+#   group_by(chemical) %>%
+#   summarise(POD_med = POD_med, POD_cil = POD_cil, hit_confidence = hit_confidence, lowest_conc = lowest_conc)
 
-simulated_curves_spearman <- sum_bmd_dat_nobin_neg_spearman$result$resp_set
+simulated_curves_spearman <- sum_bmd_dat_nobin_neg_spearman$result$resp_set # To merge with other sets
+
 simulated_curve_bmds_spearman <- sum_bmd_dat_nobin_neg_spearman$act_summary %>%
   group_by(chemical) %>%
-  summarise(POD_med = POD_med, POD_cil = POD_cil, hit_confidence = hit_confidence, lowest_conc = lowest_conc)
+  summarise(POD_med = POD_med, POD_cil = POD_cil, hit_confidence = hit_confidence, lowest_conc = lowest_conc) # To merge with other sets
 
-p_pearson <- simulated_curves_pearson %>%
-  group_by(chemical, sample_id, conc) %>%
-  ggplot(aes(x = conc, y = resp, group = sample_id), color = "gray75") +
-  geom_line(alpha = 0.3) +
-  geom_hline(yintercept = -bmr_thresh_pearson, linetype = "dashed", color = "red") +
-  geom_vline(data = simulated_curve_bmds_pearson, aes(xintercept = POD_med), color = "blue") +
-  geom_vline(data = simulated_curve_bmds_pearson, aes(xintercept = POD_cil), color = "green") +
-  geom_text(data = simulated_curve_bmds_pearson, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+0.75), y = -85, inherit.aes = FALSE, size = 3) +
-  facet_wrap(~chemical, scales = "free") +
-  ylim(-100,50) +
-  theme_minimal() +
-  theme(panel.border = element_rect(colour = "grey50", fill = NA))
+simulated_curves_spearman_act_set <- sum_bmd_dat_nobin_neg_spearman$result$act_set
 
-p_spearman <- simulated_curves_spearman %>%
-  group_by(chemical, sample_id, conc) %>%
-  ggplot(aes(x = conc, y = resp, group = sample_id), color = "gray75") +
-  geom_line(alpha = 0.3) +
+simulated_curves_spearman_summary <- simulated_curves_spearman %>%
+  inner_join(simulated_curves_spearman_act_set) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(endpoint = endpoint, resp = resp, corrected_resp = corrected_resp, correction = correction, POD = POD, highest_conc = highest_conc, hit = hit, lowest_conc = lowest_conc) %>%
+  inner_join(simulated_curve_bmds_spearman) %>%
+  mutate(resp = if_else(correction == 1, true = corrected_resp, false = resp)) %>%
+  select(-corrected_resp) %>%
+  mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+curve_hits_spearman <- simulated_curves_spearman_summary %>%
+  filter(hit == 1)
+
+confident_curves_spearman <- curve_hits_spearman %>%
+  filter(POD == median_POD | POD == POD_med, hit_confidence >= 0.5)
+
+bmds_spearman <- simulated_curves_spearman_summary %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med))
+
+# p_pearson <- simulated_curves_pearson %>%
+#   group_by(chemical, sample_id, conc) %>%
+#   ggplot(aes(x = conc, y = resp, group = sample_id), color = "gray75") +
+#   geom_line(alpha = 0.3) +
+#   geom_hline(yintercept = -bmr_thresh_pearson, linetype = "dashed", color = "red") +
+#   geom_vline(data = simulated_curve_bmds_pearson, aes(xintercept = POD_med), color = "blue") +
+#   geom_vline(data = simulated_curve_bmds_pearson, aes(xintercept = POD_cil), color = "green") +
+#   geom_text(data = simulated_curve_bmds_pearson, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+0.75), y = -85, inherit.aes = FALSE, size = 3) +
+#   facet_wrap(~chemical, scales = "free") +
+#   ylim(-100,50) +
+#   theme_minimal() +
+#   theme(panel.border = element_rect(colour = "grey50", fill = NA))
+
+p_spearman <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = simulated_curves_spearman_summary, mapping = aes(x = conc, y = resp, group = sample_id), color = "gray75", alpha = 0.2) +
+  geom_line(data = curve_hits_spearman, mapping = aes(x = conc, y = resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  geom_line(data = confident_curves_spearman, mapping = aes(x = conc, y = resp, group = sample_id), color = "black") +
   geom_hline(yintercept = -bmr_thresh_spearman, linetype = "dashed", color = "red") +
-  geom_vline(data = simulated_curve_bmds_spearman, aes(xintercept = POD_med), color = "blue") +
-  geom_vline(data = simulated_curve_bmds_spearman, aes(xintercept = POD_cil), color = "green") +
-  geom_text(data = simulated_curve_bmds_spearman, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+0.75), y = -85, inherit.aes = FALSE, size = 3) +
+  geom_vline(data = bmds_spearman, aes(xintercept = median_POD), color = "blue") +
+  # geom_vline(data = bmds_spearman, aes(xintercept = POD_med), color = "yellow") +
+  # geom_vline(data = bmds_spearman, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_spearman, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = simulated_curve_bmds_spearman, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -85, inherit.aes = FALSE, size = 3) +
   facet_wrap(~chemical, scales = "free") +
   ylim(-100,50) +
   theme_minimal() +
   theme(panel.border = element_rect(colour = "grey50", fill = NA))
 
-pearson_fitted <- simulated_curves_pearson %>%
+# Use the noise-filtered data from the curveP output
+# pearson_fitted <- simulated_curves_pearson %>%
+#   group_by(chemical) %>%
+#   run_fit(
+#   .,
+#   modls = c("hill", "cnst"),
+#   keep_sets = c("fit_set", "resp_set"), 
+#   hill_pdir = -1, #Negative direction only
+#   n_samples = params$sample_size
+# )
+# 
+# pearson_fitted_output <- summarize_fit_output(d = pearson_fitted, thr_resp = bmr_thresh_pearson)
+# 
+# pearson_fitted_output_summary <- pearson_fitted_output$result$resp_set %>%
+#   group_by(chemical, sample_id, conc) %>%
+#   summarize(fitted_resp = unique(na.omit(fitted_resp)))
+# 
+# p_pearson_fitted <- ggplot(data = pearson_fitted_output_summary, aes(x = conc, y = fitted_resp)) +
+#   geom_smooth(se = FALSE) +
+#   geom_vline(data = pearson_fitted_output$act_summary, aes(xintercept = POD_med), color = "blue") +
+#   geom_vline(data = pearson_fitted_output$act_summary, aes(xintercept = POD_cil), color = "green") +
+#   geom_hline(yintercept = -bmr_thresh_pearson, linetype = "dashed", color = "red") +
+#   facet_wrap(~chemical, scales = "free_x") +
+#   theme_minimal() +
+#   theme(panel.border = element_rect(colour = "grey50", fill = NA))
+
+
+# Use the noise-filtered data from the curveP output
+spearman_fitted <- simulated_curves_spearman_summary %>%
+  select(endpoint, chemical, conc, resp) %>%
   group_by(chemical) %>%
   run_fit(
   .,
   modls = c("hill", "cnst"),
   keep_sets = c("fit_set", "resp_set"),
-  n_samples = NULL
+  n_samples = 10,
+  hill_pdir = -1
 )
 
-p_pearson_fitted <- ggplot(data = pearson_fitted$result$resp_set, aes(x = conc, y = fitted_resp)) +
-  geom_smooth(data = pearson_fitted$result$resp_set, aes(x = conc, y = fitted_resp)) +
-  geom_point(data = pearson_fitted$result$resp_set, aes(x = conc, y = resp)) +
-  geom_vline(data = simulated_curve_bmds_pearson, aes(xintercept = POD_med), color = "blue") +
-  geom_vline(data = simulated_curve_bmds_pearson, aes(xintercept = POD_cil), color = "green") +
-    geom_hline(yintercept = -bmr_thresh_pearson, linetype = "dashed", color = "red") +
-  facet_wrap(~chemical, scales = "free_x") +
-    theme_minimal() +
-  theme(panel.border = element_rect(colour = "grey50", fill = NA))
-  
-spearman_fitted <- simulated_curves_spearman %>%
-  group_by(chemical) %>%
-  run_fit(
-  .,
-  modls = c("hill", "cnst"),
-  keep_sets = c("fit_set", "resp_set"),
-  n_samples = NULL
-)
+spearman_fitted_output <- summarize_fit_output(d = spearman_fitted, thr_resp = bmr_thresh_spearman)
+spearman_fitted_output_summary <- spearman_fitted_output$result$resp_set %>%
+  group_by(chemical, sample_id, conc) %>%
+  summarise(fitted_resp = na.omit(fitted_resp))
 
-p_spearman_fitted <- ggplot(data = spearman_fitted$result$resp_set, aes(x = conc, y = fitted_resp)) +
-  geom_smooth() +
-  geom_point(aes(y = resp)) +
-  geom_vline(data = simulated_curve_bmds_spearman, aes(xintercept = POD_med), color = "blue") +
-  geom_vline(data = simulated_curve_bmds_spearman, aes(xintercept = POD_cil), color = "green") +
-    geom_hline(yintercept = -bmr_thresh_spearman, linetype = "dashed", color = "red") +
+p_spearman_fitted <- ggplot(data = NULL, aes(x = conc, y = fitted_resp)) +
+  geom_line(data = spearman_fitted_output_summary, aes(x = conc, y = fitted_resp, group = sample_id), color = "gray75") +
+  geom_smooth(data = spearman_fitted_output_summary, aes(x = conc, y = fitted_resp)) +
+  geom_point(data = na.omit(spearman_fitted_output$result$resp_set), aes(y = resp)) +
+  geom_vline(data = spearman_fitted_output$act_summary, aes(xintercept = POD_med), color = "blue") +
+  geom_vline(data = spearman_fitted_output$act_summary, aes(xintercept = POD_cil), color = "green") +
+  geom_hline(yintercept = -bmr_thresh_spearman, linetype = "dashed", color = "red") +
+  geom_hline(yintercept = bmr_thresh_spearman, linetype = "dashed", color = "red") +
+  geom_text(data = spearman_fitted_output$act_summary, aes(label = paste("Hit =", hit_confidence), x = lowest_conc + 1), y = -100) +
   facet_wrap(~chemical, scales = "free_x") +
-    theme_minimal() +
+  theme_minimal() +
   theme(panel.border = element_rect(colour = "grey50", fill = NA))
 
 
@@ -2198,3 +2246,63 @@ sum_bmd_dat_nobin_neg %>%
 
 From table 8 it can be seen that this method was not very effective on the current data set likely due to the very low doses used in the chemical exposure study and/or a lack of neurotoxic effects for some chemicals.\
 \
+
+
+## Analysis - Quantity Endpoints - Area Under the Curve
+
+Take the raw totaldist values and put them in a data frame with the headers:
+
+- plate_id 
+- embryo_id
+- is_VC
+- time_end
+- value (totaldist)
+
+The the create_auc_endpoints function is going to caluculate the area under the curve for each chemical
+
+```{r 87AreaUnderCurveEndpoint, include = FALSE}
+auc_endps <-
+  list(
+    Dark_1 = seq(1, 5, by = 1),
+    Light_1 = seq(6, 10, by = 1),
+    Dark_2 = seq(11, 15, by = 1),
+    Light_2 = seq(16, 20, by = 1),
+    Dark_3 = seq(21, 25, by = 1),
+    Light_3 = seq(26, 30, by = 1)
+  )
+lfishBehavDat5 <- fishBehavDatBin5 %>%
+  filter(Cycle != "Acclimation") %>%
+  mutate(time_end = time_end-20) %>%
+  mutate(plate_id = plate_id, embryo_id = embryo_id, time_end = time_end, value = totaldist) %>%
+  select(plate_id, embryo_id, time_end, value) %>%
+  arrange(time_end) %>%
+  split(., ~ plate_id)
+
+lauc_all <- list()
+for (i in chemicalNames){
+temp <- create_auc_endpoints(d = lfishBehavDat5[[i]], segments = auc_endps)
+lauc_all[[i]] <- temp[[1]]
+}
+auc_all <- ldply(lauc_all)
+
+auc_all <- auc_all %>%
+   mutate(endpoint_value_log10 = log10(endpoint_value + 1)) %>%
+  mutate(Dose = str_split(string = embryo_id, pattern = "_", simplify = TRUE)[,1],
+         embryo_id = str_split(string = embryo_id, pattern = "_", simplify = TRUE)[,2])
+auc_join <- auc_all %>%
+  filter(Dose == "Control") %>%
+  group_by(plate_id, endpoint) %>%
+  mutate(median_value = median(endpoint_value_log10))
+auc_norm <- auc_all %>%
+  full_join(auc_join) %>%
+  mutate(endpoint_value_norm = (endpoint_value_log10 - median_value)*100) %>%
+  mutate(Cycle = if_else(condition = endpoint %in% c("Dark_1", "Dark_2", "Dark_3"), true = "Dark", false = "Light"))
+```
+
+```{r 88PlotAucEndpoints}
+auc_norm %>%
+  ggplot(aes(x = Dose, y = endpoint_value_norm)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.1, height = 0, aes(color = embryo_id, shape = Cycle))
+```
+
