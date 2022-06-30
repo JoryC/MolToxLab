@@ -2094,10 +2094,69 @@ sum_bmd_dat_nobin_neg <- rbind(sum_bmd_dat_nobin_neg_pearson$act_summary, sum_bm
 ```
 
 ```{r 61.1simulated_curveps, include = FALSE}
-# simulated_curves_pearson <- sum_bmd_dat_nobin_neg_pearson$result$resp_set
-# simulated_curve_bmds_pearson <- sum_bmd_dat_nobin_neg_pearson$act_summary %>%
-#   group_by(chemical) %>%
-#   summarise(POD_med = POD_med, POD_cil = POD_cil, hit_confidence = hit_confidence, lowest_conc = lowest_conc)
+simulated_curves_pearson <- sum_bmd_dat_nobin_neg_pearson$result$resp_set # To merge with other sets
+
+simulated_curve_bmds_pearson <- sum_bmd_dat_nobin_neg_pearson$act_summary %>%
+  group_by(chemical) %>%
+  summarise(POD_med = POD_med, POD_cil = POD_cil, hit_confidence = hit_confidence, lowest_conc = lowest_conc) # To merge with other sets
+
+simulated_curves_pearson_act_set <- sum_bmd_dat_nobin_neg_pearson$result$act_set
+
+simulated_curves_pearson_summary <- simulated_curves_pearson %>%
+  inner_join(simulated_curves_pearson_act_set) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(endpoint = endpoint, resp = resp, corrected_resp = corrected_resp, correction = correction, POD = POD, highest_conc = highest_conc, hit = hit, lowest_conc = lowest_conc) %>%
+  inner_join(simulated_curve_bmds_pearson) %>%
+  mutate(resp = if_else(correction == 1, true = corrected_resp, false = resp)) %>%
+  select(-corrected_resp) %>%
+  mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+curve_hits_pearson <- simulated_curves_pearson_summary %>%
+  filter(hit == 1)
+
+
+confident_curves_pearson <- curve_hits_pearson %>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+
+bmds_pearson <- simulated_curves_pearson_summary %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med))
+
+p_pearson <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = simulated_curves_pearson_summary, mapping = aes(x = conc, y = resp, group = sample_id), color = "gray75", alpha = 0.2) +
+  geom_line(data = curve_hits_pearson, mapping = aes(x = conc, y = resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  geom_line(data = confident_curves_pearson[[1]], mapping = aes(x = conc, y = resp, group = sample_id), color = "green") +
+  geom_line(data = confident_curves_pearson[[2]], mapping = aes(x = conc, y = resp, group = sample_id), color = "yellow") +
+  geom_line(data = confident_curves_pearson[[3]], mapping = aes(x = conc, y = resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = -bmr_thresh_pearson, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_pearson, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_pearson, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_pearson, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_pearson, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = simulated_curve_bmds_pearson, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -85, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+
+
+
+
+
+
+
 
 simulated_curves_spearman <- sum_bmd_dat_nobin_neg_spearman$result$resp_set # To merge with other sets
 
@@ -2124,66 +2183,54 @@ simulated_curves_spearman_summary <- simulated_curves_spearman %>%
 curve_hits_spearman <- simulated_curves_spearman_summary %>%
   filter(hit == 1)
 
+
 confident_curves_spearman <- curve_hits_spearman %>%
-  filter(POD == median_POD | POD == POD_med, hit_confidence >= 0.5)
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
 
 bmds_spearman <- simulated_curves_spearman_summary %>%
   group_by(chemical) %>%
   summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med))
 
-# p_pearson <- simulated_curves_pearson %>%
-#   group_by(chemical, sample_id, conc) %>%
-#   ggplot(aes(x = conc, y = resp, group = sample_id), color = "gray75") +
-#   geom_line(alpha = 0.3) +
-#   geom_hline(yintercept = -bmr_thresh_pearson, linetype = "dashed", color = "red") +
-#   geom_vline(data = simulated_curve_bmds_pearson, aes(xintercept = POD_med), color = "blue") +
-#   geom_vline(data = simulated_curve_bmds_pearson, aes(xintercept = POD_cil), color = "green") +
-#   geom_text(data = simulated_curve_bmds_pearson, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+0.75), y = -85, inherit.aes = FALSE, size = 3) +
-#   facet_wrap(~chemical, scales = "free") +
-#   ylim(-100,50) +
-#   theme_minimal() +
-#   theme(panel.border = element_rect(colour = "grey50", fill = NA))
-
 p_spearman <- ggplot(NULL, aes(conc, resp)) +
   geom_line(data = simulated_curves_spearman_summary, mapping = aes(x = conc, y = resp, group = sample_id), color = "gray75", alpha = 0.2) +
   geom_line(data = curve_hits_spearman, mapping = aes(x = conc, y = resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
-  geom_line(data = confident_curves_spearman, mapping = aes(x = conc, y = resp, group = sample_id), color = "black") +
+  geom_line(data = confident_curves_spearman[[1]], mapping = aes(x = conc, y = resp, group = sample_id), color = "green") +
+  geom_line(data = confident_curves_spearman[[2]], mapping = aes(x = conc, y = resp, group = sample_id), color = "yellow") +
+  geom_line(data = confident_curves_spearman[[3]], mapping = aes(x = conc, y = resp, group = sample_id), color = "blue") +
   geom_hline(yintercept = -bmr_thresh_spearman, linetype = "dashed", color = "red") +
   geom_vline(data = bmds_spearman, aes(xintercept = median_POD), color = "blue") +
-  # geom_vline(data = bmds_spearman, aes(xintercept = POD_med), color = "yellow") +
-  # geom_vline(data = bmds_spearman, aes(xintercept = mean_POD), color = "green") +
+  geom_vline(data = bmds_spearman, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_spearman, aes(xintercept = mean_POD), color = "green") +
   # geom_vline(data = bmds_spearman, aes(xintercept = POD_cil), color = "purple") +
   geom_text(data = simulated_curve_bmds_spearman, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -85, inherit.aes = FALSE, size = 3) +
   facet_wrap(~chemical, scales = "free") +
   ylim(-100,50) +
   theme_minimal() +
-  theme(panel.border = element_rect(colour = "grey50", fill = NA))
+  theme(panel.border = element_rect(colour = "grey50", fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+
+
+
 
 # Use the noise-filtered data from the curveP output
-# pearson_fitted <- simulated_curves_pearson %>%
-#   group_by(chemical) %>%
-#   run_fit(
-#   .,
-#   modls = c("hill", "cnst"),
-#   keep_sets = c("fit_set", "resp_set"), 
-#   hill_pdir = -1, #Negative direction only
-#   n_samples = params$sample_size
-# )
-# 
-# pearson_fitted_output <- summarize_fit_output(d = pearson_fitted, thr_resp = bmr_thresh_pearson)
-# 
-# pearson_fitted_output_summary <- pearson_fitted_output$result$resp_set %>%
-#   group_by(chemical, sample_id, conc) %>%
-#   summarize(fitted_resp = unique(na.omit(fitted_resp)))
-# 
-# p_pearson_fitted <- ggplot(data = pearson_fitted_output_summary, aes(x = conc, y = fitted_resp)) +
-#   geom_smooth(se = FALSE) +
-#   geom_vline(data = pearson_fitted_output$act_summary, aes(xintercept = POD_med), color = "blue") +
-#   geom_vline(data = pearson_fitted_output$act_summary, aes(xintercept = POD_cil), color = "green") +
-#   geom_hline(yintercept = -bmr_thresh_pearson, linetype = "dashed", color = "red") +
-#   facet_wrap(~chemical, scales = "free_x") +
-#   theme_minimal() +
-#   theme(panel.border = element_rect(colour = "grey50", fill = NA))
+pearson_fitted <- simulated_curves_pearson_summary %>%
+  select(endpoint, chemical, conc, resp) %>%
+  group_by(chemical) %>%
+  run_fit(
+  .,
+  modls = c("hill", "cnst"),
+  keep_sets = c("fit_set", "resp_set"),
+  n_samples = params$sample_size,
+  hill_pdir = -1
+)
+
+
 
 
 # Use the noise-filtered data from the curveP output
@@ -2194,25 +2241,131 @@ spearman_fitted <- simulated_curves_spearman_summary %>%
   .,
   modls = c("hill", "cnst"),
   keep_sets = c("fit_set", "resp_set"),
-  n_samples = 10,
+  n_samples = params$sample_size,
   hill_pdir = -1
 )
 
-spearman_fitted_output <- summarize_fit_output(d = spearman_fitted, thr_resp = bmr_thresh_spearman)
-spearman_fitted_output_summary <- spearman_fitted_output$result$resp_set %>%
-  group_by(chemical, sample_id, conc) %>%
-  summarise(fitted_resp = na.omit(fitted_resp))
 
-p_spearman_fitted <- ggplot(data = NULL, aes(x = conc, y = fitted_resp)) +
-  geom_line(data = spearman_fitted_output_summary, aes(x = conc, y = fitted_resp, group = sample_id), color = "gray75") +
-  geom_smooth(data = spearman_fitted_output_summary, aes(x = conc, y = fitted_resp)) +
-  geom_point(data = na.omit(spearman_fitted_output$result$resp_set), aes(y = resp)) +
-  geom_vline(data = spearman_fitted_output$act_summary, aes(xintercept = POD_med), color = "blue") +
-  geom_vline(data = spearman_fitted_output$act_summary, aes(xintercept = POD_cil), color = "green") +
-  geom_hline(yintercept = -bmr_thresh_spearman, linetype = "dashed", color = "red") +
-  geom_hline(yintercept = bmr_thresh_spearman, linetype = "dashed", color = "red") +
-  geom_text(data = spearman_fitted_output$act_summary, aes(label = paste("Hit =", hit_confidence), x = lowest_conc + 1), y = -100) +
+
+#Wrangling
+pearson_fitted_output <- summarize_fit_output(d = pearson_fitted, thr_resp = bmr_thresh_pearson)
+
+pearson_fitted_output_1 <- pearson_fitted_output$result$resp_set %>%
+  inner_join(pearson_fitted_output$result$act_set) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = fitted_resp, POD = POD, lowest_conc = lowest_conc, highest_conc = highest_conc, endpoint = endpoint, hit = hit) %>%
+  inner_join(pearson_fitted_output$act_summary) %>%
+  select(endpoint, chemical, sample_id, conc, fitted_resp, lowest_conc, highest_conc, POD, POD_med, POD_cil, POD_ciu, hit, hit_confidence)
+
+pearson_fitted_output_summary <- pearson_fitted_output_1 %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = unique(fitted_resp), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc), POD = unique(POD), POD_cil = unique(POD_cil), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit = unique(hit), hit_confidence = unique(hit_confidence)) %>%
+    mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+fitted_hits_pearson <- pearson_fitted_output_summary %>%
+  filter(hit == 1)
+
+confident_fitted_hits_pearson <- fitted_hits_pearson %>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+
+bmds_fitted_pearson <- pearson_fitted_output_summary %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit_confidence = unique(hit_confidence), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc))
+
+
+
+
+
+
+#Wrangling
+spearman_fitted_output <- summarize_fit_output(d = spearman_fitted, thr_resp = bmr_thresh_spearman)
+
+spearman_fitted_output_1 <- spearman_fitted_output$result$resp_set %>%
+  inner_join(spearman_fitted_output$result$act_set) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = fitted_resp, POD = POD, lowest_conc = lowest_conc, highest_conc = highest_conc, endpoint = endpoint, hit = hit) %>%
+  inner_join(spearman_fitted_output$act_summary) %>%
+  select(endpoint, chemical, sample_id, conc, fitted_resp, lowest_conc, highest_conc, POD, POD_med, POD_cil, POD_ciu, hit, hit_confidence)
+
+spearman_fitted_output_summary <- spearman_fitted_output_1 %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = unique(fitted_resp), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc), POD = unique(POD), POD_cil = unique(POD_cil), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit = unique(hit), hit_confidence = unique(hit_confidence)) %>%
+    mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+fitted_hits_spearman <- spearman_fitted_output_summary %>%
+  filter(hit == 1)
+
+confident_fitted_hits_spearman <- fitted_hits_spearman %>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+bmds_fitted_spearman <- spearman_fitted_output_summary %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit_confidence = unique(hit_confidence), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc))
+
+
+
+
+
+
+
+#Plotting
+p_pearson_fitted <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = pearson_fitted_output_summary, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "gray75", alpha = 0.4) +
+  # geom_point(data = pearson_fitted_output_summary, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9", alpha = 0.7) +
+  geom_line(data = fitted_hits_pearson, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  geom_line(data = confident_fitted_hits_pearson[[1]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "green") +
+  geom_line(data = confident_fitted_hits_pearson[[2]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "yellow") +
+  geom_line(data = confident_fitted_hits_pearson[[3]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = -bmr_thresh_pearson, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_fitted_pearson, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_fitted_pearson, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_fitted_pearson, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_fitted_pearson, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = pearson_fitted_output_summary, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -60, inherit.aes = FALSE, size = 3) +
   facet_wrap(~chemical, scales = "free_x") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA))
+
+
+
+#Plotting
+p_spearman_fitted <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = spearman_fitted_output_summary, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "gray75", alpha = 0.4) +
+  # geom_point(data = spearman_fitted_output_summary, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9", alpha = 0.7) +
+  geom_line(data = fitted_hits_spearman, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  geom_line(data = confident_fitted_hits_spearman[[1]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "green") +
+  geom_line(data = confident_fitted_hits_spearman[[2]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_fitted_hits_spearman[[3]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = -bmr_thresh_spearman, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_fitted_spearman, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_fitted_spearman, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_fitted_spearman, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_fitted_spearman, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = spearman_fitted_output_summary, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -60, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free_x") +
+  ylim(-100,50) +
   theme_minimal() +
   theme(panel.border = element_rect(colour = "grey50", fill = NA))
 
@@ -2221,7 +2374,7 @@ p_list <- list(p_pearson, p_spearman, p_pearson_fitted, p_spearman_fitted)
 names(p_list) <- c("Pearson simulated curves", "Spearman simulated curves", "Pearson fitted curves (Hill/Constant)", "Spearman fitted curves (Hill/Constant)")
 ```
 
-##### Simulated Curve Plots with BMDs (Blue), and BMDLs (Green) {.tabset}
+##### Simulated Curve Plots with median BMDs (Blue), mean BMDs (Green), and the RcurveP BMDs (Yellow) {.tabset}
 ```{r 61.2Simulated_curves, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
 for (i in seq_along(p_list)){
   temp <- p_list[[i]]
@@ -2234,7 +2387,7 @@ for (i in seq_along(p_list)){
 From the Hsieh et al 2019 manuscript: The BMD value is the median value (over all `r params$sample_size` simulated curves) of the dose that crosses the BMR. The lower and upper bounds of the 95% confidence intervals were categorized as the BMDL and BMDU respectively. Hit confidences represent the percentage of simulated curves (out of `r params$sample_size`) that were not flat after curve fitting.
 
 
-```{r 62calculating_benchmark_dose_3, echo=FALSE}
+```{r 62calculating_benchmark_dose_3, include=FALSE}
 sum_bmd_dat_nobin_neg %>%
   mutate(lowest_conc = 10^(lowest_conc), highest_conc = 10^(highest_conc), POD_cil = 10^(POD_cil), POD_med = 10^(POD_med), POD_ciu = 10^(POD_ciu)) %>%
   select(chemical, endpoint, lowest_conc, highest_conc, POD_cil, POD_med, POD_ciu, hit_confidence) %>%
@@ -2299,7 +2452,7 @@ auc_norm <- auc_all %>%
   mutate(Cycle = if_else(condition = endpoint %in% c("Dark_1", "Dark_2", "Dark_3"), true = "Dark", false = "Light"))
 ```
 
-```{r 88PlotAucEndpoints}
+```{r 88PlotAucEndpoints, include= FALSE}
 auc_norm %>%
   ggplot(aes(x = Dose, y = endpoint_value_norm)) +
   geom_boxplot(outlier.shape = NA) +
