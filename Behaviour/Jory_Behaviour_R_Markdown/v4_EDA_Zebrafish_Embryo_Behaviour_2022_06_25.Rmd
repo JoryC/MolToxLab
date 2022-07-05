@@ -2400,7 +2400,6 @@ sum_bmd_dat_nobin_neg %>%
 From table 8 it can be seen that this method was not very effective on the current data set likely due to the very low doses used in the chemical exposure study and/or a lack of neurotoxic effects for some chemicals.\
 \
 
-
 ## Analysis - Quantity Endpoints - Area Under the Curve
 
 Take the raw totaldist values and put them in a data frame with the headers:
@@ -2413,7 +2412,7 @@ Take the raw totaldist values and put them in a data frame with the headers:
 
 The the create_auc_endpoints function is going to caluculate the area under the curve for each chemical
 
-```{r 87AreaUnderCurveEndpoint, include = FALSE}
+```{r 87AreaUnderCurveEndpoint, include = FALSE, message=FALSE, warning=FALSE}
 auc_endps <-
   list(
     Dark_1 = seq(1, 5, by = 1),
@@ -2426,8 +2425,9 @@ auc_endps <-
 lfishBehavDat5 <- fishBehavDatBin5 %>%
   filter(Cycle != "Acclimation") %>%
   mutate(time_end = time_end-20) %>%
+  mutate(log_dose = log10(Dose_mg_L)) %>%
   mutate(plate_id = plate_id, embryo_id = embryo_id, time_end = time_end, value = totaldist) %>%
-  select(plate_id, embryo_id, time_end, value) %>%
+  select(plate_id, embryo_id, time_end, Dose_mg_L, log_dose, value) %>%
   arrange(time_end) %>%
   split(., ~ plate_id)
 
@@ -2445,9 +2445,9 @@ auc_all <- auc_all %>%
 auc_join <- auc_all %>%
   filter(Dose == "Control") %>%
   group_by(plate_id, endpoint) %>%
-  mutate(median_value = median(endpoint_value_log10))
+  mutate(median_value = median(endpoint_value_log10), Dose = NULL, endpoint_value = NULL, endpoint_value_log10 = NULL, log_dose = NULL, Dose_mg_L = NULL)
 auc_norm <- auc_all %>%
-  full_join(auc_join) %>%
+  full_join(auc_join, by = c(".id", "plate_id", "embryo_id", "endpoint")) %>%
   mutate(endpoint_value_norm = (endpoint_value_log10 - median_value)*100) %>%
   mutate(Cycle = if_else(condition = endpoint %in% c("Dark_1", "Dark_2", "Dark_3"), true = "Dark", false = "Light"))
 ```
@@ -2457,5 +2457,2455 @@ auc_norm %>%
   ggplot(aes(x = Dose, y = endpoint_value_norm)) +
   geom_boxplot(outlier.shape = NA) +
   geom_jitter(width = 0.1, height = 0, aes(color = embryo_id, shape = Cycle))
+# auc_norm %>%
+#   ggplot(aes(x = Dose, y = endpoint_value_norm)) +
+#   geom_boxplot(outlier.shape = NA) +
+#   geom_jitter(width = 0.1, height = 0, aes(color = embryo_id, shape = Cycle)) +
+#   ylim(-100,100)
 ```
 
+```{r 89Prep_rCurveP, include = FALSE}
+auc_norm_no_cntrl <- auc_norm %>%
+  filter(Dose != "Control") %>%
+  rename(resp = endpoint_value_norm, conc = log_dose, chemical = .id,) %>%
+  select(endpoint, chemical, conc, resp)
+```
+
+
+### Negative Direction
+
+```{r 90AUC_rCurveP, include=FALSE}
+test <-
+  estimate_dataset_bmr(
+    combi_run_rcurvep(
+      auc_norm_no_cntrl,
+      n_samples = params$sample_size,
+      #Increase this number to 100 or 1000 for better results (takes a long time to run)
+      keep_sets = c("act_set", "resp_set", "fp_set"),
+      TRSH = seq(5, 95, by = 5),
+      RNGE = -1000000
+    ),
+    plot = FALSE
+  )
+
+temp_auc_norm_LD_no_cntrl <- auc_norm_no_cntrl %>%
+  mutate(endpoint = str_split(string = endpoint, pattern = "_", simplify = TRUE)[,1])
+
+test_LD <- estimate_dataset_bmr(
+    combi_run_rcurvep(
+      temp_auc_norm_LD_no_cntrl,
+      n_samples = params$sample_size,
+      #Increase this number to 100 or 1000 for better results (takes a long time to run)
+      keep_sets = c("act_set", "resp_set", "fp_set"),
+      TRSH = seq(5, 95, by = 5),
+      RNGE = -1000000
+    ),
+    plot = FALSE
+  )
+```
+
+```{r 91bmr_auc, echo = FALSE}
+test$outcome %>%
+  select(endpoint, qc, cor_exp_fit, cor_lm_fit, bmr_exp, bmr_ori) %>%
+  kable(
+    col.names = c(
+      "Endpoint",
+      "Quality Control Message",
+      "Correlation of expotential fit",
+      "Correlation of linear model fit",
+      "BMR of exponential model",
+      "BMR of linear model"
+    ),
+    align = 'llrrrr',
+    caption = "Table 8. Summary of the estimated BMR"
+  ) %>%
+  kable_styling() %>%
+  scroll_box()
+```
+
+```{r 91.1bmr_auc, echo = FALSE}
+test_LD$outcome %>%
+  select(endpoint, qc, cor_exp_fit, cor_lm_fit, bmr_exp, bmr_ori) %>%
+  kable(
+    col.names = c(
+      "Endpoint",
+      "Quality Control Message",
+      "Correlation of expotential fit",
+      "Correlation of linear model fit",
+      "BMR of exponential model",
+      "BMR of linear model"
+    ),
+    align = 'llrrrr',
+    caption = "Table 8. Summary of the estimated BMR"
+  ) %>%
+  kable_styling() %>%
+  scroll_box()
+```
+
+```{r 92Pull_BMRs, include = FALSE}
+test$outcome[which(is.na(test$outcome))] = 0
+test_LD$outcome[which(is.na(test$outcome))] = 0
+
+bmr_thresh_Dark_1 <- test$outcome %>%
+  filter(endpoint == "Dark_1") %>%
+  mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
+  pull(bmr)
+
+bmr_thresh_Dark_2 <- test$outcome %>%
+  filter(endpoint == "Dark_2") %>%
+  mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
+  pull(bmr)
+
+bmr_thresh_Dark_3 <- test$outcome %>%
+  filter(endpoint == "Dark_3") %>%
+  mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
+  pull(bmr)
+
+bmr_thresh_Light_1 <- test$outcome %>%
+  filter(endpoint == "Light_1") %>%
+  mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
+  pull(bmr)
+
+bmr_thresh_Light_2 <- test$outcome %>%
+  filter(endpoint == "Light_2") %>%
+  mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
+  pull(bmr)
+
+bmr_thresh_Light_3 <- test$outcome %>%
+  filter(endpoint == "Light_3") %>%
+  mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
+  pull(bmr)
+
+bmr_thresh_Dark <- test_LD$outcome %>%
+  filter(endpoint == "Dark") %>%
+  mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
+  pull(bmr)
+
+bmr_thresh_Light <- test_LD$outcome %>%
+  filter(endpoint == "Light") %>%
+  mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
+  pull(bmr)
+```
+
+```{r 93RcurveP_AUC, include = FALSE}
+set.seed(976)
+Dark_1_out <- auc_norm_no_cntrl %>%
+  filter(endpoint == "Dark_1") %>%
+  combi_run_rcurvep(., n_samples = params$sample_size,
+      #Increase this number to 100 or 1000 for better results (takes a long time to run)
+      keep_sets = c("act_set", "resp_set", "fp_set"),
+      TRSH = bmr_thresh_Dark_1,
+      RNGE = -1000000) %>%
+  summarize_rcurvep_output()
+
+
+set.seed(9089)
+Dark_2_out <- auc_norm_no_cntrl %>%
+  filter(endpoint == "Dark_2") %>%
+  combi_run_rcurvep(., n_samples = params$sample_size,
+      #Increase this number to 100 or 1000 for better results (takes a long time to run)
+      keep_sets = c("act_set", "resp_set", "fp_set"),
+      TRSH = bmr_thresh_Dark_2,
+      RNGE = -1000000) %>%
+  summarize_rcurvep_output()
+
+
+set.seed(1359)  
+Dark_3_out <- auc_norm_no_cntrl %>%
+  filter(endpoint == "Dark_3") %>%
+  combi_run_rcurvep(., n_samples = params$sample_size,
+      #Increase this number to 100 or 1000 for better results (takes a long time to run)
+      keep_sets = c("act_set", "resp_set", "fp_set"),
+      TRSH = bmr_thresh_Dark_3,
+      RNGE = -1000000) %>%
+  summarize_rcurvep_output()
+
+
+set.seed(5346) 
+Light_1_out <- auc_norm_no_cntrl %>%
+  filter(endpoint == "Light_1") %>%
+  combi_run_rcurvep(., n_samples = params$sample_size,
+      #Increase this number to 100 or 1000 for better results (takes a long time to run)
+      keep_sets = c("act_set", "resp_set", "fp_set"),
+      TRSH = bmr_thresh_Light_1,
+      RNGE = -1000000) %>%
+  summarize_rcurvep_output()
+
+  
+set.seed(6842)
+Light_2_out <- auc_norm_no_cntrl %>%
+  filter(endpoint == "Light_2") %>%
+  combi_run_rcurvep(., n_samples = params$sample_size,
+      #Increase this number to 100 or 1000 for better results (takes a long time to run)
+      keep_sets = c("act_set", "resp_set", "fp_set"),
+      TRSH = bmr_thresh_Light_2,
+      RNGE = -1000000) %>%
+  summarize_rcurvep_output()
+
+
+set.seed(1208)
+Light_3_out <- auc_norm_no_cntrl %>%
+  filter(endpoint == "Light_3") %>%
+  combi_run_rcurvep(., n_samples = params$sample_size,
+      #Increase this number to 100 or 1000 for better results (takes a long time to run)
+      keep_sets = c("act_set", "resp_set", "fp_set"),
+      TRSH = bmr_thresh_Light_3,
+      RNGE = -1000000) %>%
+  summarize_rcurvep_output()
+  
+set.seed(47)
+Light_out <- temp_auc_norm_LD_no_cntrl %>%
+  filter(endpoint == "Light") %>%
+  combi_run_rcurvep(., n_samples = params$sample_size,
+      #Increase this number to 100 or 1000 for better results (takes a long time to run)
+      keep_sets = c("act_set", "resp_set", "fp_set"),
+      TRSH = bmr_thresh_Light,
+      RNGE = -1000000) %>%
+  summarize_rcurvep_output()
+
+set.seed(347)
+Dark_out <- temp_auc_norm_LD_no_cntrl %>%
+  filter(endpoint == "Dark") %>%
+  combi_run_rcurvep(., n_samples = params$sample_size,
+      #Increase this number to 100 or 1000 for better results (takes a long time to run)
+      keep_sets = c("act_set", "resp_set", "fp_set"),
+      TRSH = bmr_thresh_Light,
+      RNGE = -1000000) %>%
+  summarize_rcurvep_output()
+```
+
+
+```{r 95Rcurvep_obj_wrangling, include = FALSE}
+## Light_1
+simulated_curves_Light_1 <- Light_1_out$result$resp_set # To merge with other sets
+simulated_curve_bmds_Light_1 <- Light_1_out$act_summary %>%
+  group_by(chemical) %>%
+  summarise(POD_med = POD_med, POD_cil = POD_cil, hit_confidence = hit_confidence, lowest_conc = lowest_conc) # To merge with other sets
+simulated_curves_Light_1_act_set <- Light_1_out$result$act_set
+
+simulated_curves_Light_1_summary <- simulated_curves_Light_1 %>%
+  inner_join(simulated_curves_Light_1_act_set) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(endpoint = endpoint, resp = resp, corrected_resp = corrected_resp, correction = correction, POD = POD, highest_conc = highest_conc, hit = hit, lowest_conc = lowest_conc) %>%
+  inner_join(simulated_curve_bmds_Light_1) %>%
+  mutate(resp = if_else(correction == 1, true = corrected_resp, false = resp)) %>%
+  select(-corrected_resp) %>%
+  mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+curve_hits_Light_1 <- simulated_curves_Light_1_summary %>%
+  filter(hit == 1)
+
+confident_curves_Light_1 <- curve_hits_Light_1%>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+bmds_Light_1 <- simulated_curves_Light_1_summary %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med))
+
+## Light_2
+simulated_curves_Light_2 <- Light_2_out$result$resp_set # To merge with other sets
+simulated_curve_bmds_Light_2 <- Light_2_out$act_summary %>%
+  group_by(chemical) %>%
+  summarise(POD_med = POD_med, POD_cil = POD_cil, hit_confidence = hit_confidence, lowest_conc = lowest_conc) # To merge with other sets
+simulated_curves_Light_2_act_set <- Light_2_out$result$act_set
+
+simulated_curves_Light_2_summary <- simulated_curves_Light_2 %>%
+  inner_join(simulated_curves_Light_2_act_set) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(endpoint = endpoint, resp = resp, corrected_resp = corrected_resp, correction = correction, POD = POD, highest_conc = highest_conc, hit = hit, lowest_conc = lowest_conc) %>%
+  inner_join(simulated_curve_bmds_Light_2) %>%
+  mutate(resp = if_else(correction == 1, true = corrected_resp, false = resp)) %>%
+  select(-corrected_resp) %>%
+  mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+curve_hits_Light_2 <- simulated_curves_Light_2_summary %>%
+  filter(hit == 1)
+
+confident_curves_Light_2 <- curve_hits_Light_2%>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+bmds_Light_2 <- simulated_curves_Light_2_summary %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med))
+
+## Light_3
+simulated_curves_Light_3 <- Light_3_out$result$resp_set # To merge with other sets
+simulated_curve_bmds_Light_3 <- Light_3_out$act_summary %>%
+  group_by(chemical) %>%
+  summarise(POD_med = POD_med, POD_cil = POD_cil, hit_confidence = hit_confidence, lowest_conc = lowest_conc) # To merge with other sets
+simulated_curves_Light_3_act_set <- Light_3_out$result$act_set
+
+simulated_curves_Light_3_summary <- simulated_curves_Light_3 %>%
+  inner_join(simulated_curves_Light_3_act_set) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(endpoint = endpoint, resp = resp, corrected_resp = corrected_resp, correction = correction, POD = POD, highest_conc = highest_conc, hit = hit, lowest_conc = lowest_conc) %>%
+  inner_join(simulated_curve_bmds_Light_3) %>%
+  mutate(resp = if_else(correction == 1, true = corrected_resp, false = resp)) %>%
+  select(-corrected_resp) %>%
+  mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+curve_hits_Light_3 <- simulated_curves_Light_3_summary %>%
+  filter(hit == 1)
+
+confident_curves_Light_3 <- curve_hits_Light_3%>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+bmds_Light_3 <- simulated_curves_Light_3_summary %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med))
+
+
+
+## Dark_1
+simulated_curves_Dark_1 <- Dark_1_out$result$resp_set # To merge with other sets
+simulated_curve_bmds_Dark_1 <- Dark_1_out$act_summary %>%
+  group_by(chemical) %>%
+  summarise(POD_med = POD_med, POD_cil = POD_cil, hit_confidence = hit_confidence, lowest_conc = lowest_conc) # To merge with other sets
+simulated_curves_Dark_1_act_set <- Dark_1_out$result$act_set
+
+simulated_curves_Dark_1_summary <- simulated_curves_Dark_1 %>%
+  inner_join(simulated_curves_Dark_1_act_set) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(endpoint = endpoint, resp = resp, corrected_resp = corrected_resp, correction = correction, POD = POD, highest_conc = highest_conc, hit = hit, lowest_conc = lowest_conc) %>%
+  inner_join(simulated_curve_bmds_Dark_1) %>%
+  mutate(resp = if_else(correction == 1, true = corrected_resp, false = resp)) %>%
+  select(-corrected_resp) %>%
+  mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+curve_hits_Dark_1 <- simulated_curves_Dark_1_summary %>%
+  filter(hit == 1)
+
+confident_curves_Dark_1 <- curve_hits_Dark_1%>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+bmds_Dark_1 <- simulated_curves_Dark_1_summary %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med))
+
+## Dark_2
+simulated_curves_Dark_2 <- Dark_2_out$result$resp_set # To merge with other sets
+simulated_curve_bmds_Dark_2 <- Dark_2_out$act_summary %>%
+  group_by(chemical) %>%
+  summarise(POD_med = POD_med, POD_cil = POD_cil, hit_confidence = hit_confidence, lowest_conc = lowest_conc) # To merge with other sets
+simulated_curves_Dark_2_act_set <- Dark_2_out$result$act_set
+
+simulated_curves_Dark_2_summary <- simulated_curves_Dark_2 %>%
+  inner_join(simulated_curves_Dark_2_act_set) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(endpoint = endpoint, resp = resp, corrected_resp = corrected_resp, correction = correction, POD = POD, highest_conc = highest_conc, hit = hit, lowest_conc = lowest_conc) %>%
+  inner_join(simulated_curve_bmds_Dark_2) %>%
+  mutate(resp = if_else(correction == 1, true = corrected_resp, false = resp)) %>%
+  select(-corrected_resp) %>%
+  mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+curve_hits_Dark_2 <- simulated_curves_Dark_2_summary %>%
+  filter(hit == 1)
+
+confident_curves_Dark_2 <- curve_hits_Dark_2%>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+bmds_Dark_2 <- simulated_curves_Dark_2_summary %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med))
+
+## Dark_3
+simulated_curves_Dark_3 <- Dark_3_out$result$resp_set # To merge with other sets
+simulated_curve_bmds_Dark_3 <- Dark_3_out$act_summary %>%
+  group_by(chemical) %>%
+  summarise(POD_med = POD_med, POD_cil = POD_cil, hit_confidence = hit_confidence, lowest_conc = lowest_conc) # To merge with other sets
+simulated_curves_Dark_3_act_set <- Dark_3_out$result$act_set
+
+simulated_curves_Dark_3_summary <- simulated_curves_Dark_3 %>%
+  inner_join(simulated_curves_Dark_3_act_set) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(endpoint = endpoint, resp = resp, corrected_resp = corrected_resp, correction = correction, POD = POD, highest_conc = highest_conc, hit = hit, lowest_conc = lowest_conc) %>%
+  inner_join(simulated_curve_bmds_Dark_3) %>%
+  mutate(resp = if_else(correction == 1, true = corrected_resp, false = resp)) %>%
+  select(-corrected_resp) %>%
+  mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+curve_hits_Dark_3 <- simulated_curves_Dark_3_summary %>%
+  filter(hit == 1)
+
+confident_curves_Dark_3 <- curve_hits_Dark_3%>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+bmds_Dark_3 <- simulated_curves_Dark_3_summary %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med))
+
+
+
+## Light
+simulated_curves_Light <- Light_out$result$resp_set # To merge with other sets
+simulated_curve_bmds_Light <- Light_out$act_summary %>%
+  group_by(chemical) %>%
+  summarise(POD_med = POD_med, POD_cil = POD_cil, hit_confidence = hit_confidence, lowest_conc = lowest_conc) # To merge with other sets
+simulated_curves_Light_act_set <- Light_out$result$act_set
+
+simulated_curves_Light_summary <- simulated_curves_Light %>%
+  inner_join(simulated_curves_Light_act_set) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(endpoint = endpoint, resp = resp, corrected_resp = corrected_resp, correction = correction, POD = POD, highest_conc = highest_conc, hit = hit, lowest_conc = lowest_conc) %>%
+  inner_join(simulated_curve_bmds_Light) %>%
+  mutate(resp = if_else(correction == 1, true = corrected_resp, false = resp)) %>%
+  select(-corrected_resp) %>%
+  mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+curve_hits_Light <- simulated_curves_Light_summary %>%
+  filter(hit == 1)
+
+confident_curves_Light <- curve_hits_Light%>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+bmds_Light <- simulated_curves_Light_summary %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med))
+
+## Dark
+simulated_curves_Dark <- Dark_out$result$resp_set # To merge with other sets
+simulated_curve_bmds_Dark <- Dark_out$act_summary %>%
+  group_by(chemical) %>%
+  summarise(POD_med = POD_med, POD_cil = POD_cil, hit_confidence = hit_confidence, lowest_conc = lowest_conc) # To merge with other sets
+simulated_curves_Dark_act_set <- Dark_out$result$act_set
+
+simulated_curves_Dark_summary <- simulated_curves_Dark %>%
+  inner_join(simulated_curves_Dark_act_set) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(endpoint = endpoint, resp = resp, corrected_resp = corrected_resp, correction = correction, POD = POD, highest_conc = highest_conc, hit = hit, lowest_conc = lowest_conc) %>%
+  inner_join(simulated_curve_bmds_Dark) %>%
+  mutate(resp = if_else(correction == 1, true = corrected_resp, false = resp)) %>%
+  select(-corrected_resp) %>%
+  mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+curve_hits_Dark <- simulated_curves_Dark_summary %>%
+  filter(hit == 1)
+
+confident_curves_Dark <- curve_hits_Dark%>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+bmds_Dark <- simulated_curves_Dark_summary %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med))
+```
+
+```{r 96curve_simulation_auc, include = FALSE}
+## Light 1
+p_Light_1 <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = simulated_curves_Light_1_summary, mapping = aes(x = conc, y = resp, group = sample_id), color = "gray75", alpha = 0.2) +
+  geom_line(data = curve_hits_Light_1, mapping = aes(x = conc, y = resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  geom_line(data = confident_curves_Light_1[[1]], mapping = aes(x = conc, y = resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_curves_Light_1[[2]], mapping = aes(x = conc, y = resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_curves_Light_1[[3]], mapping = aes(x = conc, y = resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = -bmr_thresh_Light_1, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_Light_1, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_Light_1, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_Light_1, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_Light_1, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = simulated_curve_bmds_Light_1, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -85, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+## Light_2
+p_Light_2 <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = simulated_curves_Light_2_summary, mapping = aes(x = conc, y = resp, group = sample_id), color = "gray75", alpha = 0.2) +
+  geom_line(data = curve_hits_Light_2, mapping = aes(x = conc, y = resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  # geom_line(data = confident_curves_Light_2[[1]], mapping = aes(x = conc, y = resp, group = sample_id), color = "green") +
+  # geom_line(data = confident_curves_Light_2[[2]], mapping = aes(x = conc, y = resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_curves_Light_2[[3]], mapping = aes(x = conc, y = resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = -bmr_thresh_Light_2, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_Light_2, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_Light_2, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_Light_2, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_Light_2, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = simulated_curve_bmds_Light_2, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -85, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+## Light_3
+p_Light_3 <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = simulated_curves_Light_3_summary, mapping = aes(x = conc, y = resp, group = sample_id), color = "gray75", alpha = 0.2) +
+  geom_line(data = curve_hits_Light_3, mapping = aes(x = conc, y = resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  # geom_line(data = confident_curves_Light_3[[1]], mapping = aes(x = conc, y = resp, group = sample_id), color = "green") +
+  # geom_line(data = confident_curves_Light_3[[2]], mapping = aes(x = conc, y = resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_curves_Light_3[[3]], mapping = aes(x = conc, y = resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = -bmr_thresh_Light_3, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_Light_3, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_Light_3, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_Light_3, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_Light_3, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = simulated_curve_bmds_Light_3, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -85, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+
+## Dark_1
+p_Dark_1 <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = simulated_curves_Dark_1_summary, mapping = aes(x = conc, y = resp, group = sample_id), color = "gray75", alpha = 0.2) +
+  geom_line(data = curve_hits_Dark_1, mapping = aes(x = conc, y = resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  # geom_line(data = confident_curves_Dark_1[[1]], mapping = aes(x = conc, y = resp, group = sample_id), color = "green") +
+  # geom_line(data = confident_curves_Dark_1[[2]], mapping = aes(x = conc, y = resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_curves_Dark_1[[3]], mapping = aes(x = conc, y = resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = -bmr_thresh_Dark_1, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_Dark_1, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_Dark_1, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_Dark_1, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_Dark_1, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = simulated_curve_bmds_Dark_1, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -85, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+## Dark_2
+p_Dark_2 <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = simulated_curves_Dark_2_summary, mapping = aes(x = conc, y = resp, group = sample_id), color = "gray75", alpha = 0.2) +
+  geom_line(data = curve_hits_Dark_2, mapping = aes(x = conc, y = resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  geom_line(data = confident_curves_Dark_2[[1]], mapping = aes(x = conc, y = resp, group = sample_id), color = "green") +
+  geom_line(data = confident_curves_Dark_2[[2]], mapping = aes(x = conc, y = resp, group = sample_id), color = "yellow") +
+  geom_line(data = confident_curves_Dark_2[[3]], mapping = aes(x = conc, y = resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = -bmr_thresh_Dark_2, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_Dark_2, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_Dark_2, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_Dark_2, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_Dark_2, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = simulated_curve_bmds_Dark_2, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -85, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+## Dark_3
+p_Dark_3 <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = simulated_curves_Dark_3_summary, mapping = aes(x = conc, y = resp, group = sample_id), color = "gray75", alpha = 0.2) +
+  geom_line(data = curve_hits_Dark_3, mapping = aes(x = conc, y = resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  # geom_line(data = confident_curves_Dark_3[[1]], mapping = aes(x = conc, y = resp, group = sample_id), color = "green") +
+  # geom_line(data = confident_curves_Dark_3[[2]], mapping = aes(x = conc, y = resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_curves_Dark_3[[3]], mapping = aes(x = conc, y = resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = -bmr_thresh_Dark_3, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_Dark_3, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_Dark_3, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_Dark_3, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_Dark_3, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = simulated_curve_bmds_Dark_3, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -85, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+
+## Light
+p_Light <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = simulated_curves_Light_summary, mapping = aes(x = conc, y = resp, group = sample_id), color = "gray75", alpha = 0.2) +
+  geom_line(data = curve_hits_Light, mapping = aes(x = conc, y = resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  # geom_line(data = confident_curves_Light[[1]], mapping = aes(x = conc, y = resp, group = sample_id), color = "green") +
+  # geom_line(data = confident_curves_Light[[2]], mapping = aes(x = conc, y = resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_curves_Light[[3]], mapping = aes(x = conc, y = resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = -bmr_thresh_Light, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_Light, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_Light, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_Light, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_Light, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = simulated_curve_bmds_Light, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -85, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+
+## Dark
+p_Dark <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = simulated_curves_Dark_summary, mapping = aes(x = conc, y = resp, group = sample_id), color = "gray75", alpha = 0.2) +
+  geom_line(data = curve_hits_Dark, mapping = aes(x = conc, y = resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  # geom_line(data = confident_curves_Dark[[1]], mapping = aes(x = conc, y = resp, group = sample_id), color = "green") +
+  # geom_line(data = confident_curves_Dark[[2]], mapping = aes(x = conc, y = resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_curves_Dark[[3]], mapping = aes(x = conc, y = resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = -bmr_thresh_Dark, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_Dark, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_Dark, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_Dark, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_Dark, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = simulated_curve_bmds_Dark, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -85, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+```
+
+```{r 97run_fits_auc, include=FALSE}
+# Use the noise-filtered data from the curveP output
+
+## Light_1
+Light_1_fitted <- simulated_curves_Light_1_summary %>%
+  select(endpoint, chemical, conc, resp) %>%
+  group_by(chemical) %>%
+  run_fit(
+  .,
+  modls = c("hill", "cnst"),
+  keep_sets = c("fit_set", "resp_set"),
+  n_samples = params$sample_size
+)
+
+## Light_2
+Light_2_fitted <- simulated_curves_Light_2_summary %>%
+  select(endpoint, chemical, conc, resp) %>%
+  group_by(chemical) %>%
+  run_fit(
+  .,
+  modls = c("hill", "cnst"),
+  keep_sets = c("fit_set", "resp_set"),
+  n_samples = params$sample_size
+)
+
+## Light_3
+Light_3_fitted <- simulated_curves_Light_3_summary %>%
+  select(endpoint, chemical, conc, resp) %>%
+  group_by(chemical) %>%
+  run_fit(
+  .,
+  modls = c("hill", "cnst"),
+  keep_sets = c("fit_set", "resp_set"),
+  n_samples = params$sample_size
+)
+
+## Dark_1
+Dark_1_fitted <- simulated_curves_Dark_1_summary %>%
+  select(endpoint, chemical, conc, resp) %>%
+  group_by(chemical) %>%
+  run_fit(
+  .,
+  modls = c("hill", "cnst"),
+  keep_sets = c("fit_set", "resp_set"),
+  n_samples = params$sample_size
+)
+
+## Dark_2
+Dark_2_fitted <- simulated_curves_Dark_2_summary %>%
+  select(endpoint, chemical, conc, resp) %>%
+  group_by(chemical) %>%
+  run_fit(
+  .,
+  modls = c("hill", "cnst"),
+  keep_sets = c("fit_set", "resp_set"),
+  n_samples = params$sample_size
+)
+
+## Dark_3
+Dark_3_fitted <- simulated_curves_Dark_3_summary %>%
+  select(endpoint, chemical, conc, resp) %>%
+  group_by(chemical) %>%
+  run_fit(
+  .,
+  modls = c("hill", "cnst"),
+  keep_sets = c("fit_set", "resp_set"),
+  n_samples = params$sample_size
+)
+
+## Light
+Light_fitted <- simulated_curves_Light_summary %>%
+  select(endpoint, chemical, conc, resp) %>%
+  group_by(chemical) %>%
+  run_fit(
+  .,
+  modls = c("hill", "cnst"),
+  keep_sets = c("fit_set", "resp_set"),
+  n_samples = params$sample_size
+)
+
+## Dark
+Dark_fitted <- simulated_curves_Dark_summary %>%
+  select(endpoint, chemical, conc, resp) %>%
+  group_by(chemical) %>%
+  run_fit(
+  .,
+  modls = c("hill", "cnst"),
+  keep_sets = c("fit_set", "resp_set"),
+  n_samples = params$sample_size
+)
+```
+
+```{r 98wrangling_fitted_auc_data, include=FALSE}
+#Wrangling
+
+## Light_1
+Light_1_fitted_output <- summarize_fit_output(d = Light_1_fitted, thr_resp = bmr_thresh_Light_1)
+
+Light_1_fitted_output_1 <- Light_1_fitted_output$result$resp_set %>%
+  inner_join(Light_1_fitted_output$result$act_set) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = fitted_resp, POD = POD, lowest_conc = lowest_conc, highest_conc = highest_conc, endpoint = endpoint, hit = hit) %>%
+  inner_join(Light_1_fitted_output$act_summary) %>%
+  select(endpoint, chemical, sample_id, conc, fitted_resp, lowest_conc, highest_conc, POD, POD_med, POD_cil, POD_ciu, hit, hit_confidence)
+
+Light_1_fitted_output_summary <- Light_1_fitted_output_1 %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = unique(fitted_resp), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc), POD = unique(POD), POD_cil = unique(POD_cil), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit = unique(hit), hit_confidence = unique(hit_confidence)) %>%
+    mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+fitted_hits_Light_1 <- Light_1_fitted_output_summary %>%
+  filter(hit == 1)
+
+confident_fitted_hits_Light_1 <- fitted_hits_Light_1 %>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+bmds_fitted_Light_1 <- Light_1_fitted_output_summary %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit_confidence = unique(hit_confidence), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc))
+
+## Light_2
+#Wrangling
+Light_2_fitted_output <- summarize_fit_output(d = Light_2_fitted, thr_resp = bmr_thresh_Light_2)
+
+Light_2_fitted_output_1 <- Light_2_fitted_output$result$resp_set %>%
+  inner_join(Light_2_fitted_output$result$act_set) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = fitted_resp, POD = POD, lowest_conc = lowest_conc, highest_conc = highest_conc, endpoint = endpoint, hit = hit) %>%
+  inner_join(Light_2_fitted_output$act_summary) %>%
+  select(endpoint, chemical, sample_id, conc, fitted_resp, lowest_conc, highest_conc, POD, POD_med, POD_cil, POD_ciu, hit, hit_confidence)
+
+Light_2_fitted_output_summary <- Light_2_fitted_output_1 %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = unique(fitted_resp), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc), POD = unique(POD), POD_cil = unique(POD_cil), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit = unique(hit), hit_confidence = unique(hit_confidence)) %>%
+    mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+fitted_hits_Light_2 <- Light_2_fitted_output_summary %>%
+  filter(hit == 1)
+
+confident_fitted_hits_Light_2 <- fitted_hits_Light_2 %>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+
+bmds_fitted_Light_2 <- Light_2_fitted_output_summary %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit_confidence = unique(hit_confidence), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc))
+
+## Light_3
+#Wrangling
+Light_3_fitted_output <- summarize_fit_output(d = Light_3_fitted, thr_resp = bmr_thresh_Light_3)
+
+Light_3_fitted_output_1 <- Light_3_fitted_output$result$resp_set %>%
+  inner_join(Light_3_fitted_output$result$act_set) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = fitted_resp, POD = POD, lowest_conc = lowest_conc, highest_conc = highest_conc, endpoint = endpoint, hit = hit) %>%
+  inner_join(Light_3_fitted_output$act_summary) %>%
+  select(endpoint, chemical, sample_id, conc, fitted_resp, lowest_conc, highest_conc, POD, POD_med, POD_cil, POD_ciu, hit, hit_confidence)
+
+Light_3_fitted_output_summary <- Light_3_fitted_output_1 %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = unique(fitted_resp), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc), POD = unique(POD), POD_cil = unique(POD_cil), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit = unique(hit), hit_confidence = unique(hit_confidence)) %>%
+    mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+fitted_hits_Light_3 <- Light_3_fitted_output_summary %>%
+  filter(hit == 1)
+
+confident_fitted_hits_Light_3 <- fitted_hits_Light_3 %>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+
+bmds_fitted_Light_3 <- Light_3_fitted_output_summary %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit_confidence = unique(hit_confidence), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc))
+
+## Dark_1
+#Wrangling
+Dark_1_fitted_output <- summarize_fit_output(d = Dark_1_fitted, thr_resp = bmr_thresh_Dark_1)
+
+Dark_1_fitted_output_1 <- Dark_1_fitted_output$result$resp_set %>%
+  inner_join(Dark_1_fitted_output$result$act_set) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = fitted_resp, POD = POD, lowest_conc = lowest_conc, highest_conc = highest_conc, endpoint = endpoint, hit = hit) %>%
+  inner_join(Dark_1_fitted_output$act_summary) %>%
+  select(endpoint, chemical, sample_id, conc, fitted_resp, lowest_conc, highest_conc, POD, POD_med, POD_cil, POD_ciu, hit, hit_confidence)
+
+Dark_1_fitted_output_summary <- Dark_1_fitted_output_1 %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = unique(fitted_resp), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc), POD = unique(POD), POD_cil = unique(POD_cil), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit = unique(hit), hit_confidence = unique(hit_confidence)) %>%
+    mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+fitted_hits_Dark_1 <- Dark_1_fitted_output_summary %>%
+  filter(hit == 1)
+
+confident_fitted_hits_Dark_1 <- fitted_hits_Dark_1 %>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+
+bmds_fitted_Dark_1 <- Dark_1_fitted_output_summary %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit_confidence = unique(hit_confidence), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc))
+
+## Dark_2
+#Wrangling
+Dark_2_fitted_output <- summarize_fit_output(d = Dark_2_fitted, thr_resp = bmr_thresh_Dark_2)
+
+Dark_2_fitted_output_1 <- Dark_2_fitted_output$result$resp_set %>%
+  inner_join(Dark_2_fitted_output$result$act_set) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = fitted_resp, POD = POD, lowest_conc = lowest_conc, highest_conc = highest_conc, endpoint = endpoint, hit = hit) %>%
+  inner_join(Dark_2_fitted_output$act_summary) %>%
+  select(endpoint, chemical, sample_id, conc, fitted_resp, lowest_conc, highest_conc, POD, POD_med, POD_cil, POD_ciu, hit, hit_confidence)
+
+Dark_2_fitted_output_summary <- Dark_2_fitted_output_1 %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = unique(fitted_resp), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc), POD = unique(POD), POD_cil = unique(POD_cil), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit = unique(hit), hit_confidence = unique(hit_confidence)) %>%
+    mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+fitted_hits_Dark_2 <- Dark_2_fitted_output_summary %>%
+  filter(hit == 1)
+
+confident_fitted_hits_Dark_2 <- fitted_hits_Dark_2 %>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+
+bmds_fitted_Dark_2 <- Dark_2_fitted_output_summary %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit_confidence = unique(hit_confidence), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc))
+
+## Dark_3
+#Wrangling
+Dark_3_fitted_output <- summarize_fit_output(d = Dark_3_fitted, thr_resp = bmr_thresh_Dark_3)
+
+Dark_3_fitted_output_1 <- Dark_3_fitted_output$result$resp_set %>%
+  inner_join(Dark_3_fitted_output$result$act_set) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = fitted_resp, POD = POD, lowest_conc = lowest_conc, highest_conc = highest_conc, endpoint = endpoint, hit = hit) %>%
+  inner_join(Dark_3_fitted_output$act_summary) %>%
+  select(endpoint, chemical, sample_id, conc, fitted_resp, lowest_conc, highest_conc, POD, POD_med, POD_cil, POD_ciu, hit, hit_confidence)
+
+Dark_3_fitted_output_summary <- Dark_3_fitted_output_1 %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = unique(fitted_resp), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc), POD = unique(POD), POD_cil = unique(POD_cil), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit = unique(hit), hit_confidence = unique(hit_confidence)) %>%
+    mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+fitted_hits_Dark_3 <- Dark_3_fitted_output_summary %>%
+  filter(hit == 1)
+
+confident_fitted_hits_Dark_3 <- fitted_hits_Dark_3 %>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+
+bmds_fitted_Dark_3 <- Dark_3_fitted_output_summary %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit_confidence = unique(hit_confidence), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc))
+
+## Light
+#Wrangling
+Light_fitted_output <- summarize_fit_output(d = Light_fitted, thr_resp = bmr_thresh_Light)
+
+Light_fitted_output_1 <- Light_fitted_output$result$resp_set %>%
+  inner_join(Light_fitted_output$result$act_set) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = fitted_resp, POD = POD, lowest_conc = lowest_conc, highest_conc = highest_conc, endpoint = endpoint, hit = hit) %>%
+  inner_join(Light_fitted_output$act_summary) %>%
+  select(endpoint, chemical, sample_id, conc, fitted_resp, lowest_conc, highest_conc, POD, POD_med, POD_cil, POD_ciu, hit, hit_confidence)
+
+Light_fitted_output_summary <- Light_fitted_output_1 %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = unique(fitted_resp), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc), POD = unique(POD), POD_cil = unique(POD_cil), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit = unique(hit), hit_confidence = unique(hit_confidence)) %>%
+    mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+fitted_hits_Light <- Light_fitted_output_summary %>%
+  filter(hit == 1)
+
+confident_fitted_hits_Light <- fitted_hits_Light %>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+
+bmds_fitted_Light <- Light_fitted_output_summary %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit_confidence = unique(hit_confidence), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc))
+
+## Dark
+#Wrangling
+Dark_fitted_output <- summarize_fit_output(d = Dark_fitted, thr_resp = bmr_thresh_Dark)
+
+Dark_fitted_output_1 <- Dark_fitted_output$result$resp_set %>%
+  inner_join(Dark_fitted_output$result$act_set) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = fitted_resp, POD = POD, lowest_conc = lowest_conc, highest_conc = highest_conc, endpoint = endpoint, hit = hit) %>%
+  inner_join(Dark_fitted_output$act_summary) %>%
+  select(endpoint, chemical, sample_id, conc, fitted_resp, lowest_conc, highest_conc, POD, POD_med, POD_cil, POD_ciu, hit, hit_confidence)
+
+Dark_fitted_output_summary <- Dark_fitted_output_1 %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = unique(fitted_resp), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc), POD = unique(POD), POD_cil = unique(POD_cil), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit = unique(hit), hit_confidence = unique(hit_confidence)) %>%
+    mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+fitted_hits_Dark <- Dark_fitted_output_summary %>%
+  filter(hit == 1)
+
+confident_fitted_hits_Dark <- fitted_hits_Dark %>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+
+bmds_fitted_Dark <- Dark_fitted_output_summary %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit_confidence = unique(hit_confidence), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc))
+```
+
+
+```{r 99plot_fitted_aucs, include=FALSE}
+#Plotting
+
+## Light_1
+p_Light_1_fitted <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = Light_1_fitted_output_summary, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "gray75", alpha = 0.4) +
+  # geom_point(data = Light_1_fitted_output_summary, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9", alpha = 0.7) +
+  geom_line(data = fitted_hits_Light_1, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  geom_line(data = confident_fitted_hits_Light_1[[1]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "green") +
+  geom_line(data = confident_fitted_hits_Light_1[[2]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_fitted_hits_Light_1[[3]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = -bmr_thresh_Light_1, linetype = "dashed", color = "red") +
+  geom_hline(yintercept = bmr_thresh_Light_1, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_fitted_Light_1, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_fitted_Light_1, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_fitted_Light_1, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_fitted_Light_1, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = Light_1_fitted_output_summary, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -60, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free_x") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA))
+
+## Light_2
+p_Light_2_fitted <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = Light_2_fitted_output_summary, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "gray75", alpha = 0.4) +
+  # geom_point(data = Light_2_fitted_output_summary, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9", alpha = 0.7) +
+  geom_line(data = fitted_hits_Light_2, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  # geom_line(data = confident_fitted_hits_Light_2[[1]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "green") +
+  # geom_line(data = confident_fitted_hits_Light_2[[2]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_fitted_hits_Light_2[[3]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = -bmr_thresh_Light_2, linetype = "dashed", color = "red") +
+  geom_hline(yintercept = bmr_thresh_Light_2, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_fitted_Light_2, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_fitted_Light_2, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_fitted_Light_2, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_fitted_Light_2, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = Light_2_fitted_output_summary, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -60, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free_x") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA))
+
+## Light_3
+p_Light_3_fitted <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = Light_3_fitted_output_summary, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "gray75", alpha = 0.4) +
+  # geom_point(data = Light_3_fitted_output_summary, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9", alpha = 0.7) +
+  geom_line(data = fitted_hits_Light_3, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  # geom_line(data = confident_fitted_hits_Light_3[[1]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "green") +
+  # geom_line(data = confident_fitted_hits_Light_3[[2]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_fitted_hits_Light_3[[3]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = -bmr_thresh_Light_3, linetype = "dashed", color = "red") +
+  geom_hline(yintercept = bmr_thresh_Light_3, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_fitted_Light_3, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_fitted_Light_3, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_fitted_Light_3, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_fitted_Light_3, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = Light_3_fitted_output_summary, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -60, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free_x") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA))
+
+## Dark_1
+p_Dark_1_fitted <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = Dark_1_fitted_output_summary, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "gray75", alpha = 0.4) +
+  # geom_point(data = Dark_1_fitted_output_summary, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9", alpha = 0.7) +
+  geom_line(data = fitted_hits_Dark_1, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  geom_line(data = confident_fitted_hits_Dark_1[[1]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "green") +
+  geom_line(data = confident_fitted_hits_Dark_1[[2]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_fitted_hits_Dark_1[[3]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = -bmr_thresh_Dark_1, linetype = "dashed", color = "red") +
+  geom_hline(yintercept = bmr_thresh_Dark_1, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_fitted_Dark_1, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_fitted_Dark_1, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_fitted_Dark_1, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_fitted_Dark_1, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = Dark_1_fitted_output_summary, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -60, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free_x") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA))
+
+## Dark_2
+p_Dark_2_fitted <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = Dark_2_fitted_output_summary, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "gray75", alpha = 0.4) +
+  # geom_point(data = Dark_2_fitted_output_summary, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9", alpha = 0.7) +
+  geom_line(data = fitted_hits_Dark_2, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  geom_line(data = confident_fitted_hits_Dark_2[[1]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "green") +
+  geom_line(data = confident_fitted_hits_Dark_2[[2]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "yellow") +
+  geom_line(data = confident_fitted_hits_Dark_2[[3]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = -bmr_thresh_Dark_2, linetype = "dashed", color = "red") +
+  geom_hline(yintercept = bmr_thresh_Dark_2, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_fitted_Dark_2, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_fitted_Dark_2, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_fitted_Dark_2, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_fitted_Dark_2, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = Dark_2_fitted_output_summary, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -60, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free_x") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA))
+
+## Dark_3
+p_Dark_3_fitted <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = Dark_3_fitted_output_summary, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "gray75", alpha = 0.4) +
+  # geom_point(data = Dark_3_fitted_output_summary, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9", alpha = 0.7) +
+  geom_line(data = fitted_hits_Dark_3, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  # geom_line(data = confident_fitted_hits_Dark_3[[1]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "green") +
+  # geom_line(data = confident_fitted_hits_Dark_3[[2]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_fitted_hits_Dark_3[[3]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = -bmr_thresh_Dark_3, linetype = "dashed", color = "red") +
+   geom_hline(yintercept = bmr_thresh_Dark_3, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_fitted_Dark_3, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_fitted_Dark_3, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_fitted_Dark_3, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_fitted_Dark_3, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = Dark_3_fitted_output_summary, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -60, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free_x") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA))
+
+## Light
+p_Light_fitted <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = Light_fitted_output_summary, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "gray75", alpha = 0.4) +
+  # geom_point(data = Light_fitted_output_summary, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9", alpha = 0.7) +
+  geom_line(data = fitted_hits_Light, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  # geom_line(data = confident_fitted_hits_Light[[1]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "green") +
+  # geom_line(data = confident_fitted_hits_Light[[2]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_fitted_hits_Light[[3]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = -bmr_thresh_Light, linetype = "dashed", color = "red") +
+  geom_hline(yintercept = bmr_thresh_Light, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_fitted_Light, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_fitted_Light, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_fitted_Light, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_fitted_Light, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = Light_fitted_output_summary, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -60, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free_x") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA))
+
+## Dark
+p_Dark_fitted <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = Dark_fitted_output_summary, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "gray75", alpha = 0.4) +
+  # geom_point(data = Dark_fitted_output_summary, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9", alpha = 0.7) +
+  geom_line(data = fitted_hits_Dark, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  # geom_line(data = confident_fitted_hits_Dark[[1]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "green") +
+  # geom_line(data = confident_fitted_hits_Dark[[2]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_fitted_hits_Dark[[3]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = -bmr_thresh_Dark, linetype = "dashed", color = "red") +
+  geom_hline(yintercept = bmr_thresh_Dark, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_fitted_Dark, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_fitted_Dark, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_fitted_Dark, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_fitted_Dark, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = Dark_fitted_output_summary, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -60, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free_x") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA))
+
+```
+
+
+### Positive Direction
+
+```{r 100AUC_rCurveP, include=FALSE}
+testP <-
+  estimate_dataset_bmr(
+    combi_run_rcurvep(
+      auc_norm_no_cntrl,
+      n_samples = params$sample_size,
+      #Increase this number to 100 or 1000 for better results (takes a long time to run)
+      keep_sets = c("act_set", "resp_set", "fp_set"),
+      TRSH = seq(5, 95, by = 5),
+      RNGE = 1000000
+    ),
+    plot = FALSE
+  )
+
+temp_auc_norm_LD_no_cntrlP <- auc_norm_no_cntrl %>%
+  mutate(endpoint = str_split(string = endpoint, pattern = "_", simplify = TRUE)[,1])
+
+test_LDP <- estimate_dataset_bmr(
+    combi_run_rcurvep(
+      temp_auc_norm_LD_no_cntrlP,
+      n_samples = params$sample_size,
+      #Increase this number to 100 or 1000 for better results (takes a long time to run)
+      keep_sets = c("act_set", "resp_set", "fp_set"),
+      TRSH = seq(5, 95, by = 5),
+      RNGE = 1000000
+    ),
+    plot = FALSE
+  )
+```
+
+```{r 101bmr_auc, echo = FALSE}
+testP$outcome %>%
+  select(endpoint, qc, cor_exp_fit, cor_lm_fit, bmr_exp, bmr_ori) %>%
+  kable(
+    col.names = c(
+      "Endpoint",
+      "Quality Control Message",
+      "Correlation of expotential fit",
+      "Correlation of linear model fit",
+      "BMR of exponential model",
+      "BMR of linear model"
+    ),
+    align = 'llrrrr',
+    caption = "Table 8. Summary of the estimated BMR"
+  ) %>%
+  kable_styling() %>%
+  scroll_box()
+```
+
+```{r 101.1bmr_auc, echo = FALSE}
+test_LDP$outcome %>%
+  select(endpoint, qc, cor_exp_fit, cor_lm_fit, bmr_exp, bmr_ori) %>%
+  kable(
+    col.names = c(
+      "Endpoint",
+      "Quality Control Message",
+      "Correlation of expotential fit",
+      "Correlation of linear model fit",
+      "BMR of exponential model",
+      "BMR of linear model"
+    ),
+    align = 'llrrrr',
+    caption = "Table 8. Summary of the estimated BMR"
+  ) %>%
+  kable_styling() %>%
+  scroll_box()
+```
+
+```{r 103Pull_BMRs, include = FALSE}
+testP$outcome[which(is.na(test$outcome))] = 0
+test_LDP$outcome[which(is.na(test$outcome))] = 0
+
+bmr_thresh_Dark_1P <- testP$outcome %>%
+  filter(endpoint == "Dark_1") %>%
+  mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
+  pull(bmr)
+
+bmr_thresh_Dark_2P <- testP$outcome %>%
+  filter(endpoint == "Dark_2") %>%
+  mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
+  pull(bmr)
+
+bmr_thresh_Dark_3P <- testP$outcome %>%
+  filter(endpoint == "Dark_3") %>%
+  mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
+  pull(bmr)
+
+bmr_thresh_Light_1P <- testP$outcome %>%
+  filter(endpoint == "Light_1") %>%
+  mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
+  pull(bmr)
+
+bmr_thresh_Light_2P <- testP$outcome %>%
+  filter(endpoint == "Light_2") %>%
+  mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
+  pull(bmr)
+
+bmr_thresh_Light_3P <- testP$outcome %>%
+  filter(endpoint == "Light_3") %>%
+  mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
+  pull(bmr)
+
+bmr_thresh_DarkP <- test_LDP$outcome %>%
+  filter(endpoint == "Dark") %>%
+  mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
+  pull(bmr)
+
+bmr_thresh_LightP <- test_LDP$outcome %>%
+  filter(endpoint == "Light") %>%
+  mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
+  pull(bmr)
+```
+
+```{r 104RcurveP_AUC, include = FALSE}
+set.seed(976)
+Dark_1_outP <- auc_norm_no_cntrl %>%
+  filter(endpoint == "Dark_1") %>%
+  combi_run_rcurvep(., n_samples = params$sample_size,
+      #Increase this number to 100 or 1000 for better results (takes a long time to run)
+      keep_sets = c("act_set", "resp_set", "fp_set"),
+      TRSH = bmr_thresh_Dark_1,
+      RNGE = 1000000) %>%
+  summarize_rcurvep_output()
+
+
+set.seed(9089)
+Dark_2_outP <- auc_norm_no_cntrl %>%
+  filter(endpoint == "Dark_2") %>%
+  combi_run_rcurvep(., n_samples = params$sample_size,
+      #Increase this number to 100 or 1000 for better results (takes a long time to run)
+      keep_sets = c("act_set", "resp_set", "fp_set"),
+      TRSH = bmr_thresh_Dark_2,
+      RNGE = 1000000) %>%
+  summarize_rcurvep_output()
+
+
+set.seed(1359)  
+Dark_3_outP <- auc_norm_no_cntrl %>%
+  filter(endpoint == "Dark_3") %>%
+  combi_run_rcurvep(., n_samples = params$sample_size,
+      #Increase this number to 100 or 1000 for better results (takes a long time to run)
+      keep_sets = c("act_set", "resp_set", "fp_set"),
+      TRSH = bmr_thresh_Dark_3,
+      RNGE = 1000000) %>%
+  summarize_rcurvep_output()
+
+
+set.seed(5346) 
+Light_1_outP <- auc_norm_no_cntrl %>%
+  filter(endpoint == "Light_1") %>%
+  combi_run_rcurvep(., n_samples = params$sample_size,
+      #Increase this number to 100 or 1000 for better results (takes a long time to run)
+      keep_sets = c("act_set", "resp_set", "fp_set"),
+      TRSH = bmr_thresh_Light_1,
+      RNGE = 1000000) %>%
+  summarize_rcurvep_output()
+
+  
+set.seed(6842)
+Light_2_outP <- auc_norm_no_cntrl %>%
+  filter(endpoint == "Light_2") %>%
+  combi_run_rcurvep(., n_samples = params$sample_size,
+      #Increase this number to 100 or 1000 for better results (takes a long time to run)
+      keep_sets = c("act_set", "resp_set", "fp_set"),
+      TRSH = bmr_thresh_Light_2,
+      RNGE = 1000000) %>%
+  summarize_rcurvep_output()
+
+
+set.seed(1208)
+Light_3_outP <- auc_norm_no_cntrl %>%
+  filter(endpoint == "Light_3") %>%
+  combi_run_rcurvep(., n_samples = params$sample_size,
+      #Increase this number to 100 or 1000 for better results (takes a long time to run)
+      keep_sets = c("act_set", "resp_set", "fp_set"),
+      TRSH = bmr_thresh_Light_3,
+      RNGE = 1000000) %>%
+  summarize_rcurvep_output()
+  
+set.seed(47)
+Light_outP <- temp_auc_norm_LD_no_cntrl %>%
+  filter(endpoint == "Light") %>%
+  combi_run_rcurvep(., n_samples = params$sample_size,
+      #Increase this number to 100 or 1000 for better results (takes a long time to run)
+      keep_sets = c("act_set", "resp_set", "fp_set"),
+      TRSH = bmr_thresh_Light,
+      RNGE = 1000000) %>%
+  summarize_rcurvep_output()
+
+set.seed(347)
+Dark_outP <- temp_auc_norm_LD_no_cntrl %>%
+  filter(endpoint == "Dark") %>%
+  combi_run_rcurvep(., n_samples = params$sample_size,
+      #Increase this number to 100 or 1000 for better results (takes a long time to run)
+      keep_sets = c("act_set", "resp_set", "fp_set"),
+      TRSH = bmr_thresh_Light,
+      RNGE = 1000000) %>%
+  summarize_rcurvep_output()
+```
+
+
+```{r 105Rcurvep_obj_wrangling, include = FALSE}
+## Light_1
+simulated_curves_Light_1P <- Light_1_outP$result$resp_set # To merge with other sets
+simulated_curve_bmds_Light_1P <- Light_1_outP$act_summary %>%
+  group_by(chemical) %>%
+  summarise(POD_med = POD_med, POD_cil = POD_cil, hit_confidence = hit_confidence, lowest_conc = lowest_conc) # To merge with other sets
+simulated_curves_Light_1_act_setP <- Light_1_outP$result$act_set
+
+simulated_curves_Light_1_summaryP <- simulated_curves_Light_1P %>%
+  inner_join(simulated_curves_Light_1_act_setP) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(endpoint = endpoint, resp = resp, corrected_resp = corrected_resp, correction = correction, POD = POD, highest_conc = highest_conc, hit = hit, lowest_conc = lowest_conc) %>%
+  inner_join(simulated_curve_bmds_Light_1P) %>%
+  mutate(resp = if_else(correction == 1, true = corrected_resp, false = resp)) %>%
+  select(-corrected_resp) %>%
+  mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+curve_hits_Light_1P <- simulated_curves_Light_1_summaryP %>%
+  filter(hit == 1)
+
+confident_curves_Light_1P <- curve_hits_Light_1P%>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+bmds_Light_1P <- simulated_curves_Light_1_summaryP %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med))
+
+## Light_2
+simulated_curves_Light_2P <- Light_2_outP$result$resp_set # To merge with other sets
+simulated_curve_bmds_Light_2P <- Light_2_outP$act_summary %>%
+  group_by(chemical) %>%
+  summarise(POD_med = POD_med, POD_cil = POD_cil, hit_confidence = hit_confidence, lowest_conc = lowest_conc) # To merge with other sets
+simulated_curves_Light_2_act_setP <- Light_2_outP$result$act_set
+
+simulated_curves_Light_2_summaryP <- simulated_curves_Light_2P %>%
+  inner_join(simulated_curves_Light_2_act_setP) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(endpoint = endpoint, resp = resp, corrected_resp = corrected_resp, correction = correction, POD = POD, highest_conc = highest_conc, hit = hit, lowest_conc = lowest_conc) %>%
+  inner_join(simulated_curve_bmds_Light_2P) %>%
+  mutate(resp = if_else(correction == 1, true = corrected_resp, false = resp)) %>%
+  select(-corrected_resp) %>%
+  mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+curve_hits_Light_2P <- simulated_curves_Light_2_summaryP %>%
+  filter(hit == 1)
+
+confident_curves_Light_2P <- curve_hits_Light_2P %>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+bmds_Light_2P <- simulated_curves_Light_2_summaryP %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med))
+
+## Light_3
+simulated_curves_Light_3P <- Light_3_outP$result$resp_set # To merge with other sets
+simulated_curve_bmds_Light_3P <- Light_3_outP$act_summary %>%
+  group_by(chemical) %>%
+  summarise(POD_med = POD_med, POD_cil = POD_cil, hit_confidence = hit_confidence, lowest_conc = lowest_conc) # To merge with other sets
+simulated_curves_Light_3_act_setP <- Light_3_outP$result$act_set
+
+simulated_curves_Light_3_summaryP <- simulated_curves_Light_3P %>%
+  inner_join(simulated_curves_Light_3_act_setP) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(endpoint = endpoint, resp = resp, corrected_resp = corrected_resp, correction = correction, POD = POD, highest_conc = highest_conc, hit = hit, lowest_conc = lowest_conc) %>%
+  inner_join(simulated_curve_bmds_Light_3P) %>%
+  mutate(resp = if_else(correction == 1, true = corrected_resp, false = resp)) %>%
+  select(-corrected_resp) %>%
+  mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+curve_hits_Light_3P <- simulated_curves_Light_3_summaryP %>%
+  filter(hit == 1)
+
+confident_curves_Light_3P <- curve_hits_Light_3P %>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+bmds_Light_3P <- simulated_curves_Light_3_summaryP %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med))
+
+
+
+## Dark_1
+simulated_curves_Dark_1P <- Dark_1_outP$result$resp_set # To merge with other sets
+simulated_curve_bmds_Dark_1P <- Dark_1_outP$act_summary %>%
+  group_by(chemical) %>%
+  summarise(POD_med = POD_med, POD_cil = POD_cil, hit_confidence = hit_confidence, lowest_conc = lowest_conc) # To merge with other sets
+simulated_curves_Dark_1_act_setP <- Dark_1_outP$result$act_set
+
+simulated_curves_Dark_1_summaryP <- simulated_curves_Dark_1P %>%
+  inner_join(simulated_curves_Dark_1_act_setP) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(endpoint = endpoint, resp = resp, corrected_resp = corrected_resp, correction = correction, POD = POD, highest_conc = highest_conc, hit = hit, lowest_conc = lowest_conc) %>%
+  inner_join(simulated_curve_bmds_Dark_1P) %>%
+  mutate(resp = if_else(correction == 1, true = corrected_resp, false = resp)) %>%
+  select(-corrected_resp) %>%
+  mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+curve_hits_Dark_1P <- simulated_curves_Dark_1_summaryP %>%
+  filter(hit == 1)
+
+confident_curves_Dark_1P <- curve_hits_Dark_1P %>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+bmds_Dark_1P <- simulated_curves_Dark_1_summaryP %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med))
+
+## Dark_2
+simulated_curves_Dark_2P <- Dark_2_outP$result$resp_set # To merge with other sets
+simulated_curve_bmds_Dark_2P <- Dark_2_outP$act_summary %>%
+  group_by(chemical) %>%
+  summarise(POD_med = POD_med, POD_cil = POD_cil, hit_confidence = hit_confidence, lowest_conc = lowest_conc) # To merge with other sets
+simulated_curves_Dark_2_act_setP <- Dark_2_outP$result$act_set
+
+simulated_curves_Dark_2_summaryP <- simulated_curves_Dark_2P %>%
+  inner_join(simulated_curves_Dark_2_act_setP) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(endpoint = endpoint, resp = resp, corrected_resp = corrected_resp, correction = correction, POD = POD, highest_conc = highest_conc, hit = hit, lowest_conc = lowest_conc) %>%
+  inner_join(simulated_curve_bmds_Dark_2P) %>%
+  mutate(resp = if_else(correction == 1, true = corrected_resp, false = resp)) %>%
+  select(-corrected_resp) %>%
+  mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+curve_hits_Dark_2P <- simulated_curves_Dark_2_summaryP %>%
+  filter(hit == 1)
+
+confident_curves_Dark_2P <- curve_hits_Dark_2P %>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+bmds_Dark_2P <- simulated_curves_Dark_2_summaryP %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med))
+
+## Dark_3
+simulated_curves_Dark_3P <- Dark_3_outP$result$resp_set # To merge with other sets
+simulated_curve_bmds_Dark_3P <- Dark_3_outP$act_summary %>%
+  group_by(chemical) %>%
+  summarise(POD_med = POD_med, POD_cil = POD_cil, hit_confidence = hit_confidence, lowest_conc = lowest_conc) # To merge with other sets
+simulated_curves_Dark_3_act_setP <- Dark_3_outP$result$act_set
+
+simulated_curves_Dark_3_summaryP <- simulated_curves_Dark_3P %>%
+  inner_join(simulated_curves_Dark_3_act_setP) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(endpoint = endpoint, resp = resp, corrected_resp = corrected_resp, correction = correction, POD = POD, highest_conc = highest_conc, hit = hit, lowest_conc = lowest_conc) %>%
+  inner_join(simulated_curve_bmds_Dark_3P) %>%
+  mutate(resp = if_else(correction == 1, true = corrected_resp, false = resp)) %>%
+  select(-corrected_resp) %>%
+  mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+curve_hits_Dark_3P <- simulated_curves_Dark_3_summaryP %>%
+  filter(hit == 1)
+
+confident_curves_Dark_3P <- curve_hits_Dark_3P %>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+bmds_Dark_3P <- simulated_curves_Dark_3_summaryP %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med))
+
+
+
+## Light
+simulated_curves_LightP <- Light_outP$result$resp_set # To merge with other sets
+simulated_curve_bmds_LightP <- Light_outP$act_summary %>%
+  group_by(chemical) %>%
+  summarise(POD_med = POD_med, POD_cil = POD_cil, hit_confidence = hit_confidence, lowest_conc = lowest_conc) # To merge with other sets
+simulated_curves_Light_act_setP <- Light_outP$result$act_set
+
+simulated_curves_Light_summaryP <- simulated_curves_LightP %>%
+  inner_join(simulated_curves_Light_act_setP) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(endpoint = endpoint, resp = resp, corrected_resp = corrected_resp, correction = correction, POD = POD, highest_conc = highest_conc, hit = hit, lowest_conc = lowest_conc) %>%
+  inner_join(simulated_curve_bmds_LightP) %>%
+  mutate(resp = if_else(correction == 1, true = corrected_resp, false = resp)) %>%
+  select(-corrected_resp) %>%
+  mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+curve_hits_LightP <- simulated_curves_Light_summaryP %>%
+  filter(hit == 1)
+
+confident_curves_LightP <- curve_hits_LightP %>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+bmds_LightP <- simulated_curves_Light_summaryP %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med))
+
+## Dark
+simulated_curves_DarkP <- Dark_outP$result$resp_set # To merge with other sets
+simulated_curve_bmds_DarkP <- Dark_outP$act_summary %>%
+  group_by(chemical) %>%
+  summarise(POD_med = POD_med, POD_cil = POD_cil, hit_confidence = hit_confidence, lowest_conc = lowest_conc) # To merge with other sets
+simulated_curves_Dark_act_setP <- Dark_outP$result$act_set
+
+simulated_curves_Dark_summaryP <- simulated_curves_DarkP %>%
+  inner_join(simulated_curves_Dark_act_setP) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(endpoint = endpoint, resp = resp, corrected_resp = corrected_resp, correction = correction, POD = POD, highest_conc = highest_conc, hit = hit, lowest_conc = lowest_conc) %>%
+  inner_join(simulated_curve_bmds_DarkP) %>%
+  mutate(resp = if_else(correction == 1, true = corrected_resp, false = resp)) %>%
+  select(-corrected_resp) %>%
+  mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+curve_hits_DarkP <- simulated_curves_Dark_summaryP %>%
+  filter(hit == 1)
+
+confident_curves_DarkP <- curve_hits_DarkP %>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+bmds_DarkP <- simulated_curves_Dark_summaryP %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med))
+```
+
+```{r 106curve_simulation_auc, include = FALSE}
+## Light 1
+p_Light_1P <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = simulated_curves_Light_1_summaryP, mapping = aes(x = conc, y = resp, group = sample_id), color = "gray75", alpha = 0.2) +
+  geom_line(data = curve_hits_Light_1P, mapping = aes(x = conc, y = resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  # geom_line(data = confident_curves_Light_1P[[1]], mapping = aes(x = conc, y = resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_curves_Light_1P[[2]], mapping = aes(x = conc, y = resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_curves_Light_1P[[3]], mapping = aes(x = conc, y = resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = bmr_thresh_Light_1P, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_Light_1P, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_Light_1P, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_Light_1P, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_Light_1P, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = simulated_curve_bmds_Light_1P, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -85, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+## Light_2
+p_Light_2P <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = simulated_curves_Light_2_summaryP, mapping = aes(x = conc, y = resp, group = sample_id), color = "gray75", alpha = 0.2) +
+  geom_line(data = curve_hits_Light_2P, mapping = aes(x = conc, y = resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  # geom_line(data = confident_curves_Light_2P[[1]], mapping = aes(x = conc, y = resp, group = sample_id), color = "green") +
+  # geom_line(data = confident_curves_Light_2P[[2]], mapping = aes(x = conc, y = resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_curves_Light_2P[[3]], mapping = aes(x = conc, y = resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = bmr_thresh_Light_2P, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_Light_2P, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_Light_2P, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_Light_2P, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_Light_2P, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = simulated_curve_bmds_Light_2P, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -85, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+## Light_3
+p_Light_3P <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = simulated_curves_Light_3_summaryP, mapping = aes(x = conc, y = resp, group = sample_id), color = "gray75", alpha = 0.2) +
+  geom_line(data = curve_hits_Light_3P, mapping = aes(x = conc, y = resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  geom_line(data = confident_curves_Light_3P[[1]], mapping = aes(x = conc, y = resp, group = sample_id), color = "green") +
+  geom_line(data = confident_curves_Light_3P[[2]], mapping = aes(x = conc, y = resp, group = sample_id), color = "blue") +
+  # geom_line(data = confident_curves_Light_3P[[3]], mapping = aes(x = conc, y = resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = bmr_thresh_Light_3P, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_Light_3P, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_Light_3P, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_Light_3P, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_Light_3P, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = simulated_curve_bmds_Light_3P, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -85, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+
+## Dark_1
+p_Dark_1P <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = simulated_curves_Dark_1_summaryP, mapping = aes(x = conc, y = resp, group = sample_id), color = "gray75", alpha = 0.2) +
+  geom_line(data = curve_hits_Dark_1P, mapping = aes(x = conc, y = resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  # geom_line(data = confident_curves_Dark_1P[[1]], mapping = aes(x = conc, y = resp, group = sample_id), color = "green") +
+  geom_line(data = confident_curves_Dark_1P[[1]], mapping = aes(x = conc, y = resp, group = sample_id), color = "yellow") +
+  geom_line(data = confident_curves_Dark_1P[[2]], mapping = aes(x = conc, y = resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = bmr_thresh_Dark_1P, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_Dark_1P, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_Dark_1P, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_Dark_1P, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_Dark_1PP, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = simulated_curve_bmds_Dark_1P, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -85, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+## Dark_2
+p_Dark_2P <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = simulated_curves_Dark_2_summaryP, mapping = aes(x = conc, y = resp, group = sample_id), color = "gray75", alpha = 0.2) +
+  geom_line(data = curve_hits_Dark_2P, mapping = aes(x = conc, y = resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  geom_line(data = confident_curves_Dark_2P[[1]], mapping = aes(x = conc, y = resp, group = sample_id), color = "green") +
+  geom_line(data = confident_curves_Dark_2P[[2]], mapping = aes(x = conc, y = resp, group = sample_id), color = "yellow") +
+  geom_line(data = confident_curves_Dark_2P[[3]], mapping = aes(x = conc, y = resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = bmr_thresh_Dark_2P, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_Dark_2P, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_Dark_2P, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_Dark_2P, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_Dark_2P, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = simulated_curve_bmds_Dark_2P, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -85, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+## Dark_3
+p_Dark_3P <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = simulated_curves_Dark_3_summaryP, mapping = aes(x = conc, y = resp, group = sample_id), color = "gray75", alpha = 0.2) +
+  geom_line(data = curve_hits_Dark_3P, mapping = aes(x = conc, y = resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  geom_line(data = confident_curves_Dark_3P[[1]], mapping = aes(x = conc, y = resp, group = sample_id), color = "green") +
+  geom_line(data = confident_curves_Dark_3P[[2]], mapping = aes(x = conc, y = resp, group = sample_id), color = "yellow") +
+  geom_line(data = confident_curves_Dark_3P[[3]], mapping = aes(x = conc, y = resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = bmr_thresh_Dark_3P, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_Dark_3P, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_Dark_3P, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_Dark_3P, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_Dark_3P, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = simulated_curve_bmds_Dark_3P, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -85, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+
+## Light
+p_LightP <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = simulated_curves_Light_summaryP, mapping = aes(x = conc, y = resp, group = sample_id), color = "gray75", alpha = 0.2) +
+  geom_line(data = curve_hits_LightP, mapping = aes(x = conc, y = resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  # geom_line(data = confident_curves_LightP[[1]], mapping = aes(x = conc, y = resp, group = sample_id), color = "green") +
+  # geom_line(data = confident_curves_LightP[[2]], mapping = aes(x = conc, y = resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_curves_LightP[[3]], mapping = aes(x = conc, y = resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = bmr_thresh_LightP, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_LightP, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_LightP, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_LightP, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_LightP, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = simulated_curve_bmds_LightP, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -85, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+
+## Dark
+p_DarkP <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = simulated_curves_Dark_summaryP, mapping = aes(x = conc, y = resp, group = sample_id), color = "gray75", alpha = 0.2) +
+  geom_line(data = curve_hits_DarkP, mapping = aes(x = conc, y = resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  # geom_line(data = confident_curves_DarkP[[1]], mapping = aes(x = conc, y = resp, group = sample_id), color = "green") +
+  # geom_line(data = confident_curves_DarkP[[2]], mapping = aes(x = conc, y = resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_curves_DarkP[[3]], mapping = aes(x = conc, y = resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = bmr_thresh_DarkP, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_DarkP, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_DarkP, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_DarkP, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_DarkP, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = simulated_curve_bmds_DarkP, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -85, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+```
+
+```{r 107run_fits_auc, include=FALSE}
+# Use the noise-filtered data from the curveP output
+
+## Light_1
+Light_1_fittedP <- simulated_curves_Light_1_summaryP %>%
+  select(endpoint, chemical, conc, resp) %>%
+  group_by(chemical) %>%
+  run_fit(
+  .,
+  modls = c("hill", "cnst"),
+  keep_sets = c("fit_set", "resp_set"),
+  n_samples = params$sample_size
+)
+
+## Light_2
+Light_2_fittedP <- simulated_curves_Light_2_summaryP %>%
+  select(endpoint, chemical, conc, resp) %>%
+  group_by(chemical) %>%
+  run_fit(
+  .,
+  modls = c("hill", "cnst"),
+  keep_sets = c("fit_set", "resp_set"),
+  n_samples = params$sample_size
+)
+
+## Light_3
+Light_3_fittedP <- simulated_curves_Light_3_summaryP %>%
+  select(endpoint, chemical, conc, resp) %>%
+  group_by(chemical) %>%
+  run_fit(
+  .,
+  modls = c("hill", "cnst"),
+  keep_sets = c("fit_set", "resp_set"),
+  n_samples = params$sample_size
+)
+
+## Dark_1
+Dark_1_fittedP <- simulated_curves_Dark_1_summaryP %>%
+  select(endpoint, chemical, conc, resp) %>%
+  group_by(chemical) %>%
+  run_fit(
+  .,
+  modls = c("hill", "cnst"),
+  keep_sets = c("fit_set", "resp_set"),
+  n_samples = params$sample_size
+)
+
+## Dark_2
+Dark_2_fittedP <- simulated_curves_Dark_2_summaryP %>%
+  select(endpoint, chemical, conc, resp) %>%
+  group_by(chemical) %>%
+  run_fit(
+  .,
+  modls = c("hill", "cnst"),
+  keep_sets = c("fit_set", "resp_set"),
+  n_samples = params$sample_size
+)
+
+## Dark_3
+Dark_3_fittedP <- simulated_curves_Dark_3_summaryP %>%
+  select(endpoint, chemical, conc, resp) %>%
+  group_by(chemical) %>%
+  run_fit(
+  .,
+  modls = c("hill", "cnst"),
+  keep_sets = c("fit_set", "resp_set"),
+  n_samples = params$sample_size
+)
+
+## Light
+Light_fittedP <- simulated_curves_Light_summaryP %>%
+  select(endpoint, chemical, conc, resp) %>%
+  group_by(chemical) %>%
+  run_fit(
+  .,
+  modls = c("hill", "cnst"),
+  keep_sets = c("fit_set", "resp_set"),
+  n_samples = params$sample_size
+)
+
+## Dark
+Dark_fittedP <- simulated_curves_Dark_summaryP %>%
+  select(endpoint, chemical, conc, resp) %>%
+  group_by(chemical) %>%
+  run_fit(
+  .,
+  modls = c("hill", "cnst"),
+  keep_sets = c("fit_set", "resp_set"),
+  n_samples = params$sample_size
+)
+```
+
+```{r 108wrangling_fitted_auc_data, include=FALSE}
+#Wrangling
+
+## Light_1
+Light_1_fitted_outputP <- summarize_fit_output(d = Light_1_fittedP, thr_resp = bmr_thresh_Light_1P)
+
+Light_1_fitted_output_1P <- Light_1_fitted_outputP$result$resp_set %>%
+  inner_join(Light_1_fitted_outputP$result$act_set) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = fitted_resp, POD = POD, lowest_conc = lowest_conc, highest_conc = highest_conc, endpoint = endpoint, hit = hit) %>%
+  inner_join(Light_1_fitted_outputP$act_summary) %>%
+  select(endpoint, chemical, sample_id, conc, fitted_resp, lowest_conc, highest_conc, POD, POD_med, POD_cil, POD_ciu, hit, hit_confidence)
+
+Light_1_fitted_output_summaryP <- Light_1_fitted_output_1P %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = unique(fitted_resp), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc), POD = unique(POD), POD_cil = unique(POD_cil), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit = unique(hit), hit_confidence = unique(hit_confidence)) %>%
+    mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+fitted_hits_Light_1P <- Light_1_fitted_output_summaryP %>%
+  filter(hit == 1)
+
+confident_fitted_hits_Light_1P <- fitted_hits_Light_1P %>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+bmds_fitted_Light_1P <- Light_1_fitted_output_summaryP %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit_confidence = unique(hit_confidence), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc))
+
+## Light_2
+#Wrangling
+Light_2_fitted_outputP <- summarize_fit_output(d = Light_2_fittedP, thr_resp = bmr_thresh_Light_2P)
+
+Light_2_fitted_output_1P <- Light_2_fitted_outputP$result$resp_set %>%
+  inner_join(Light_2_fitted_outputP$result$act_set) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = fitted_resp, POD = POD, lowest_conc = lowest_conc, highest_conc = highest_conc, endpoint = endpoint, hit = hit) %>%
+  inner_join(Light_2_fitted_output$act_summary) %>%
+  select(endpoint, chemical, sample_id, conc, fitted_resp, lowest_conc, highest_conc, POD, POD_med, POD_cil, POD_ciu, hit, hit_confidence)
+
+Light_2_fitted_output_summaryP <- Light_2_fitted_output_1P %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = unique(fitted_resp), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc), POD = unique(POD), POD_cil = unique(POD_cil), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit = unique(hit), hit_confidence = unique(hit_confidence)) %>%
+    mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+fitted_hits_Light_2P <- Light_2_fitted_output_summaryP %>%
+  filter(hit == 1)
+
+confident_fitted_hits_Light_2P <- fitted_hits_Light_2P %>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+
+bmds_fitted_Light_2P <- Light_2_fitted_output_summaryP %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit_confidence = unique(hit_confidence), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc))
+
+## Light_3
+#Wrangling
+Light_3_fitted_outputP <- summarize_fit_output(d = Light_3_fittedP, thr_resp = bmr_thresh_Light_3P)
+
+Light_3_fitted_output_1P <- Light_3_fitted_outputP$result$resp_set %>%
+  inner_join(Light_3_fitted_outputP$result$act_set) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = fitted_resp, POD = POD, lowest_conc = lowest_conc, highest_conc = highest_conc, endpoint = endpoint, hit = hit) %>%
+  inner_join(Light_3_fitted_output$act_summary) %>%
+  select(endpoint, chemical, sample_id, conc, fitted_resp, lowest_conc, highest_conc, POD, POD_med, POD_cil, POD_ciu, hit, hit_confidence)
+
+Light_3_fitted_output_summaryP <- Light_3_fitted_output_1P %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = unique(fitted_resp), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc), POD = unique(POD), POD_cil = unique(POD_cil), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit = unique(hit), hit_confidence = unique(hit_confidence)) %>%
+    mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+fitted_hits_Light_3P <- Light_3_fitted_output_summaryP %>%
+  filter(hit == 1)
+
+confident_fitted_hits_Light_3P <- fitted_hits_Light_3P %>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+
+bmds_fitted_Light_3P <- Light_3_fitted_output_summaryP %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit_confidence = unique(hit_confidence), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc))
+
+## Dark_1
+#Wrangling
+Dark_1_fitted_outputP <- summarize_fit_output(d = Dark_1_fittedP, thr_resp = bmr_thresh_Dark_1P)
+
+Dark_1_fitted_output_1P <- Dark_1_fitted_outputP$result$resp_set %>%
+  inner_join(Dark_1_fitted_outputP$result$act_set) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = fitted_resp, POD = POD, lowest_conc = lowest_conc, highest_conc = highest_conc, endpoint = endpoint, hit = hit) %>%
+  inner_join(Dark_1_fitted_output$act_summary) %>%
+  select(endpoint, chemical, sample_id, conc, fitted_resp, lowest_conc, highest_conc, POD, POD_med, POD_cil, POD_ciu, hit, hit_confidence)
+
+Dark_1_fitted_output_summaryP <- Dark_1_fitted_output_1P %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = unique(fitted_resp), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc), POD = unique(POD), POD_cil = unique(POD_cil), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit = unique(hit), hit_confidence = unique(hit_confidence)) %>%
+    mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+fitted_hits_Dark_1P <- Dark_1_fitted_output_summaryP %>%
+  filter(hit == 1)
+
+confident_fitted_hits_Dark_1P <- fitted_hits_Dark_1P %>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+
+bmds_fitted_Dark_1P <- Dark_1_fitted_output_summaryP %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit_confidence = unique(hit_confidence), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc))
+
+## Dark_2
+#Wrangling
+Dark_2_fitted_outputP <- summarize_fit_output(d = Dark_2_fittedP, thr_resp = bmr_thresh_Dark_2P)
+
+Dark_2_fitted_output_1P <- Dark_2_fitted_outputP$result$resp_set %>%
+  inner_join(Dark_2_fitted_outputP$result$act_set) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = fitted_resp, POD = POD, lowest_conc = lowest_conc, highest_conc = highest_conc, endpoint = endpoint, hit = hit) %>%
+  inner_join(Dark_2_fitted_output$act_summary) %>%
+  select(endpoint, chemical, sample_id, conc, fitted_resp, lowest_conc, highest_conc, POD, POD_med, POD_cil, POD_ciu, hit, hit_confidence)
+
+Dark_2_fitted_output_summaryP <- Dark_2_fitted_output_1P %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = unique(fitted_resp), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc), POD = unique(POD), POD_cil = unique(POD_cil), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit = unique(hit), hit_confidence = unique(hit_confidence)) %>%
+    mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+fitted_hits_Dark_2P <- Dark_2_fitted_output_summaryP %>%
+  filter(hit == 1)
+
+confident_fitted_hits_Dark_2P <- fitted_hits_Dark_2P %>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+
+bmds_fitted_Dark_2P <- Dark_2_fitted_output_summaryP %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit_confidence = unique(hit_confidence), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc))
+
+## Dark_3
+#Wrangling
+Dark_3_fitted_outputP <- summarize_fit_output(d = Dark_3_fittedP, thr_resp = bmr_thresh_Dark_3P)
+
+Dark_3_fitted_output_1P <- Dark_3_fitted_outputP$result$resp_set %>%
+  inner_join(Dark_3_fitted_outputP$result$act_set) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = fitted_resp, POD = POD, lowest_conc = lowest_conc, highest_conc = highest_conc, endpoint = endpoint, hit = hit) %>%
+  inner_join(Dark_3_fitted_output$act_summary) %>%
+  select(endpoint, chemical, sample_id, conc, fitted_resp, lowest_conc, highest_conc, POD, POD_med, POD_cil, POD_ciu, hit, hit_confidence)
+
+Dark_3_fitted_output_summaryP <- Dark_3_fitted_output_1P %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = unique(fitted_resp), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc), POD = unique(POD), POD_cil = unique(POD_cil), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit = unique(hit), hit_confidence = unique(hit_confidence)) %>%
+    mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+fitted_hits_Dark_3P <- Dark_3_fitted_output_summaryP %>%
+  filter(hit == 1)
+
+confident_fitted_hits_Dark_3P <- fitted_hits_Dark_3P %>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+
+bmds_fitted_Dark_3P <- Dark_3_fitted_output_summaryP %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit_confidence = unique(hit_confidence), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc))
+
+## Light
+#Wrangling
+Light_fitted_outputP <- summarize_fit_output(d = Light_fittedP, thr_resp = bmr_thresh_LightP)
+
+Light_fitted_output_1P <- Light_fitted_outputP$result$resp_set %>%
+  inner_join(Light_fitted_outputP$result$act_set) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = fitted_resp, POD = POD, lowest_conc = lowest_conc, highest_conc = highest_conc, endpoint = endpoint, hit = hit) %>%
+  inner_join(Light_fitted_output$act_summary) %>%
+  select(endpoint, chemical, sample_id, conc, fitted_resp, lowest_conc, highest_conc, POD, POD_med, POD_cil, POD_ciu, hit, hit_confidence)
+
+Light_fitted_output_summaryP <- Light_fitted_output_1P %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = unique(fitted_resp), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc), POD = unique(POD), POD_cil = unique(POD_cil), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit = unique(hit), hit_confidence = unique(hit_confidence)) %>%
+    mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+fitted_hits_LightP <- Light_fitted_output_summaryP %>%
+  filter(hit == 1)
+
+confident_fitted_hits_LightP <- fitted_hits_LightP %>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+
+bmds_fitted_LightP <- Light_fitted_output_summaryP %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit_confidence = unique(hit_confidence), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc))
+
+## Dark
+#Wrangling
+Dark_fitted_outputP <- summarize_fit_output(d = Dark_fittedP, thr_resp = bmr_thresh_DarkP)
+
+Dark_fitted_output_1P <- Dark_fitted_outputP$result$resp_set %>%
+  inner_join(Dark_fitted_outputP$result$act_set) %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = fitted_resp, POD = POD, lowest_conc = lowest_conc, highest_conc = highest_conc, endpoint = endpoint, hit = hit) %>%
+  inner_join(Dark_fitted_outputP$act_summary) %>%
+  select(endpoint, chemical, sample_id, conc, fitted_resp, lowest_conc, highest_conc, POD, POD_med, POD_cil, POD_ciu, hit, hit_confidence)
+
+Dark_fitted_output_summaryP <- Dark_fitted_output_1P %>%
+  group_by(chemical, conc, sample_id) %>%
+  summarise(fitted_resp = unique(fitted_resp), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc), POD = unique(POD), POD_cil = unique(POD_cil), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit = unique(hit), hit_confidence = unique(hit_confidence)) %>%
+    mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+  mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
+    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+
+fitted_hits_DarkP <- Dark_fitted_output_summaryP %>%
+  filter(hit == 1)
+
+confident_fitted_hits_DarkP <- fitted_hits_DarkP %>%
+  filter(hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+
+bmds_fitted_DarkP <- Dark_fitted_output_summaryP %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med), POD_ciu = unique(POD_ciu), hit_confidence = unique(hit_confidence), lowest_conc = unique(lowest_conc), highest_conc = unique(highest_conc))
+```
+
+
+```{r 109plot_fitted_aucs, include=FALSE}
+#Plotting
+
+## Light_1
+p_Light_1_fittedP <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = Light_1_fitted_output_summaryP, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "gray75", alpha = 0.4) +
+  # geom_point(data = Light_1_fitted_output_summaryP, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9", alpha = 0.7) +
+  geom_line(data = fitted_hits_Light_1P, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  geom_line(data = confident_fitted_hits_Light_1P[[1]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "green") +
+  geom_line(data = confident_fitted_hits_Light_1P[[2]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "yellow") +
+  geom_line(data = confident_fitted_hits_Light_1P[[3]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = -bmr_thresh_Light_1P, linetype = "dashed", color = "red") +
+  geom_hline(yintercept = bmr_thresh_Light_1P, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_fitted_Light_1P, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_fitted_Light_1P, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_fitted_Light_1P, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_fitted_Light_1, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = Light_1_fitted_output_summaryP, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -60, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free_x") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA))
+
+## Light_2
+p_Light_2_fittedP <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = Light_2_fitted_output_summaryP, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "gray75", alpha = 0.4) +
+  # geom_point(data = Light_2_fitted_output_summaryP, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9", alpha = 0.7) +
+  geom_line(data = fitted_hits_Light_2P, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  # geom_line(data = confident_fitted_hits_Light_2P[[1]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "green") +
+  # geom_line(data = confident_fitted_hits_Light_2P[[2]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_fitted_hits_Light_2P[[3]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = -bmr_thresh_Light_2P, linetype = "dashed", color = "red") +
+  geom_hline(yintercept = bmr_thresh_Light_2P, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_fitted_Light_2P, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_fitted_Light_2P, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_fitted_Light_2P, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_fitted_Light_2, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = Light_2_fitted_output_summaryP, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -60, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free_x") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA))
+
+## Light_3
+p_Light_3_fittedP <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = Light_3_fitted_output_summaryP, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "gray75", alpha = 0.4) +
+  # geom_point(data = Light_3_fitted_output_summaryP, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9", alpha = 0.7) +
+  geom_line(data = fitted_hits_Light_3P, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  # geom_line(data = confident_fitted_hits_Light_3P[[1]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "green") +
+  # geom_line(data = confident_fitted_hits_Light_3P[[2]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_fitted_hits_Light_3P[[3]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = -bmr_thresh_Light_3P, linetype = "dashed", color = "red") +
+  geom_hline(yintercept = bmr_thresh_Light_3P, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_fitted_Light_3P, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_fitted_Light_3P, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_fitted_Light_3P, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_fitted_Light_3P, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = Light_3_fitted_output_summaryP, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -60, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free_x") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA))
+
+## Dark_1
+p_Dark_1_fittedP <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = Dark_1_fitted_output_summaryP, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "gray75", alpha = 0.4) +
+  # geom_point(data = Dark_1_fitted_output_summaryP, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9", alpha = 0.7) +
+  geom_line(data = fitted_hits_Dark_1P, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  geom_line(data = confident_fitted_hits_Dark_1P[[1]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "green") +
+  geom_line(data = confident_fitted_hits_Dark_1P[[2]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "yellow") +
+  geom_line(data = confident_fitted_hits_Dark_1P[[3]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = -bmr_thresh_Dark_1P, linetype = "dashed", color = "red") +
+  geom_hline(yintercept = bmr_thresh_Dark_1P, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_fitted_Dark_1P, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_fitted_Dark_1P, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_fitted_Dark_1P, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_fitted_Dark_1P, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = Dark_1_fitted_output_summaryP, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -60, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free_x") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA))
+
+## Dark_2
+p_Dark_2_fittedP <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = Dark_2_fitted_output_summaryP, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "gray75", alpha = 0.4) +
+  # geom_point(data = Dark_2_fitted_output_summaryP, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9", alpha = 0.7) +
+  geom_line(data = fitted_hits_Dark_2P, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  geom_line(data = confident_fitted_hits_Dark_2P[[1]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "green") +
+  geom_line(data = confident_fitted_hits_Dark_2P[[2]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "yellow") +
+  geom_line(data = confident_fitted_hits_Dark_2P[[3]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = -bmr_thresh_Dark_2P, linetype = "dashed", color = "red") +
+  geom_hline(yintercept = bmr_thresh_Dark_2P, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_fitted_Dark_2P, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_fitted_Dark_2P, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_fitted_Dark_2P, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_fitted_Dark_2P, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = Dark_2_fitted_output_summaryP, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -60, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free_x") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA))
+
+## Dark_3
+p_Dark_3_fittedP <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = Dark_3_fitted_output_summaryP, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "gray75", alpha = 0.4) +
+  # geom_point(data = Dark_3_fitted_output_summaryP, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9", alpha = 0.7) +
+  geom_line(data = fitted_hits_Dark_3P, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  # geom_line(data = confident_fitted_hits_Dark_3P[1]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "green") +
+  # geom_line(data = confident_fitted_hits_Dark_3P[[2]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_fitted_hits_Dark_3P[[3]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = -bmr_thresh_Dark_3P, linetype = "dashed", color = "red") +
+   geom_hline(yintercept = bmr_thresh_Dark_3P, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_fitted_Dark_3P, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_fitted_Dark_3P, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_fitted_Dark_3P, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_fitted_Dark_3, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = Dark_3_fitted_output_summaryP, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -60, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free_x") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA))
+
+## Light
+p_Light_fittedP <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = Light_fitted_output_summaryP, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "gray75", alpha = 0.4) +
+  # geom_point(data = Light_fitted_output_summaryP, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9", alpha = 0.7) +
+  geom_line(data = fitted_hits_LightP, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  # geom_line(data = confident_fitted_hits_LightP[[1]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "green") +
+  # geom_line(data = confident_fitted_hits_LightP[[2]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_fitted_hits_LightP[[3]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = -bmr_thresh_LightP, linetype = "dashed", color = "red") +
+  geom_hline(yintercept = bmr_thresh_LightP, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_fitted_LightP, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_fitted_LightP, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_fitted_LightP, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_fitted_LightP, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = Light_fitted_output_summaryP, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -60, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free_x") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA))
+
+## Dark
+p_Dark_fittedP <- ggplot(NULL, aes(conc, resp)) +
+  geom_line(data = Dark_fitted_output_summaryP, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "gray75", alpha = 0.4) +
+  # geom_point(data = Dark_fitted_output_summaryP, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9", alpha = 0.7) +
+  geom_line(data = fitted_hits_DarkP, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
+  # geom_line(data = confident_fitted_hits_DarkP[[1]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "green") +
+  # geom_line(data = confident_fitted_hits_DarkP[[2]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_fitted_hits_DarkP[[3]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "blue") +
+  geom_hline(yintercept = -bmr_thresh_DarkP, linetype = "dashed", color = "red") +
+  geom_hline(yintercept = bmr_thresh_DarkP, linetype = "dashed", color = "red") +
+  geom_vline(data = bmds_fitted_DarkP, aes(xintercept = median_POD), color = "blue") +
+  geom_vline(data = bmds_fitted_DarkP, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_fitted_DarkP, aes(xintercept = mean_POD), color = "green") +
+  # geom_vline(data = bmds_fitted_DarkP, aes(xintercept = POD_cil), color = "purple") +
+  geom_text(data = Dark_fitted_output_summaryP, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -60, inherit.aes = FALSE, size = 3) +
+  facet_wrap(~chemical, scales = "free_x") +
+  ylim(-100,50) +
+  theme_minimal() +
+  theme(panel.border = element_rect(colour = "grey50", fill = NA))
+
+```
+
+
+
+
+
+```{r 110List_auc_plot}
+p_list_2 <- list(p_Dark, p_DarkP, p_Dark_1, p_Dark_1P, p_Dark_2, p_Dark_2P, p_Dark_3, p_Dark_3P,  p_Light, p_LightP,  p_Light_1, p_Light_1P,  p_Light_2, p_Light_2P,  p_Light_3, p_Light_3P)
+p_list_3 <- list(p_Dark_fitted, p_Dark_fittedP, p_Dark_1_fitted, p_Dark_1_fittedP, p_Dark_2_fitted, p_Dark_2_fittedP, p_Dark_3_fitted, p_Dark_3_fittedP, p_Light_fitted, p_Light_fittedP, p_Light_1_fitted, p_Light_1_fittedP, p_Light_2_fitted, p_Light_2_fittedP, p_Light_3_fitted, p_Light_3_fittedP)
+names(p_list_2) <- c("Dark cycles (all 3) - Negative direction rucrvep", "Dark cycles (all 3) - Positive direction rucrvep", "Dark cycle 1 (5 mins) - Negative direction rcurvep", "Dark cycle 1 (5 mins) - Positive direction rcurvep", "Dark cycle 2 (5 mins) - Negative rcurvep",  "Dark cycle 2 (5 mins) - Positive rcurvep", "Dark cycle 3 (5 mins) - Negative rcurvep", "Dark cycle 3 (5 mins) - Positive rcurvep", "Light cycles (all 3) - Negative rucrvep", "Light cycles (all 3) - Positive rucrvep", "Light cycle 1 (5 mins) - Negative rcurvep",  "Light cycle 1 (5 mins) - Positive rcurvep", "Light cycle 2 (5 mins) - Negative rcurvep", "Light cycle 2 (5 mins) - Positive rcurvep",  "Light cycle 3 (5 mins) - Negative rcurvep", "Light cycle 3 (5 mins) - Positive rcurvep")
+names(p_list_3) <- c("Dark cycles (all 3) - Negative Direction fitted", "Dark cycles (all 3) - Positive Direction fitted", "Dark cycle 1 (5 mins) - Negative fitted", "Dark cycle 1 (5 mins) - Positive fitted", "Dark cycle 2 (5 mins) - Negative fitted", "Dark cycle 2 (5 mins) - Positive fitted", "Dark cycle 3 (5 mins) - Negative fitted", "Dark cycle 3 (5 mins) - Positive fitted", "Light cycles (all 3) - Negative fitted", "Light cycles (all 3) - Positive fitted", "Light cycle 1 (5 mins) - Negative fitted", "Light cycle 1 (5 mins) - Positive fitted", "Light cycle 2 (5 mins) - Negative fitted", "Light cycle 2 (5 mins) - Positive itted", "Light cycle 3 (5 mins) - Negative fitted", "Light cycle 3 (5 mins) - Positive fitted")
+```
+
+
+#### Simulated Curve Plots with median BMDs (Blue), mean BMDs (Green), and the RcurveP BMDs (Yellow) {.tabset}
+```{r 111Simulated_curves, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
+for (i in seq_along(p_list_2)){
+  temp <- p_list_2[[i]]
+  cat("#####", names(p_list_2)[i], " \n")
+  print(temp)
+  cat(' \n\n')
+}
+```
+
+
+#### Fitted Curve Plots with median BMDs (Blue), mean BMDs (Green), and the RcurveP BMDs (Yellow) {.tabset}
+```{r 112Simulated_curves, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
+for (i in seq_along(p_list_3)){
+  temp <- p_list_3[[i]]
+  cat("#####", names(p_list_3)[i], " \n")
+  print(temp)
+  cat(' \n\n')
+}
+```
