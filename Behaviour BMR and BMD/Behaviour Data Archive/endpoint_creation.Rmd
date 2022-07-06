@@ -31,19 +31,19 @@ remove(temp1)
 patd <- readRDS(paste0(ChemicalName,"/",ChemicalName,".rds"))
 ```
 
-<!-- ## all plates , cols = embryo_id + plate_id + is_VC + time_end + value -->
-<!-- #```{r} -->
-<!-- patd <- patd %>% -->
-<!--   unite(embryo_id, row_id, column_id) %>% -->
-<!--   rename( -->
-<!--     value = total_distance_moved, -->
-<!--     is_VC = is_vehicle_control -->
-<!--   ) %>% -->
-<!--   filter( -->
-<!--     is.na(well_comment) #remove all malformed/dead -->
-<!--   ) %>% -->
-<!--   select(plate_id, embryo_id, is_VC, time_end, value) -->
-<!-- #``` -->
+## all plates , cols = embryo_id + plate_id + is_VC + time_end + value
+```{r}
+patd <- patd %>%
+  unite(embryo_id, row_id, column_id) %>%
+  rename(
+    value = total_distance_moved,
+    is_VC = is_vehicle_control
+  ) %>%
+  filter(
+    is.na(well_comment) #remove all malformed/dead
+  ) %>%
+  select(plate_id, embryo_id, is_VC, time_end, value)
+```
 
 ## just one plate
 ```{r}

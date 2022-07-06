@@ -1489,12 +1489,15 @@ lfishBehavDat <- split(as.data.frame(lfishBehavDat), ~ plate_id) # Split into li
 # chemicalNames <- chemicalNames[-which(chemicalNames %in% c("BPAF", "24DMP"))]
 ```
 
-The analysis pipeline included in this report was adapted from [Hsieh et al 2019](https://pubmed.ncbi.nlm.nih.gov/30321397/). It is still a work in progress.\
+The analysis pipeline included in this report was adapted from [Hsieh et al 2019](https://pubmed.ncbi.nlm.nih.gov/30321397/).\
 \
-The general workflow is to first, calculate similarity scores (Pearson's correlation coefficient/ Spearman's rank-order correlation coefficient) for observations, normalize data to the median of control group, then perform statistical analyses and post-hoc tests (ANCOVA, Dunnett's test). Finally, a benchmark dose (BMD) is calculated for each chemical using the [Rcurvep package](https://github.com/moggces/Rcurvep).\
+The general workflow is to first, calculate similarity scores (Pearson's correlation coefficient/ Spearman's rank-order correlation coefficient) for observations, normalize data to the median of control group, then perform statistical analyses and post-hoc tests (ANCOVA, Dunnett's test). Data are noise-filtered using [Rcurvep package](https://github.com/moggces/Rcurvep) prior to model fitting. Finally, a benchmark dose (BMD) is estimated for each chemical after fitting the data to various dose-response models.\
 \
+RcurveP is a tunable, heuristic, and non-parametric noise-filtering algorithm that attempts to find the minimum number of corrections possible that would produce a monotonic dose-response relationship. RcurveP assumes that the dose-response relationship follows a monotonic behaviour (increasing, decreasing or flat) and attempts to find a set of minimally corrected response values that fit that behaviour ( [Sedykh A.](https://pubmed.ncbi.nlm.nih.gov/27518631/) ).\
+Naturally, zebrafish behavioural data is complex and noisy. This report uses the RCurveP method output as response values to help reduce the noise from previously transformed response values (similarity scores, quantity endpoints). Normalization of transformed data is a preliminary step pior to RCurveP to help reduce the noise of the raw data within different plates/experiments.
+\
+Similarity endpoints are calculated by iteratively performing pairwise comparisons between chemical-treated fish across the duration of the experiment, and all of the chemically treated treated embryos (e.g. embryo_id Dose1_1 vs embryo_id Control_1, embryo_id Dose1_1 vs embryo_id Control_2, embryo_id Dose1_1 vs embryo_id Control_3... embryo_id Dose1_1 vs embryo_id Control_9). After nine iterations (Control group n = 9), the mean Pearson's correlation coefficient/Spearman's rank-order correlation coefficient is used as the similarity endpoint.\
 
-Similarity endpoints are calculated by iteratively performing pairwise comparisons between chemical-treated fish across the duration of the experiment, and all of the chemically treated treated embryos (e.g. embryo_id Dose1_1 vs embryo_id Control_1, embryo_id Dose1_1 vs embryo_id Control_2, embryo_id Dose1_1 vs embryo_id Control_3... embryo_id Dose1_1 vs embryo_id Control_9). After nine iterations (Control group n = 9), the mean Pearson's correlation coefficient/Spearman's rank-order correlation coefficient is used as the similarity endpoint.
 
 ```{r 46.1Visual_of_how_to_calculate_simi_enpoints, echo = FALSE}
 p1 <- fishBehavDat %>%
@@ -1935,6 +1938,7 @@ simi_norm_tib_4rcurvep_pearson <- simi_norm_tib_pearson %>%
   select(endpoint, chemical, conc, resp)
 ```
 
+
 Since we do not know what the benchmark response is for each one of the chemicals, a method will be used that can estimate a benchmark response (empirically) when given a large enough set of data. The RcurveP package includes an automated process to select an appropriate BMR based off of the data. From Hsieh et al. 2019 manuscript: "The pooled variance of potency of all chemicals per [threshold value (i.e. 5 through 99)] was calculated. The BMR was considered as the [threshold value] at which the potency variance was sufficiently reduced and was the lowest threshold that potency variance was stabilized".
 
 ##### Negative Direction
@@ -1947,7 +1951,8 @@ simi_norm_tib_4rcurvep_act_pearson <- combi_run_rcurvep(
   n_samples = params$sample_size, #Increase this number to 100 or 1000 for better results (takes a long time to run)
   keep_sets = c("act_set", "resp_set", "fp_set"),
   TRSH = seq(5, 95, by = 5),
-  RNGE = -1000000
+  RNGE = -1000000,
+  TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
 )
 ```
 
@@ -1959,7 +1964,8 @@ simi_norm_tib_4rcurvep_act_spearman <- combi_run_rcurvep(
   n_samples = params$sample_size, #Increase this number to 100 or 1000 for better results (takes a long time to run)
   keep_sets = c("act_set", "resp_set", "fp_set"),
   TRSH = seq(5, 95, by = 5),
-  RNGE = -1000000
+  RNGE = -1000000,
+  TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
 )
 ```
 
@@ -2064,7 +2070,7 @@ bmr_thresh_spearman <- bmr_output_spearman$outcome %>%
     pull(bmr)
 ```
 
-From the sampling method, it seems that the benchmark response threshold should be set to `r bmr_thresh_pearson` for the pearson endpoint and `r bmr_thresh_spearman` for the spearman endpoint, but it is advised to be cautious of doing so. In the future, there will be a visualization of all of the simulated curves to try to visually determine if the BMR is appropriate.
+From the sampling method, it the benchmark response threshold should be set to `r bmr_thresh_pearson` for the pearson endpoint and `r bmr_thresh_spearman` for the spearman endpoint.
 
 ```{r 60calculating_benchmark_dose, include = FALSE}
 bmd_dat_nobin_neg_pearson <- combi_run_rcurvep(
@@ -2072,7 +2078,8 @@ bmd_dat_nobin_neg_pearson <- combi_run_rcurvep(
   n_samples = params$sample_size, #Increase this number to 100 or 1000 for better results (takes a long time to run)
   keep_sets = c("act_set", "resp_set"), 
   TRSH = bmr_thresh_pearson,
-  RNGE = -1000000
+  RNGE = -1000000,
+  TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
 )
 ```
 
@@ -2082,13 +2089,14 @@ bmd_dat_nobin_neg_spearman <- combi_run_rcurvep(
   n_samples = params$sample_size, #Increase this number to 100 or 1000 for better results (takes a long time to run)
   keep_sets = c("act_set", "resp_set"), 
   TRSH = bmr_thresh_spearman,
-  RNGE = -1000000
+  RNGE = -1000000,
+  TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
 )
 ```
 
 ```{r 61calculating_benchmark_dose_2, echo=FALSE, collapse=TRUE}
-sum_bmd_dat_nobin_neg_pearson <- summarize_rcurvep_output(bmd_dat_nobin_neg_pearson)
-sum_bmd_dat_nobin_neg_spearman <- summarize_rcurvep_output(bmd_dat_nobin_neg_spearman)
+sum_bmd_dat_nobin_neg_pearson <- summarize_rcurvep_output(bmd_dat_nobin_neg_pearson, inactivate = "INVERSE", ci_level = 0.95)
+sum_bmd_dat_nobin_neg_spearman <- summarize_rcurvep_output(bmd_dat_nobin_neg_spearman, inactivate = "INVERSE", ci_level = 0.95)
 
 sum_bmd_dat_nobin_neg <- rbind(sum_bmd_dat_nobin_neg_pearson$act_summary, sum_bmd_dat_nobin_neg_spearman$act_summary)
 ```
@@ -2387,6 +2395,59 @@ for (i in seq_along(p_list)){
 From the Hsieh et al 2019 manuscript: The BMD value is the median value (over all `r params$sample_size` simulated curves) of the dose that crosses the BMR. The lower and upper bounds of the 95% confidence intervals were categorized as the BMDL and BMDU respectively. Hit confidences represent the percentage of simulated curves (out of `r params$sample_size`) that were not flat after curve fitting.
 
 
+
+```{r 87.1Distribution_of_responses, include=FALSE}
+
+grid.arrange(
+  qplot(
+    data = simulated_curves_pearson_summary,
+    x = resp,
+    xlim = c(-100, 100),
+    xlab = "Pearson Corrected Responses Distribution"
+  ),
+  qplot(
+    data = simulated_curves_pearson,
+    x = resp,
+    xlim = c(-100, 100),
+    xlab = "Pearson Non-Corrected Responses Distribution"
+  ),
+  qplot(
+    data = simulated_curves_spearman_summary,
+    x = resp,
+    xlim = c(-100, 100),
+    xlab = "Spearman Corrected Responses Distribution"
+  ),
+  qplot(
+    data = simulated_curves_spearman,
+    x = resp,
+    xlim = c(-100, 100),
+    xlab = "Spearman Non-Corrected Responses Distribution"
+  ),
+  nrow = 4
+)
+
+```
+
+```{r 87.2Distribution_of_PODs, include = FALSE}
+curve_hits_pearson %>%
+  group_by(chemical) %>%
+  mutate(median_POD = median(POD), low_conf_POD = quantile(POD, c(0.05)), high_conf_POD = quantile(POD, c(0.95))) %>%
+ggplot(data = ., aes(x = POD)) +
+  geom_histogram() +
+  facet_wrap(~ chemical, scales = "free") +
+  geom_vline(aes(xintercept = median_POD), color = "blue") +
+  geom_vline(aes(xintercept = low_conf_POD), color = "green") +
+  geom_vline(aes(xintercept = high_conf_POD), color = "purple") +
+  geom_vline(aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(aes(xintercept = POD_cil), color = "red")
+  # geom_vline(aes(xintercept = POD_ciu), color = "purple")
+  
+```
+
+
+
+
+
 ```{r 62calculating_benchmark_dose_3, include=FALSE}
 sum_bmd_dat_nobin_neg %>%
   mutate(lowest_conc = 10^(lowest_conc), highest_conc = 10^(highest_conc), POD_cil = 10^(POD_cil), POD_med = 10^(POD_med), POD_ciu = 10^(POD_ciu)) %>%
@@ -2452,11 +2513,12 @@ auc_norm <- auc_all %>%
   mutate(Cycle = if_else(condition = endpoint %in% c("Dark_1", "Dark_2", "Dark_3"), true = "Dark", false = "Light"))
 ```
 
-```{r 88PlotAucEndpoints, include= FALSE}
+```{r 88PlotAucEndpoints, echo=FALSE}
 auc_norm %>%
   ggplot(aes(x = Dose, y = endpoint_value_norm)) +
   geom_boxplot(outlier.shape = NA) +
-  geom_jitter(width = 0.1, height = 0, aes(color = embryo_id, shape = Cycle))
+  geom_jitter(width = 0.1, height = 0, aes(color = embryo_id, shape = Cycle)) +
+  facet_wrap(~ plate_id, scales = "free")
 # auc_norm %>%
 #   ggplot(aes(x = Dose, y = endpoint_value_norm)) +
 #   geom_boxplot(outlier.shape = NA) +
@@ -2483,7 +2545,8 @@ test <-
       #Increase this number to 100 or 1000 for better results (takes a long time to run)
       keep_sets = c("act_set", "resp_set", "fp_set"),
       TRSH = seq(5, 95, by = 5),
-      RNGE = -1000000
+      RNGE = -1000000,
+      TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
     ),
     plot = FALSE
   )
@@ -2498,7 +2561,8 @@ test_LD <- estimate_dataset_bmr(
       #Increase this number to 100 or 1000 for better results (takes a long time to run)
       keep_sets = c("act_set", "resp_set", "fp_set"),
       TRSH = seq(5, 95, by = 5),
-      RNGE = -1000000
+      RNGE = -1000000,
+      TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
     ),
     plot = FALSE
   )
@@ -2595,8 +2659,10 @@ Dark_1_out <- auc_norm_no_cntrl %>%
       #Increase this number to 100 or 1000 for better results (takes a long time to run)
       keep_sets = c("act_set", "resp_set", "fp_set"),
       TRSH = bmr_thresh_Dark_1,
-      RNGE = -1000000) %>%
-  summarize_rcurvep_output()
+      RNGE = -1000000,
+      TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
+      ) %>%
+  summarize_rcurvep_output(inactivate = "INVERSE", ci_level = 0.95)
 
 
 set.seed(9089)
@@ -2606,8 +2672,10 @@ Dark_2_out <- auc_norm_no_cntrl %>%
       #Increase this number to 100 or 1000 for better results (takes a long time to run)
       keep_sets = c("act_set", "resp_set", "fp_set"),
       TRSH = bmr_thresh_Dark_2,
-      RNGE = -1000000) %>%
-  summarize_rcurvep_output()
+      RNGE = -1000000,
+      TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
+      ) %>%
+  summarize_rcurvep_output(inactivate = "INVERSE", ci_level = 0.95)
 
 
 set.seed(1359)  
@@ -2617,8 +2685,10 @@ Dark_3_out <- auc_norm_no_cntrl %>%
       #Increase this number to 100 or 1000 for better results (takes a long time to run)
       keep_sets = c("act_set", "resp_set", "fp_set"),
       TRSH = bmr_thresh_Dark_3,
-      RNGE = -1000000) %>%
-  summarize_rcurvep_output()
+      RNGE = -1000000,
+      TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
+      ) %>%
+  summarize_rcurvep_output(inactivate = "INVERSE", ci_level = 0.95)
 
 
 set.seed(5346) 
@@ -2628,8 +2698,10 @@ Light_1_out <- auc_norm_no_cntrl %>%
       #Increase this number to 100 or 1000 for better results (takes a long time to run)
       keep_sets = c("act_set", "resp_set", "fp_set"),
       TRSH = bmr_thresh_Light_1,
-      RNGE = -1000000) %>%
-  summarize_rcurvep_output()
+      RNGE = -1000000,
+      TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
+      ) %>%
+  summarize_rcurvep_output(inactivate = "INVERSE", ci_level = 0.95)
 
   
 set.seed(6842)
@@ -2639,8 +2711,10 @@ Light_2_out <- auc_norm_no_cntrl %>%
       #Increase this number to 100 or 1000 for better results (takes a long time to run)
       keep_sets = c("act_set", "resp_set", "fp_set"),
       TRSH = bmr_thresh_Light_2,
-      RNGE = -1000000) %>%
-  summarize_rcurvep_output()
+      RNGE = -1000000,
+      TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
+      ) %>%
+  summarize_rcurvep_output(inactivate = "INVERSE", ci_level = 0.95)
 
 
 set.seed(1208)
@@ -2650,8 +2724,10 @@ Light_3_out <- auc_norm_no_cntrl %>%
       #Increase this number to 100 or 1000 for better results (takes a long time to run)
       keep_sets = c("act_set", "resp_set", "fp_set"),
       TRSH = bmr_thresh_Light_3,
-      RNGE = -1000000) %>%
-  summarize_rcurvep_output()
+      RNGE = -1000000,
+      TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
+      ) %>%
+  summarize_rcurvep_output(inactivate = "INVERSE", ci_level = 0.95)
   
 set.seed(47)
 Light_out <- temp_auc_norm_LD_no_cntrl %>%
@@ -2660,8 +2736,10 @@ Light_out <- temp_auc_norm_LD_no_cntrl %>%
       #Increase this number to 100 or 1000 for better results (takes a long time to run)
       keep_sets = c("act_set", "resp_set", "fp_set"),
       TRSH = bmr_thresh_Light,
-      RNGE = -1000000) %>%
-  summarize_rcurvep_output()
+      RNGE = -1000000,
+      TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
+      ) %>%
+  summarize_rcurvep_output(inactivate = "INVERSE", ci_level = 0.95)
 
 set.seed(347)
 Dark_out <- temp_auc_norm_LD_no_cntrl %>%
@@ -2670,8 +2748,10 @@ Dark_out <- temp_auc_norm_LD_no_cntrl %>%
       #Increase this number to 100 or 1000 for better results (takes a long time to run)
       keep_sets = c("act_set", "resp_set", "fp_set"),
       TRSH = bmr_thresh_Light,
-      RNGE = -1000000) %>%
-  summarize_rcurvep_output()
+      RNGE = -1000000,
+      TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
+      ) %>%
+  summarize_rcurvep_output(inactivate = "INVERSE", ci_level = 0.95)
 ```
 
 
@@ -3686,7 +3766,8 @@ testP <-
       #Increase this number to 100 or 1000 for better results (takes a long time to run)
       keep_sets = c("act_set", "resp_set", "fp_set"),
       TRSH = seq(5, 95, by = 5),
-      RNGE = 1000000
+      RNGE = 1000000,
+      TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
     ),
     plot = FALSE
   )
@@ -3701,7 +3782,8 @@ test_LDP <- estimate_dataset_bmr(
       #Increase this number to 100 or 1000 for better results (takes a long time to run)
       keep_sets = c("act_set", "resp_set", "fp_set"),
       TRSH = seq(5, 95, by = 5),
-      RNGE = 1000000
+      RNGE = 1000000,
+      TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
     ),
     plot = FALSE
   )
@@ -3798,8 +3880,10 @@ Dark_1_outP <- auc_norm_no_cntrl %>%
       #Increase this number to 100 or 1000 for better results (takes a long time to run)
       keep_sets = c("act_set", "resp_set", "fp_set"),
       TRSH = bmr_thresh_Dark_1,
-      RNGE = 1000000) %>%
-  summarize_rcurvep_output()
+      RNGE = 1000000,
+      TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
+      ) %>%
+  summarize_rcurvep_output(inactivate = "INVERSE", ci_level = 0.95)
 
 
 set.seed(9089)
@@ -3809,8 +3893,10 @@ Dark_2_outP <- auc_norm_no_cntrl %>%
       #Increase this number to 100 or 1000 for better results (takes a long time to run)
       keep_sets = c("act_set", "resp_set", "fp_set"),
       TRSH = bmr_thresh_Dark_2,
-      RNGE = 1000000) %>%
-  summarize_rcurvep_output()
+      RNGE = 1000000,
+      TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
+      ) %>%
+  summarize_rcurvep_output(inactivate = "INVERSE", ci_level = 0.95)
 
 
 set.seed(1359)  
@@ -3820,8 +3906,10 @@ Dark_3_outP <- auc_norm_no_cntrl %>%
       #Increase this number to 100 or 1000 for better results (takes a long time to run)
       keep_sets = c("act_set", "resp_set", "fp_set"),
       TRSH = bmr_thresh_Dark_3,
-      RNGE = 1000000) %>%
-  summarize_rcurvep_output()
+      RNGE = 1000000,
+      TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
+      ) %>%
+  summarize_rcurvep_output(inactivate = "INVERSE", ci_level = 0.95)
 
 
 set.seed(5346) 
@@ -3831,8 +3919,10 @@ Light_1_outP <- auc_norm_no_cntrl %>%
       #Increase this number to 100 or 1000 for better results (takes a long time to run)
       keep_sets = c("act_set", "resp_set", "fp_set"),
       TRSH = bmr_thresh_Light_1,
-      RNGE = 1000000) %>%
-  summarize_rcurvep_output()
+      RNGE = 1000000,
+      TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
+      ) %>%
+  summarize_rcurvep_output(inactivate = "INVERSE", ci_level = 0.95)
 
   
 set.seed(6842)
@@ -3842,8 +3932,10 @@ Light_2_outP <- auc_norm_no_cntrl %>%
       #Increase this number to 100 or 1000 for better results (takes a long time to run)
       keep_sets = c("act_set", "resp_set", "fp_set"),
       TRSH = bmr_thresh_Light_2,
-      RNGE = 1000000) %>%
-  summarize_rcurvep_output()
+      RNGE = 1000000,
+      TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
+      ) %>%
+  summarize_rcurvep_output(inactivate = "INVERSE", ci_level = 0.95)
 
 
 set.seed(1208)
@@ -3853,8 +3945,10 @@ Light_3_outP <- auc_norm_no_cntrl %>%
       #Increase this number to 100 or 1000 for better results (takes a long time to run)
       keep_sets = c("act_set", "resp_set", "fp_set"),
       TRSH = bmr_thresh_Light_3,
-      RNGE = 1000000) %>%
-  summarize_rcurvep_output()
+      RNGE = 1000000,
+      TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
+      ) %>%
+  summarize_rcurvep_output(inactivate = "INVERSE", ci_level = 0.95)
   
 set.seed(47)
 Light_outP <- temp_auc_norm_LD_no_cntrl %>%
@@ -3863,8 +3957,10 @@ Light_outP <- temp_auc_norm_LD_no_cntrl %>%
       #Increase this number to 100 or 1000 for better results (takes a long time to run)
       keep_sets = c("act_set", "resp_set", "fp_set"),
       TRSH = bmr_thresh_Light,
-      RNGE = 1000000) %>%
-  summarize_rcurvep_output()
+      RNGE = 1000000,,
+      TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
+      ) %>%
+  summarize_rcurvep_output(inactivate = "INVERSE", ci_level = 0.95)
 
 set.seed(347)
 Dark_outP <- temp_auc_norm_LD_no_cntrl %>%
@@ -3873,8 +3969,10 @@ Dark_outP <- temp_auc_norm_LD_no_cntrl %>%
       #Increase this number to 100 or 1000 for better results (takes a long time to run)
       keep_sets = c("act_set", "resp_set", "fp_set"),
       TRSH = bmr_thresh_Light,
-      RNGE = 1000000) %>%
-  summarize_rcurvep_output()
+      RNGE = 1000000,
+      TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
+      ) %>%
+  summarize_rcurvep_output(inactivate = "INVERSE", ci_level = 0.95)
 ```
 
 
