@@ -2134,6 +2134,39 @@ summarise_rcurvep_results <- function(resp_set, act_set, act_summary, reject_hit
   return(result)
 }
 
+
+
+bmd_results <- function(summary_dat){
+  summary_dat %>%
+    group_by(chemical) %>%
+    summarise(median_POD = unique(median_POD), mean_POD = unique(mean_POD), ciu_POD = unique(ciu_POD), cil_POD = unique(cil_POD))
+}
+
+
+confident_hits <- function(summary_dat, reject_hit_conf_under = 0.5) {
+  confident_hit_result <- summary_dat %>%
+    filter(hit == 1, hit_confidence >= 0.5) %>%
+  group_by(chemical, sample_id) %>%
+  mutate(POD_diff_cil = abs(POD-cil_POD), POD_diff_ciu = abs(POD-ciu_POD), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_cil, POD_diff_ciu, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_cil, true = "cil", false = if_else(condition = smallest_diff == POD_diff_ciu, true = "ciu", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean")))) %>%
+  ungroup() %>%
+  group_by(conf_POD) %>%
+  group_split(.keep = TRUE)
+
+temp_name <- NULL
+for (i in 1:length(confident_hit_result)) {
+temp <- unique(confident_curves_pearson[[i]]$conf_POD)
+temp_name[i] <- temp
+}
+
+names(confident_hit_result) <- c(temp_name)
+
+return(confident_hit_result)
+}
+
+
+
+
+
 ```
 
 
@@ -2148,27 +2181,12 @@ simulated_curves_pearson_summary <-
     reject_hit_conf_under = 0.5
   )
 
+bmds_pearson <- bmd_summary(simulated_curves_pearson_summary)
+
 curve_hits_pearson <- simulated_curves_pearson_summary %>%
   filter(hit == 1)
 
-bmds_pearson <- simulated_curves_pearson_summary %>%
-  group_by(chemical) %>%
-  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med), ciu_POD = unique(ciu_POD), cil_POD = unique(cil_POD))
-
-confident_curves_pearson <- curve_hits_pearson %>%
-  filter(hit_confidence >= 0.5) %>%
-  group_by(chemical, sample_id) %>%
-  mutate(POD_diff_cil = abs(POD-cil_POD), POD_diff_ciu = abs(POD-ciu_POD), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_cil, POD_diff_ciu, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_cil, true = "cil", false = if_else(condition = smallest_diff == POD_diff_ciu, true = "ciu", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean")))) %>%
-  ungroup() %>%
-  group_by(conf_POD) %>%
-  group_split(.keep = TRUE)
-
-temp_name <- NULL
-for (i in 1:length(confident_curves_pearson)) {
-temp <- unique(confident_curves_pearson[[i]]$conf_POD)
-temp_name[i] <- temp
-}
-names(confident_curves_pearson) <- c(temp_name)
+confident_curves_pearson <- confident_hits(simulated_curves_pearson_summary)
 
 p_pearson <- ggplot(NULL, aes(conc, resp)) +
   geom_line(data = simulated_curves_pearson_summary, mapping = aes(x = conc, y = resp, group = sample_id), color = "gray75", alpha = 0.2) +
