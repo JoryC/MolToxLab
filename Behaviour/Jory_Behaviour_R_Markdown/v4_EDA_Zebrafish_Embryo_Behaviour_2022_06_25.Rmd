@@ -2101,57 +2101,87 @@ sum_bmd_dat_nobin_neg_spearman <- summarize_rcurvep_output(bmd_dat_nobin_neg_spe
 sum_bmd_dat_nobin_neg <- rbind(sum_bmd_dat_nobin_neg_pearson$act_summary, sum_bmd_dat_nobin_neg_spearman$act_summary)
 ```
 
-```{r 61.1simulated_curveps, include = FALSE}
-simulated_curves_pearson <- sum_bmd_dat_nobin_neg_pearson$result$resp_set # To merge with other sets
 
-simulated_curve_bmds_pearson <- sum_bmd_dat_nobin_neg_pearson$act_summary %>%
-  group_by(chemical) %>%
-  summarise(POD_med = POD_med, POD_cil = POD_cil, hit_confidence = hit_confidence, lowest_conc = lowest_conc) # To merge with other sets
+```{r 61.0Data_Wrangling_Function, include = FALSE}
 
-simulated_curves_pearson_act_set <- sum_bmd_dat_nobin_neg_pearson$result$act_set
-
-simulated_curves_pearson_summary <- simulated_curves_pearson %>%
-  inner_join(simulated_curves_pearson_act_set) %>%
-  group_by(chemical, conc, sample_id) %>%
+summarise_rcurvep_results <- function(resp_set, act_set, act_summary, reject_hit_conf_under = 0.5) {
+  bmd_summary <- act_summary %>%
+    group_by(chemical) %>%
+    summarise(POD_med = POD_med, POD_cil = POD_cil, hit_confidence = hit_confidence, lowest_conc = lowest_conc) # To merge with other sets
+  
+  result <- resp_set %>%
+    inner_join(act_set) %>%
+    group_by(chemical, conc, sample_id) %>%
   summarise(endpoint = endpoint, resp = resp, corrected_resp = corrected_resp, correction = correction, POD = POD, highest_conc = highest_conc, hit = hit, lowest_conc = lowest_conc) %>%
-  inner_join(simulated_curve_bmds_pearson) %>%
-  mutate(resp = if_else(correction == 1, true = corrected_resp, false = resp)) %>%
+    inner_join(bmd_summary) %>%
+    ungroup() %>%
+    group_by(chemical) %>%
+    mutate(resp = if_else(correction == 1, true = corrected_resp, false = resp)) %>%
   select(-corrected_resp) %>%
   mutate(median_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
   mutate(median_POD = if_else(condition = is.na(median(median_POD, na.rm = TRUE)), true = unique(highest_conc), false = median(median_POD, na.rm = TRUE))) %>%
-  mutate(median_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = median_POD)) %>%
+  mutate(median_POD = if_else(condition = hit_confidence < reject_hit_conf_under, true = unique(highest_conc), false = median_POD)) %>%
   mutate(mean_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
   mutate(mean_POD = if_else(condition = is.na(mean(mean_POD, na.rm = TRUE)), true = unique(highest_conc), false = mean(mean_POD, na.rm = TRUE))) %>%
-    mutate(mean_POD = if_else(condition = hit_confidence < 0.5, true = unique(highest_conc), false = mean_POD))
+    mutate(mean_POD = if_else(condition = hit_confidence < reject_hit_conf_under, true = unique(highest_conc), false = mean_POD)) %>%
+    mutate(cil_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+    mutate(cil_POD = if_else(condition = is.na(quantile(cil_POD, prob = c(0.05), na.rm = TRUE)), true = unique(highest_conc), false = quantile(cil_POD, prob = c(0.05), na.rm = TRUE))) %>%
+    mutate(cil_POD = if_else(condition = hit_confidence < reject_hit_conf_under, true = unique(highest_conc), false = cil_POD)) %>%
+    mutate(ciu_POD = if_else(condition = POD == lowest_conc, true = unique(highest_conc), false = POD)) %>%
+    mutate(ciu_POD = if_else(condition = is.na(quantile(ciu_POD, prob = c(0.95), na.rm = TRUE)), true = unique(highest_conc), false = quantile(ciu_POD, prob = c(0.95), na.rm = TRUE))) %>%
+    mutate(ciu_POD = if_else(condition = hit_confidence < reject_hit_conf_under, true = unique(highest_conc), false = ciu_POD))
+  
+  return(result)
+}
+
+```
+
+
+
+```{r 61.1simulated_curveps, include = FALSE}
+
+simulated_curves_pearson_summary <-
+  summarise_rcurvep_results(
+    resp_set = sum_bmd_dat_nobin_neg_pearson$result$resp_set,
+    act_set = sum_bmd_dat_nobin_neg_pearson$result$act_set,
+    act_summary = sum_bmd_dat_nobin_neg_pearson$act_summary,
+    reject_hit_conf_under = 0.5
+  )
 
 curve_hits_pearson <- simulated_curves_pearson_summary %>%
   filter(hit == 1)
 
+bmds_pearson <- simulated_curves_pearson_summary %>%
+  group_by(chemical) %>%
+  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med), ciu_POD = unique(ciu_POD), cil_POD = unique(cil_POD))
 
 confident_curves_pearson <- curve_hits_pearson %>%
   filter(hit_confidence >= 0.5) %>%
   group_by(chemical, sample_id) %>%
-  mutate(POD_diff_med = abs(POD-POD_med), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_med, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_med, true = "med", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean"))) %>%
+  mutate(POD_diff_cil = abs(POD-cil_POD), POD_diff_ciu = abs(POD-ciu_POD), POD_diff_median = abs(POD-median_POD), POD_diff_mean = abs(POD-mean_POD), smallest_diff = min(c(POD_diff_cil, POD_diff_ciu, POD_diff_mean, POD_diff_median)), conf_POD = if_else(condition = smallest_diff == POD_diff_cil, true = "cil", false = if_else(condition = smallest_diff == POD_diff_ciu, true = "ciu", false = if_else(condition = smallest_diff == POD_diff_median, true = "median", false = "mean")))) %>%
   ungroup() %>%
   group_by(conf_POD) %>%
   group_split(.keep = TRUE)
 
-
-bmds_pearson <- simulated_curves_pearson_summary %>%
-  group_by(chemical) %>%
-  summarise(median_POD = unique(median_POD), POD_cil = unique(POD_cil), mean_POD = unique(mean_POD), POD_med = unique(POD_med))
+temp_name <- NULL
+for (i in 1:length(confident_curves_pearson)) {
+temp <- unique(confident_curves_pearson[[i]]$conf_POD)
+temp_name[i] <- temp
+}
+names(confident_curves_pearson) <- c(temp_name)
 
 p_pearson <- ggplot(NULL, aes(conc, resp)) +
   geom_line(data = simulated_curves_pearson_summary, mapping = aes(x = conc, y = resp, group = sample_id), color = "gray75", alpha = 0.2) +
   geom_line(data = curve_hits_pearson, mapping = aes(x = conc, y = resp, group = sample_id), color = "#a9a9a9",  alpha = 0.7) +
-  geom_line(data = confident_curves_pearson[[1]], mapping = aes(x = conc, y = resp, group = sample_id), color = "green") +
-  geom_line(data = confident_curves_pearson[[2]], mapping = aes(x = conc, y = resp, group = sample_id), color = "yellow") +
-  geom_line(data = confident_curves_pearson[[3]], mapping = aes(x = conc, y = resp, group = sample_id), color = "blue") +
+  geom_line(data = confident_curves_pearson[["cil"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "purple") +
+  geom_line(data = confident_curves_pearson[["ciu"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "yellow") +
+  geom_line(data = confident_curves_pearson[["mean"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "green") +
+    geom_line(data = confident_curves_pearson[["median"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "blue") +
   geom_hline(yintercept = -bmr_thresh_pearson, linetype = "dashed", color = "red") +
   geom_vline(data = bmds_pearson, aes(xintercept = median_POD), color = "blue") +
-  geom_vline(data = bmds_pearson, aes(xintercept = POD_med), color = "yellow") +
+  geom_vline(data = bmds_pearson, aes(xintercept = ciu_POD), color = "yellow") +
   geom_vline(data = bmds_pearson, aes(xintercept = mean_POD), color = "green") +
-  # geom_vline(data = bmds_pearson, aes(xintercept = POD_cil), color = "purple") +
+  geom_vline(data = bmds_pearson, aes(xintercept = cil_POD), color = "purple") +
   geom_text(data = simulated_curve_bmds_pearson, mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc+1), y = -85, inherit.aes = FALSE, size = 3) +
   facet_wrap(~chemical, scales = "free") +
   ylim(-100,50) +
@@ -2431,17 +2461,13 @@ grid.arrange(
 ```{r 87.2Distribution_of_PODs, include = FALSE}
 curve_hits_pearson %>%
   group_by(chemical) %>%
-  mutate(median_POD = median(POD), low_conf_POD = quantile(POD, c(0.05)), high_conf_POD = quantile(POD, c(0.95))) %>%
 ggplot(data = ., aes(x = POD)) +
   geom_histogram() +
   facet_wrap(~ chemical, scales = "free") +
   geom_vline(aes(xintercept = median_POD), color = "blue") +
-  geom_vline(aes(xintercept = low_conf_POD), color = "green") +
-  geom_vline(aes(xintercept = high_conf_POD), color = "purple") +
-  geom_vline(aes(xintercept = POD_med), color = "yellow") +
-  geom_vline(aes(xintercept = POD_cil), color = "red")
-  # geom_vline(aes(xintercept = POD_ciu), color = "purple")
-  
+  geom_vline(aes(xintercept = cil_POD), color = "green") +
+  geom_vline(aes(xintercept = ciu_POD), color = "purple") +
+  xlim(-7, 3)
 ```
 
 
