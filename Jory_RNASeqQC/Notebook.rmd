@@ -1,4 +1,28 @@
-# RNA-seq Notebook
+---
+title: "RNA-seq Notebook"
+author: "Jory Curry"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  html_document:
+    code_folding: show
+    df_print: paged
+    toc: true
+    toc_depth: 5
+    toc_float: true
+    theme: readable
+---
+
+```{r 1setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen = 9)
+```
+
+```{r, include=FALSE}
+library(rlang)
+library(tidyverse)
+library(knitr)
+```
+
 
 ## RNA Quality/Quantity
 
@@ -26,7 +50,7 @@ Read two has a length of 27bp\
 \
 \
 Qiagen explains visually what each read file should contain\
-![reads](~/Pictures/Screenshots/Screenshot_from_2022-07-15_15-44-08.png)
+![reads](./Screenshots/Screenshot_from_2022-07-15_15-44-08.png)
 
 Here is a glimpse of what the transcripts (read 1) look like
 ```{bash fastq reads, echo = FALSE}
@@ -50,7 +74,7 @@ Note:
 Qiagen uses `bcl2fastq2 software (Illumina inc.)` for converting raw base calling data into FASTQ files after de-multiplexing.\
 From the bcl2fastq2 software manual\
 \
-![bcl2fastq2](~/Pictures/Screenshots/Screenshot_from_2022-07-15_15-38-55.png)
+![bcl2fastq2](./Screenshots/Screenshot_from_2022-07-15_15-38-55.png)
 Note that the `UMI` field is also missing from read1
 \
 \
@@ -71,28 +95,29 @@ Qiagen used `‘Empirical analysis of DGE’ algorithm of the CLC Genomics Workb
 \
 We will use Deseq2\
 \
-\
+
 The FastQ files we have are previously Filtered & Trimmed:
-- Round 1:
-  - Remove adapter sequences:
-    - polyA + CGT (AAAAAAAAAACGT) for read1, 
-      - when the adapter is found, trim the 3' end
-      - when no adapter, keep the read
-    - Score
-    - ACG + PolyT (ACGTTTT) for read2,
-      - when adapter is found, keep the 3' end
-      - when no adapter, keep the read
-    - Score
-  - Remove sequences shorter than 15 nucleotides
-- Round 2:
-  - Removal of homopolymer AG sequences
-    - at read 3' when 9 nucleotides in a window of length 10 are homoploymer
-  - Remove any sequences left with less than 15 nucleotides
-- Round 3: 
-  - Remove low quality sequences (probability of error limit @ 0.05 or ~Q-score of 13) [Q-scores](http://drive5.com/usearch/manual/quality_score.html)
-  - Remove ambiguous nucleotides: maximal 2 nucleotides allowed
-  - Remove any sequences left that are less than 15 nucleotides
-\
+
+1. Round 1
+    + Remove adapter sequences:
+    + polyA + CGT (AAAAAAAAAACGT) for read1, 
+      + when the adapter is found, trim the 3' end
+      + when no adapter, keep the read
+    + Score
+    + ACG + PolyT (ACGTTTT) for read2,
+      + when adapter is found, keep the 3' end
+      + when no adapter, keep the read
+    + Score
+    + Remove sequences shorter than 15 nucleotides
+2. Round 2
+    + Removal of homopolymer AG sequences
+      + at read 3' when 9 nucleotides in a window of length 10 are homoploymer
+    + Remove any sequences left with less than 15 nucleotides
+3. Round 3: 
+    + Remove low quality sequences (probability of error limit @ 0.05 or ~Q-score of 13) [Q-scores](http://drive5.com/usearch/manual/quality_score.html)
+    + Remove ambiguous nucleotides: maximal 2 nucleotides allowed
+    + Remove any sequences left that are less than 15 nucleotides
+
 Reports for the filtering results are available in a sample-by-sample .pdf format supplied by qiagen... or
 \
 I have run the fastq files through FastQC and generated html reports for each sample.
@@ -126,6 +151,54 @@ Keep in mind that there are 90 samples, and 2 reads for each. so the maximum num
 ### `Per base sequence content` example: `PASS` vs `FAIL`\
 PASS:
 N/A
-![`Per base sequence content` - `PASS`]()
 FAIL:
-![`Per base sequence content` - `FAIL`](~/Pictures/FastQC_Examples/per_base_sequence_content_FAIL.png)
+![`Per base sequence content` - `FAIL`](./FastQC_Examples/per_base_sequence_content_FAIL.png)
+All samples failed to pass this quality filter.
+
+
+### `Per base sequence quality` example: `PASS` vs `FAIL`\
+```{r fastQC_summary3, echo=FALSE}
+kable3 <- summary %>%
+  filter(QC_result == "FAIL", Paramater == "Per base sequence quality") %>%
+  group_by(Read) %>%
+  tally()
+
+kable(kable3, caption = "Closer look at `Per base sequence quality` FAILs show only read2s fail to pass QC based on PHRED/Q scores")
+```
+
+PASS:
+![`Per base sequence quality` - `PASS`](./FastQC_Examples/per_base_quality_PASS.png)
+FAIL:
+![`Per base sequence quality` - `FAIL`](./FastQC_Examples/per_base_quality_FAIL.png)
+
+
+### `Per sequence GC content` example: PASS vs FAIL
+```{r FastQc_Summary4, echo = FALSE}
+kable4 <- summary %>%
+  filter(Paramater == "Per sequence GC content", QC_result == "FAIL") %>%
+  group_by(Read) %>%
+  tally()
+kable(kable4, caption = "# of FAILS in the per sequence GC content paramater summarised by read #")
+```
+Almost all 62/90 samples failed the GC content quality control test
+
+PASS:
+![PASS](./FastQC_Examples/per_sequence_gc_content_PASS.png)
+FAIL:
+![PASS](./FastQC_Examples/per_sequence_gc_content_FAIL.png)
+
+### `Sequence Duplication Levels` examples: PASS vs FAIL
+```{r FastQC_summary5, echo = FALSE}
+kable5 <- summary %>%
+  filter(Paramater == "Sequence Duplication Levels", QC_result == "FAIL") %>%
+  group_by(Read, Sample) %>%
+  tally()
+kable(kable5, caption = "Sequence duplication level FAILs summarized by sample and Read")
+```
+Only Read1s failed to pass this parameter. And only 12/90 samples failed this QC paramater
+
+PASS:
+![PASS_dup](./FastQC_Examples/duplication_levels_PASS.png)
+
+FAIL:
+![PASS_dup](./FastQC_Examples/duplication_levels_FAIL.png)
