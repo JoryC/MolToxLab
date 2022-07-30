@@ -24,6 +24,20 @@ library(knitr)
 ```
 
 
+## Questions
+
+* What steps were taken beforehand before sending us the .fastq files, if any?
+  * Why are there no UMIs?
+  * Has UMI Collapsing and De-Multiplexing already taken place?(likely yes from the looks of it)
+  * Have the files been trimmed and filtered?
+    * What pipelilne (fastq, trimmomatic, Skewer, etc) ?
+* Can we get a copy of the raw unprocessed files (off the illumina NextSeq)?
+* Why did so many of the Read2s -- (UMI - Cell ID - ACG + PolyT) not map?
+* Trimming reports say "Removal of homopolymer AG sequences, at 3' end when [9] nucleotides in a window of length [10] are homopolymer"... Does this mean trimming of both PolyA and POlyG (ex: AAATAAAAA - gets trimmed & GGGGGCGGG - gets trimmed, or AGAGAGAGAG - gets trimmed?)
+* What was the software used for trimming reads? CLC Genomic Workbench???
+* In the Filtering and trimming reports (round 1), Adapter sequences are defined: AAAAAAAAAACGT & ACGTTTT... are these accurate?
+* In the filtering and trimming report (round 1), reads that don't have any adapter sequences are... "Keep the read, Score: [2 : 3 : 10 : 4]". Can you clarify what this means?
+
 ## RNA Quality/Quantity
 
 - RIN/RIS Numbers
@@ -36,7 +50,16 @@ library(knitr)
 - Sequencing depth? (Samples per lane - different sequencing techniques provide higher or lower read counts)
 - Paired end or single end sequencing?
 
+![Batch Effects](./Screenshots/Screenshot_from_2022-07-26_11-19-25.png)
+
 ## Checking our data
+
+![General RNA-seq Workflow](./Screenshots/RNAseq_workflow.png)
+
+
+![R-ODAF Workflow](./Screenshots/R-Odaf.jpg)
+Note that, "any major problems encountered during the sequencing itself would be identified prior to use of the samples by the sequencing facility (e.g., failure in the percentage of clusters passing threshold, base calling and demultiplexing) and are not included in the R-ODAF. We also did not include any removal of samples based on quality prior to trimming, since we considered that these decisions should be based on the number of reads remaining after cleaning the data rather than on the raw fastq files"
+
 
 ```{bash check for paired end, echo = TRUE}
 cd ~/MastersBackup/Data/RAW_Qiagen_Data_1_Sept_2021/QNS30480_JasonOBrien_FASTQ
@@ -69,7 +92,7 @@ Line 4 are the Quality scores for the base calls
 \
 Note: 
 - read2 only has a sequencing length of 17bp when it should have 27
-- The UMI has been omitted from the FASTQ files
+- The UMI has been omitted from the FASTQ files?????
 \
 Qiagen uses `bcl2fastq2 software (Illumina inc.)` for converting raw base calling data into FASTQ files after de-multiplexing.\
 From the bcl2fastq2 software manual\
@@ -202,3 +225,160 @@ PASS:
 
 FAIL:
 ![PASS_dup](./FastQC_Examples/duplication_levels_FAIL.png)
+
+
+
+## Example of a bash pipeline
+
+```{bash A_Typical_pipeline, echo = TRUE}
+SECONDS=0
+
+# change working directory
+cd ~/MolToxLab/Jory_RNASeqQC
+
+
+
+# STEP 1: Run fastqc
+#fastqc data/30480-001_C1_R1.fastq -o data/
+
+
+# run trimmomatic to trim reads with poor quality
+#java -jar ~/Desktop/demo/tools/Trimmomatic-0.39/trimmomatic-0.39.jar SE -threads 4 data/demo.fastq data/demo_trimmed.fastq TRAILING:10 -phred33
+#echo "Trimmomatic finished running!"
+
+#Note: We already have trimmed files from Qiagen
+
+
+#Run fastqc again to look at the trimmed files
+# fastqc data/30480-001_C1_R1.fastq -o data/
+
+
+# STEP 2: Run HISAT2
+# mkdir HISAT2
+# get the genome indices
+# There is no zebrafish genome available in hisat2's website, so we are going to build a genome instead from Ensemble
+# cd ~/MolToxLab/Jory_RNASeqQC/HISAT2/genome
+# wget http://ftp.ensembl.org/pub/release-107/fasta/danio_rerio/dna/Danio_rerio.GRCz11.dna_sm.primary_assembly.fa.gz
+# echo "Downloaded reference genome from Ensemble"
+# cd ~/MolToxLab/Jory_RNASeqQC
+
+# Build Indexes - Part 1
+# hisat2-build HISAT2/genome/Danio_rerio.GRCz11.dna_sm.primary_assembly.fa HISAT2/genome/GRCz11/GRCz11
+
+# Prepare Splice sites
+# hisat2_extract_splice_sites.py \
+# HISAT2/genome/Danio_rerio.GRCz11.107.gtf >\
+# HISAT2/genome/ens107z11_splicesites.txt
+
+# Prepare Exon sites
+# hisat2_extract_exons.py \
+# HISAT2/genome/Danio_rerio.GRCz11.107.gtf >\
+# HISAT2/genome/ens107z11_exons.txt
+
+# Build Indexes - Part 2
+# hisat2-build --ss HISAT2/genome/ens107z11_splicesites.txt --exon HISAT2/genome/ens107z11_exons.txt HISAT2/genome/Danio_rerio.GRCz11.dna_sm.primary_assembly.fa HISAT2/genome/GRCz11/GRCz11
+#This Part keeps crashing on my computer, will be trying an alternative method
+
+# run alignment
+# hisat2 -q --rna-strandness R -x HISAT2/genome/GRCz11/GRCz11 -U data/30480-001_C1_R1.fastq | samtools sort -o HISAT2/30480-001_C1_R1_trimmed.bam
+# echo "HISAT2 finished running!"
+
+# STEP 3: Run featureCounts - Quantification
+
+# get gtf
+# wget http://ftp.ensembl.org/pub/release-106/gtf/homo_sapiens/Homo_sapiens.GRCh38.106.gtf.gz
+# featureCounts -S 2 -a ../hg38/Homo_sapiens.GRCh38.106.gtf -o quants/demo_featurecounts.txt HISAT2/demo_trimmed.bam
+# echo "featureCounts finished running!"
+
+
+duration=$SECONDS
+echo "$(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed."
+```
+
+
+## The R-ODAF-Health-Canada Pipeline
+
+### Pre-processing
+
+We must take the UMIs from the raw fastq files and extract them from either read, then add them to the file header before doing any trimming, mapping or alignment!
+
+UMIs distinguish PCR duplicates vs “molecular duplicates”...
+
+Here's some more information about RNAseq with UMIs:
+
+"RNA sequencing has become one of the most important research tools for investigating gene expression. By analyzing RNA-seq data, we can obtain comprehensive genome-scale information on Expression, Splicing and RNA editing of a sample.
+
+However, in RNA-seq data, there usually are identical reads in various proportions, ranging from 40% to 70% in the FastQC step.These duplicated/repeated reads may possibly be false-positive signals, lead to INACCURATE quantification on expression, Splicing or RNA editing.
+
+Repeated reads arise largely from the library preparation step. During this process, RNAs are first fragmented into small pieces about 200-400 nt, followed by reverse transcripiton, adapter ligation and finally PCR amplification.
+
+Two steps in this process may introduce repeated reads. 
+
+Firstly, when RNAs are ion fragmented, different mRNA copies of the same gene may break at the same site, producing identical RNA fragments. Repeated reads from these “molecular duplicates” indicate that multiple mRNA copies of a the gene are present in the sample, thus TRUE repeats. 
+
+Secondly, when cDNAs are amplified, a single cDNA copy may be amplified to multiple identical ones. Repeated reads from these “PCR duplicates” are actually originated from the same mRNA copy, thus FALSE POSITIVE repeats. PCR amplification bias can introduce different duplication levels to different genes, which is the main source of inaccuracy.
+
+To get accurate gene expression information, we need to get rid of PCR duplicates and keep the “molecular duplicates”. Unfortunately, these two kinds of duplicates can’t be treated differently because they are indistinguishable in current RNA-seq data. 
+
+To solve this problem, SeqHealth company developed UMI-enhanced deep sequencing technology, and applies it to RNA sequencing (KC-DigitalTM RNA-seq), miRNA sequencing, 16s rDNA sequencing, and TCR/BCR sequencing. KC-DigitalTM RNA-seq lables each RNA fragment with a Unique Molecular Identifier (UMI) before amplification.
+
+TRUE repeats have different UMIs, while FALSE repeats from the same mRNA copy have the same UMI. When analyzing the sequencing data, by combining all the duplicated reads with the same UMI, we can remove artificial “PCR duplicates” while keeping the meaningful “molecular duplicates”. 
+
+The duplicated reads may also be produced in the sequencing process. Patterned flow-cells used on Hiseq4000/X/Novaseq can produce “ExAmp duplicates". If the molecules in a nanowell hybridise to nearby empty nanowells, one or more "ExAmp duplicate" clusters can be created, which are also artificial duplicates.
+
+UMI-enhanced sequencing technology also has the power to get rid of these ExAmp duplicates: since all the ExAmp-derived duplicated reads have the same UMI label with the source read, they can be merged into one copy during data analysis.
+
+In addition, UMI enhanced sequencing technology can correct ERRORs from PCR/sequencing steps. With the help of UMI, we can trace the source of all the duplicated reads. The duplicated reads from the same source should have an identical sequence. By aligning all the reads from the same sources, we can generate an error-free consensus sequence for each alignment. This function is especially valuable when analyzing cSNP and RNA editing changes. 
+
+In summary, the UMI-enhanced deep sequencing technology developed by SeqHealth can help to get more accurate gene expression, alternative splicing and RNA editing information, improving the quality of deep sequencing in all aspects." [https://youtu.be/nFcKar9hOkc]
+
+```{r}
+
+```
+
+
+```{bash R-ODAF-install, echo = TRUE}
+# Dependencies
+# First, download conda (https://www.anaconda.com/products/distribution), and install
+bash Anaconda-latest-Linux-x86_64.sh
+# Update
+conda update conda
+# Second, download and install MambaForge (https://github.com/conda-forge/miniforge#mambaforge)
+bash Mambaforge-Linux-x86_64.sh
+# Install Snakemake
+conda activate base
+mamba create -c conda-forge -c bioconda -n snakemake snakemake
+  # Activate with
+  conda activate snakemake
+  snakemake --help
+
+# Clone the R-ODAF Repo
+git clone https://github.com/R-ODAF/R-ODAF_Health_Canada.git
+
+# Navigate to the Repo and open the R Project file
+# create the conda environment using the .yml file... add any other dependencies that are not included like samtools
+conda env create -f environment.yml # The default name of this environment is R-ODAF
+conda activate R-ODAF
+
+# Install more dependencies
+bash install.sh #In the R Project
+# This will create a config.yaml file that can be customized for our study
+
+#Pre-Processing Data
+snakemake --cores 5 --snakefile ./workflow/Snakefile
+
+```
+
+
+## Normalizing Quantified (couunts) data
+[Stat Quest - Normalization methods](https://www.youtube.com/watch?v=TTUrtCY2k-w)
+
+We should normalize using TPM (transcripts per million) to account for sequencing depth and gene length
+
+![Variability](./Screenshots/rcmb.2017-0430tr_f1.jpeg)
+
+## Determine Intra- and Intergroup Variability and outliers
+
+Using PCA or Correlation scores in a heatmap
+
+## Filter out Noise
