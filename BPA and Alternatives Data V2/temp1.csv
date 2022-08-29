@@ -1,0 +1,78 @@
+GO Term,GO Level,Pathway Name,n-Genes,p-value,%,Median BMD
+GO:0019218,7,regulation of steroid metabolic process,3,7.66E-04,33.33,97.6323
+GO:0015485,5,cholesterol binding,3,0.024223,10.34,318.324
+GO:0015850,6,organic hydroxy compound transport,5,0.0022642,11.63,318.324
+GO:0015918,7,sterol transport,3,0.018073,11.54,318.324
+GO:0030301,8,cholesterol transport,3,0.016243,12,318.324
+GO:0032934,5,sterol binding,3,0.045426,8.11,318.324
+GO:0008284,6,positive regulation of cell population proliferation,7,0.019053,5.6,338.369
+GO:0045765,6,regulation of angiogenesis,5,0.040431,5.75,338.369
+GO:0045766,7,positive regulation of angiogenesis,3,0.031363,9.38,338.369
+GO:0050678,6,regulation of epithelial cell proliferation,3,0.031363,9.38,338.369
+GO:0050679,7,positive regulation of epithelial cell proliferation,3,0.011406,13.64,338.369
+GO:1904018,6,positive regulation of vasculature development,3,0.031363,9.38,338.369
+GO:0055072,10,iron ion homeostasis,4,0.019872,8.33,350.8765
+GO:0043627,5,response to estrogen,3,0.036667,8.82,369.578
+GO:0071391,6,cellular response to estrogen stimulus,3,0.026493,10,369.578
+GO:0016628,5,"oxidoreductase activity, acting on the CH-CH group of donors, NAD or NADP as acceptor",3,0.01291,13.04,372.875
+GO:0050661,5,NADP binding,3,0.039481,8.57,375.516
+GO:0061631,6,ubiquitin conjugating enzyme activity,3,0.042401,8.33,407.044
+GO:0030178,7,negative regulation of Wnt signaling pathway,5,0.042138,5.68,425.462
+GO:0090090,8,negative regulation of canonical Wnt signaling pathway,5,0.0088937,8.47,425.462
+GO:0072527,5,pyrimidine-containing compound metabolic process,5,0.0052186,9.62,426.603
+GO:0019905,5,syntaxin binding,4,0.034724,7.02,436.212
+GO:0008202,5,steroid metabolic process,9,4.91E-04,8.49,441.772
+GO:0060828,7,regulation of canonical Wnt signaling pathway,7,0.014299,5.93,447.4
+GO:0016529,7,sarcoplasmic reticulum,3,0.020013,11.11,450.654
+GO:0008203,6,cholesterol metabolic process,7,4.53E-04,10.94,451.404
+GO:0016125,5,sterol metabolic process,7,0.001181,9.33,451.404
+GO:0016126,6,sterol biosynthetic process,5,4.94E-04,16.13,451.404
+GO:0048878,5,chemical homeostasis,18,0.013477,3.95,452.101
+GO:0006220,6,pyrimidine nucleotide metabolic process,3,0.028873,9.68,453.396
+GO:0006221,7,pyrimidine nucleotide biosynthetic process,3,0.024223,10.34,453.396
+GO:0009218,7,pyrimidine ribonucleotide metabolic process,3,0.016243,12,453.396
+GO:0009220,8,pyrimidine ribonucleotide biosynthetic process,3,0.014522,12.5,453.396
+GO:0072528,6,pyrimidine-containing compound biosynthetic process,3,0.028873,9.68,453.396
+GO:1901362,5,organic cyclic compound biosynthetic process,21,0.016303,3.78,453.396
+GO:0006695,7,cholesterol biosynthetic process,4,7.95E-04,20,453.8035
+GO:1902653,6,secondary alcohol biosynthetic process,4,7.95E-04,20,453.8035
+GO:0005524,6,ATP binding,43,0.03823,2.96,455.333
+GO:0030554,6,adenyl nucleotide binding,44,0.040798,2.94,456.9885
+GO:0032559,6,adenyl ribonucleotide binding,44,0.032452,2.96,456.9885
+GO:0006694,6,steroid biosynthetic process,6,0.0025732,9.38,458.6195
+GO:1901617,5,organic hydroxy compound biosynthetic process,6,0.020562,6.06,458.6195
+GO:1902652,5,secondary alcohol metabolic process,8,1.31E-04,11.43,458.6195
+GO:0019395,7,fatty acid oxidation,4,0.0081143,10.81,464.562
+GO:0005783,6,endoplasmic reticulum,27,0.0032039,3.88,465.067
+GO:0046165,5,alcohol biosynthetic process,5,0.014925,7.46,465.835
+GO:0006351,7,"transcription, DNA-templated",7,0.023063,5.38,468
+GO:0097659,7,nucleic acid-templated transcription,7,0.023063,5.38,468
+GO:0004198,7,calcium-dependent cysteine-type endopeptidase activity,3,0.01291,13.04,471.38
+GO:0008380,8,RNA splicing,9,0.044504,4.43,480.956
+GO:0046903,5,secretion,9,0.0167,5,488.88
+GO:0008328,6,ionotropic glutamate receptor complex,3,0.042401,8.33,492.274
+GO:0098878,5,neurotransmitter receptor complex,3,0.042401,8.33,492.274
+GO:0006635,7,fatty acid beta-oxidation,3,0.024223,10.34,492.659
+GO:0030258,5,lipid modification,7,0.014299,5.93,492.659
+GO:0033293,6,monocarboxylic acid binding,3,0.016243,12,492.659
+GO:0034440,6,lipid oxidation,5,0.0022642,11.63,492.659
+GO:0055088,6,lipid homeostasis,5,0.0056621,9.43,492.659
+GO:0072329,7,monocarboxylic acid catabolic process,4,0.027511,7.55,496.433
+GO:0007507,5,heart development,14,5.56E-04,6.03,496.9455
+GO:0006006,6,glucose metabolic process,5,0.0016319,12.5,501.455
+GO:0019318,5,hexose metabolic process,6,0.0037599,8.7,505.7615
+GO:0005739,6,mitochondrion,26,0.031258,3.33,508.6675
+GO:0006493,7,protein O-linked glycosylation,3,0.020013,11.11,519.215
+GO:0000422,6,autophagy of mitochondrion,3,0.039481,8.57,521.171
+GO:0061726,7,mitochondrion disassembly,3,0.039481,8.57,521.171
+GO:0008016,7,regulation of heart contraction,4,0.047412,6.35,522.2725
+GO:0007186,5,G protein-coupled receptor signaling pathway,11,0.045422,1.22,523.374
+GO:0016616,5,"oxidoreductase activity, acting on the CH-OH group of donors, NAD or NADP as acceptor",9,6.88E-04,8.11,524.931
+GO:0042383,5,sarcolemma,4,0.0097702,10.26,536.425
+GO:0003015,5,heart process,5,0.015832,7.35,542.132
+GO:0060047,6,heart contraction,5,0.013216,7.69,542.132
+GO:0043171,5,peptide catabolic process,3,0.0075287,15.79,547.603
+GO:0009225,6,nucleotide-sugar metabolic process,3,0.014522,12.5,577.053
+GO:0009226,6,nucleotide-sugar biosynthetic process,3,0.0064421,16.67,577.053
+GO:0016702,5,"oxidoreductase activity, acting on single donors with incorporation of molecular oxygen, incorporation of two atoms of oxygen",3,0.039481,8.57,604.666
+GO:0016073,8,snRNA metabolic process,3,0.031363,9.38,651.265

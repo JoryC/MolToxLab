@@ -1,0 +1,19 @@
+Dose (µg/L),Replicate,Alive,Dead,Total Dead (to date),Deformities,Total Deform (to date),Hatched,Notes,Survival Rate,Deformity Rate,Hatch Rate
+1000,A,15,0,5,0,0,15,,0.75,0,1
+1000,B,17,0,3,0,0,17,,0.85,0,1
+1000,C,16,0,4,0,0,16,,0.8,0,1
+100,A,10,0,10,0,0,10,,0.5,0,1
+100,B,14,0,6,1,1,14,Curved Spine,0.7,0.05,1
+100,C,18,0,2,2,2,18,Stunted,0.9,0.1,1
+10,A,20,0,0,1,1,20,stunted and curved spine,1,0.05,1
+10,B,15,0,5,0,0,15,,0.75,0,1
+10,C,16,0,4,2,2,16,curved spine and tails,0.8,0.1,1
+1,A,17,0,3,1,1,17,stunted,0.85,0.05,1
+1,B,18,0,2,0,0,18,,0.9,0,1
+1,C,17,0,3,1,1,17,no notes,0.85,0.05,1
+0.1,A,17,0,3,2,2,16,"stunted, no tail, unhatched, curved spine and tail",0.85,0.1,0.941176471
+0.1,B,18,0,2,2,2,17,"stunted, no tail, unhatched, curved spine and tail",0.9,0.1,0.944444444
+0.1,C,16,0,4,0,0,16,,0.8,0,1
+0,A,15,0,5,0,0,15,,0.75,0,1
+0,B,18,0,2,1,1,18,curved spine and tails,0.9,0.05,1
+0,C,18,0,2,0,0,18,,0.9,0,1

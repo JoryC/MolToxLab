@@ -1,0 +1,49 @@
+chemical,endpoint,lowerCI,median,upperCI,endpoint2
+BPA,Acute Embryo Study,,2.029383778,,EC50
+BPA,Acute Embryo Study,,3.755874856,,EC50
+BPA,Acute Embryo Study,,1,,LOEC
+BPA,Acute Embryo Study,,3.056904851,,EC50
+BPA,Acute Embryo Study,,3.698970004,,LOEC
+BPA,Acute Embryo Study,,-0.060480747,,LOEC
+BPA,Acute Embryo Study,,1.357934847,,LOEC
+BPA,Chronic Adult Study,,2.301029996,,LOEC
+BPA,Acute Embryo Study,,-0.642065153,,LOEC
+BPA,Deformity POD,,NA,,null
+BPA,Lethality POD,,NA,,null
+BPA,Behaviour POD,,NA,,null
+BPA,Energy Expenditure POD,,NA,,null
+BPA,Estrogen Gene Set BMD,,NA,,null
+BPAF,Acute Embryo Study,,1.447158031,,EC50
+BPAF,Acute Embryo Study,,2.986771734,,EC50
+BPAF,Acute Embryo Study,,0,,LOEC
+BPAF,Acute Embryo Study,,3,,LOEC
+BPAF,Acute Embryo Study,,3,,LOEC
+BPAF,Chronic Adult Study,,2.397940009,,LOEC
+BPAF,Deformity POD,,NA,,null
+BPAF,Lethality POD,,NA,,null
+BPAF,Behaviour POD,,NA,,null
+BPAF,Energy Expenditure POD,,NA,,null
+BPAF,Estrogen Gene Set BMD,,NA,,null
+DES,Acute Embryo Study,,1.428134794,,LOEC
+DES,Acute Embryo Study,,2.604226053,,EC50
+DES,Chronic Adult Study,,-2,,LOEC
+DES,Deformity POD,,NA,,null
+DES,Lethality POD,,NA,,null
+DES,Behaviour POD,,NA,,null
+DES,Energy Expenditure POD,,NA,,null
+DES,Estrogen Gene Set BMD,,NA,,null
+EE2,Acute Embryo Study,,-2,,LOEC
+EE2,Acute Embryo Study,,-1.602059991,,LOEC
+EE2,Chronic Adult Study,,-2.958607315,,LOEC
+EE2,Deformity POD,,NA,,null
+EE2,Lethality POD,,NA,,null
+EE2,Behaviour POD,,NA,,null
+EE2,Energy Expenditure POD,,NA,,null
+EE2,Estrogen Gene Set BMD,-0.657577319,-0.443697499,-0.244125144,null
+TGSH,Acute Embryo Study,,4.51851394,,LOEC
+TGSH,Chronic Adult Study,,NA,,LOEC
+TGSH,Deformity POD,,NA,,null
+TGSH,Lethality POD,,NA,,null
+TGSH,Behaviour POD,,NA,,null
+TGSH,Energy Expenditure POD,,NA,,null
+TGSH,Estrogen Gene Set BMD,,NA,,null
