@@ -1,5 +1,6 @@
 ####Libraries####
 library(tidyverse)
+library(scales)
 source("Bootstrapping_Functions.R")
 source("mode_antimode.R")
 source("BMDExpressFunctions.R")
@@ -28,7 +29,7 @@ reactomeBMDvalues <- readRDS("BMDExpressData/RDS/reactome_BMD_list_logtransforme
 
 # Apical Data
 
-referencelist <- read.csv("reference_endpoints.csv")
+referencelist <- read.csv("reference_endpoints_2.csv")
 
 ####Bootstrapping####
 #20th gene
@@ -113,13 +114,18 @@ bigtibble <- bind_rows(nthgenelist, nthpercentlist, modelist, gotermlist, reacto
   rename(lowerCI = "2.5%", median = "50%", upperCI = "97.5%") %>%
   bind_rows(referencelist) %>% 
   mutate(missingvalues = if_else(is.na(median), "ND", "")) %>%
-  mutate(endpoint = factor(endpoint, levels = c("Reactome",
+  mutate(endpoint = factor(endpoint, levels = c("Estrogen Gene Set BMD",
+                                                "Reactome",
                                                 "GO Term",
                                                 "10th pct",
                                                 "20th gene",
                                                 "1st Mode",
                                                 "Chronic Adult Study",
-                                                "Acute Embryo Study"))) %>%
+                                                "Acute Embryo Study",
+                                                "Energy Expenditure POD",
+                                                "Behaviour POD",
+                                                "Deformity POD",
+                                                "Lethality POD"))) %>%
   mutate_at(.vars = "endpoint2", ~replace(., is.na(.), "null"))
 
 summaryplots <- list()
@@ -138,12 +144,34 @@ for(i in chemnames){
     # scale_x_continuous(limit = c(-5, 2), oob = function(x, limits) x) +
     geom_point(size = 3, aes(colour = endpoint, shape = endpoint2), show.legend = FALSE) +
     scale_shape_manual(values = c(22, 24, 19), breaks = c("LOEC", "EC50", "null")) +
+    scale_color_manual(values = c("#F564E3",
+                                  "#619CFF",
+                                  "#00BFC4",
+                                  "#00BA38",
+                                  "#B79F00",
+                                  "#F8766D",
+                                  "black",
+                                  "black",
+                                  "black",
+                                  "black",
+                                  "black",
+                                  "black")) +
     geom_errorbarh(aes(xmin=lowerCI, xmax=upperCI, colour = endpoint), height = .3, size = 0.55, show.legend = FALSE) +
     # geom_pointrange(aes(xmin = lowerCI, xmax = upperCI), size=0.5) +
-    geom_text(aes(x = -1, label = missingvalues)) +
+    geom_text(x = log10(lowestdoses$dose[lowestdoses$chemical == i]) + 2, aes(label = missingvalues)) +
     labs(title = paste0(i," (n=",length(logBMDvalues[[i]][[1]]), " genes)"), x = "logBMD (µg/L)", y = "Endpoint") +
     theme(plot.title = element_text(hjust = 0.5, size=12)) +
     theme_classic() 
 }
 
+# i = "EE2"
+# test <- bigtibble %>%
+#     filter(chemical == i) 
+
+
+# for(i in chemnames){
+#   print(lowestdoses$dose[lowestdoses$chemical == i])
+# }
+
 multiplot(plotlist = summaryplots, layout = matrix(c(1:length(summaryplots),NA), nrow=2, byrow=TRUE))
+

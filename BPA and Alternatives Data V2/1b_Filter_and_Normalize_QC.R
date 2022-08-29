@@ -128,10 +128,14 @@ QCplots[["readcount"]]<- readcount %>%
   geom_boxplot(outlier.shape = NA, width = 0.5) +
   geom_jitter(position = position_jitter(width = 0.2, height = 0, seed = 42069),
               colour = "black") +
-  labs(x = "Chemical", y = "Pre-Filtered Read Count", title = "Read Count") +
+  labs(x = "Chemical", y = "Mapped Read Count", title = "Read Count") +
+  # scale_y_log10(breaks = c(10^4, 10^5, 10^6),
+  #               limits = c(10^3.5, 10^6.5),
+  #               labels = trans_format("log10", math_format(10^.x))) +
   scale_y_log10(breaks = c(10^4, 10^5, 10^6, 10^7, 10^8),
                 limits = c(10^3.5, 10^8),
                 labels = trans_format("log10", math_format(10^.x))) +
+  geom_hline(color = "red", yintercept  = 350000) +
   annotation_logticks(sides="l") +
   theme_classic()
 print(QCplots[["readcount"]])
@@ -157,6 +161,7 @@ QCplots[["nCov5_plot"]] <-
   geom_jitter(position = position_jitter(width = 0.2, height = 0, seed = 42069),
               colour = "black") +
   ylim(0, 25000) +
+  geom_hline(color = "red", yintercept  = 5000) +
   labs(x = "Chemical", y = "nCov5", title = "nCov5") +
   theme_classic()
 
@@ -169,11 +174,14 @@ QCplots[["nSig80_plot"]] <-
   geom_boxplot(outlier.shape = NA, width = 0.5) +
   geom_jitter(position = position_jitter(width = 0.2,height = 0, seed = 42069),
               colour = "black") +
+  geom_hline(color = "red", yintercept  = 1000) +
   ylim(0, 4000) +
   labs(x = "Chemical", y = "nSig80", title = "nSig80") +
   theme_classic()
 
 multiplot(plotlist = QCplots, layout = matrix(c(1:4), nrow=4, byrow=TRUE))
+
+#########################################
 
 
 QC_sample_summary <- nestData %>% 
