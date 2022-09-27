@@ -35,14 +35,55 @@ summarystats_output <- lapply(apicaldata, summarystats)
 #lethal plots
 lethal_plots <- list()
 
-for(i in chemnames){
+# for(i in chemnames){
+#   lethal_plots[[i]] <-
+#     summarystats_output[[i]] %>%
+#     ggplot(aes(x = as.character(Dose), y = Survival_Rate, group = Dose)) +
+#     geom_bar(stat="identity", color ="black", fill="white",
+#              position=position_dodge()) +
+#     geom_errorbar(aes(ymin=Survival_Rate-Survival_StdDev, ymax=Survival_Rate+Survival_StdDev), width=.2,
+#                   position=position_dodge(.9)) +
+#     geom_jitter(aes(x = as.character(Dose), y = apicaldata[[i]]$Survival.Rate),
+#                 position = position_jitter(width = 0.2, height = 0, seed = 42069),
+#                 colour = "black") +
+#     theme_classic() +
+#     xlab("Dose (µg/L)") +
+#     ylab("Survival Rate") +
+#     scale_y_continuous(limits = c(-0.1,1.1), breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1)) +
+#     labs(title = i)
+# }
+
+# for(i in chemnames) {
+#   lethal_plots[[i]] <-
+#     apicaldata[[i]] %>%
+#     ggplot(aes(x = as.character(Dose), y = Survival.Rate, group = Dose)) +
+#     geom_boxplot(outlier.shape = NA, width = 0.5) +
+#     geom_jitter(position = position_jitter(width = 0.2, height = 0, seed = 2022),
+#                 colour = "black") +
+#     theme_classic() +
+#     xlab("Dose (µg/L)") +
+#     ylab("Survival Rate") +
+#     scale_y_continuous(limits = c(-0.1,1.1), breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1)) +
+#     labs(title = i)
+# }
+
+for(i in chemnames) {
   lethal_plots[[i]] <-
-    summarystats_output[[i]] %>%
-    ggplot(aes(x = as.character(Dose), y = Survival_Rate, group = Dose)) +
-    geom_bar(stat="identity", color ="black", fill="white", 
-             position=position_dodge()) +
-    geom_errorbar(aes(ymin=Survival_Rate-Survival_StdDev, ymax=Survival_Rate+Survival_StdDev), width=.2,
-                  position=position_dodge(.9)) +
+    apicaldata[[i]] %>%
+    ggplot(aes(x = as.character(Dose), y = Survival.Rate, group = Dose)) +
+    stat_summary(fun = mean, geom = "bar", 
+                 color = "black", 
+                 fill = "white", 
+                 position=position_dodge(), 
+                 width = 0.8) +
+    stat_summary(fun = mean,
+                 fun.min = function(x) mean(x) - sd(x),
+                 fun.max = function(x) mean(x) + sd(x),
+                 geom = "errorbar",
+                 width=.2, 
+                 position=position_dodge(.9)) +
+    geom_jitter(position = position_jitter(width = 0.2, height = 0, seed = 2022),
+                colour = "black") +
     theme_classic() +
     xlab("Dose (µg/L)") +
     ylab("Survival Rate") +
@@ -55,19 +96,61 @@ multiplot(plotlist = lethal_plots, cols = 2)
 #deform plots
 deform_plots <- list()
 
-for(i in chemnames){
+# for(i in chemnames){
+#   deform_plots[[i]] <-
+#     summarystats_output[[i]] %>%
+#     ggplot(aes(x = as.character(Dose), y = Deform_Rate, group = Dose)) +
+#     geom_bar(stat="identity", color ="black", fill="white", 
+#              position=position_dodge()) +
+#     geom_errorbar(aes(ymin=Deform_Rate-Deform_StdDev, ymax=Deform_Rate+Deform_StdDev), width=.2,
+#                   position=position_dodge(.9)) +
+#     geom_jitter(position = position_jitter(width = 0.2, height = 0, seed = 42069),
+#                 colour = "black") +
+#     theme_classic() +
+#     xlab("Dose (µg/L)") +
+#     ylab("Deformity Rate") +
+#     scale_y_continuous(limits = c(-0.1,1.1), breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1)) +
+#     labs(title = i)
+# }
+
+# for(i in chemnames) {
+#   deform_plots[[i]] <-
+#     apicaldata[[i]] %>%
+#     ggplot(aes(x = as.character(Dose), y = Deformity.Rate, group = Dose)) +
+#     geom_boxplot(outlier.shape = NA, width = 0.5) +
+#     geom_jitter(position = position_jitter(width = 0.2, height = 0, seed = 42069),
+#                 colour = "black") +
+#     theme_classic() +
+#     xlab("Dose (µg/L)") +
+#     ylab("Deformity Rate") +
+#     scale_y_continuous(limits = c(-0.1,1.1), breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1)) +
+#     labs(title = i)
+# }
+
+
+for(i in chemnames) {
   deform_plots[[i]] <-
-    summarystats_output[[i]] %>%
-    ggplot(aes(x = as.character(Dose), y = Deform_Rate, group = Dose)) +
-    geom_bar(stat="identity", color ="black", fill="white", 
-             position=position_dodge()) +
-    geom_errorbar(aes(ymin=Deform_Rate-Deform_StdDev, ymax=Deform_Rate+Deform_StdDev), width=.2,
-                  position=position_dodge(.9)) +
+    apicaldata[[i]] %>%
+    ggplot(aes(x = as.character(Dose), y = Deformity.Rate, group = Dose)) +
+    stat_summary(fun = mean, geom = "bar", 
+                 color = "black", 
+                 fill = "white", 
+                 position=position_dodge(), 
+                 width = 0.8) +
+    stat_summary(fun = mean,
+                 fun.min = function(x) mean(x) - sd(x),
+                 fun.max = function(x) mean(x) + sd(x),
+                 geom = "errorbar",
+                 width=.2, 
+                 position=position_dodge(.9)) +
+    geom_jitter(position = position_jitter(width = 0.2, height = 0, seed = 2022),
+                colour = "black") +
     theme_classic() +
     xlab("Dose (µg/L)") +
     ylab("Deformity Rate") +
     scale_y_continuous(limits = c(-0.1,1.1), breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1)) +
     labs(title = i)
 }
+
 
 multiplot(plotlist = deform_plots, cols = 2)

@@ -17,12 +17,12 @@ options(scipen = 9) # ensures that small numbers arent converted to scientific n
 
 
 #### IMPORT METADATA ####
-metadata <- read.csv("RNAseqData/metadata_both.csv", header = TRUE) %>%
-  arrange(sample)
+metadata <- read.csv("RNAseqData/metadata_p2.csv", header = TRUE) %>%
+  arrange(chemical, sample)
 
 #### IMPORT SEQ DATA ####
 # folders containing ONLY raw data
-dataFolders <- paste0("RNAseqData/RawData/Plate_Both/",dir("RNAseqData/RawData/Plate_Both/"))
+dataFolders <- paste0("RNAseqData/RawData/Plate_2/",dir("RNAseqData/RawData/Plate_2/"))
 
 # load data into a list
 loadRaw<-list()
@@ -33,7 +33,7 @@ for(i in dataFolders) {
                              header = TRUE,
                              stringsAsFactors = FALSE) %>%
       ####keep select if using singular plate data
-      # select(c("Ensembl.ID", "Total.exon.reads")) %>%
+      select(c("Ensembl.ID", "Total.exon.reads")) %>%
       drop_na()
     colnames(loadRaw[[j]]) <- c("gene", j)
   }
@@ -132,9 +132,9 @@ QCplots[["readcount"]]<- readcount %>%
   geom_boxplot(outlier.shape = NA, width = 0.5) +
   geom_jitter(position = position_jitter(width = 0.2, height = 0, seed = 42069),
               colour = "black") +
-  labs(x = "Chemical", y = "Pre-Filtered Read Count", title = "Read Count") +
-  scale_y_log10(breaks = c(10^4, 10^5, 10^6, 10^7, 10^8),
-                limits = c(10^3.5, 10^8),
+  labs(x = "Chemical", y = "Mapped Read Count", title = "Read Count") +
+  scale_y_log10(breaks = c(10^3, 10^4, 10^5, 10^6, 10^7, 10^8),
+                limits = c(10^3, 10^8),
                 labels = trans_format("log10", math_format(10^.x))) +
   annotation_logticks(sides="l") +
   theme_classic()
@@ -173,7 +173,7 @@ QCplots[["nSig80_plot"]] <-
   geom_boxplot(outlier.shape = NA, width = 0.5) +
   geom_jitter(position = position_jitter(width = 0.2,height = 0, seed = 42069),
               colour = "black") +
-  ylim(0, 4500) +
+  ylim(0, 5000) +
   labs(x = "Chemical", y = "nSig80", title = "nSig80") +
   theme_classic()
 
