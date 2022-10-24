@@ -1,0 +1,375 @@
+---
+title: "UPXome RNA-seq Notebook"
+author: "Jory Curry"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  html_document:
+    code_folding: show
+    df_print: paged
+    toc: true
+    toc_depth: 5
+    toc_float: true
+    theme: readable
+---
+
+```{r 1setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(engine.opts = list(bash = "-l"))
+options(scipen = 9)
+```
+
+```{r, warning=FALSE, echo=FALSE}
+library(BiocManager)
+library(BSgenome)
+library(ShortRead)
+library(plyr)
+library(tidyverse)
+```
+
+
+## Notes
+
+### QIASeq UPXome RNA Library Manual Notes
+
+* Inclusion of QIAseq FastSelect in the workflow enables rapid and efficient removal of
+ribosomal RNA (rRNA) during the preparation of the NGS RNA library -- increases the number of usable reads during
+sequencing
+* Library Indexes (Unique dual-index) are 10-bases long
+
+
+![Recommended reads per sample](./Screenshots/Screenshot from 2022-08-23 09-53-00.png)
+
+
+* Qiagen recommends 20 million reads per sample for complete transcriptome sequencing... (We sent 100ng RNA samples)
+* Qiagen says ideally, RINs should be at or above 8
+  * Our sample RINs were on average around 7
+
+
+
+
+* During reverse transcription, a unique sample ID (10 bases) is incorporated into each transcript
+* "For standard expression analysis, 74 bp paired-end sequencing with dual 10 bp indexes should be used" --  So reads should be 74bp
+* Read1
+  * 74bp = 74bp Insert
+* Read2
+  * 74bp = 10bp Sample_IDs + 6bp Hexamer (leftover from TS mechanism) + 58bp Insert
+
+![Library Workflow](./Screenshots/Screenshot from 2022-08-23 11-16-32.png)
+
+![Library Structure](./Screenshots/SMART.png)
+
+* Sam provided this description of what the library structure looks like (before adapter trimming):
+  * CTACACGACGCTCTTCCGATCT[22bp]--[Insert]--CCCTGC[6bp]--[10bpID]--AGATCGGAAGAGCACACGTCTG[22bp]
+
+
+Our Sequences had a per-base sequence-read structure as follows:
+
+![Read structure](./Screenshots/Per-Base-Sequence-Read.png)
+
+
+Note: The fastq files we have, are already demultiplexed into their respective pools by UDI... The UDIs are contained in the headers of the fastq files (I will prove this later in the notebook). The sample IDs are still contained in the Read2s for each set of paired-end fastq files.
+
+Therefore, the reads can be demultiplexed further by Sample_ID
+
+
+### Digging deeper into the results
+
+```{bash}
+tail -8 ~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Extracted_Fastq_Files/Pool-ID-1_S1_L001_R1_001.fastq
+```
+
+```{r}
+nchar("TTTGGAGTTCTTTCTGTTTTTGGATGTACATCTTCTTAAACGTCAGGTAGTTGCCCCTGTAGTAGTAGAGTTTC")
+```
+
+```{bash}
+tail -8 ~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Extracted_Fastq_Files/Pool-ID-1_S1_L001_R2_001.fastq
+```
+
+```{r}
+nchar("NNAGTGATCGGCAGGGGCTTGTCAGAGAATCAGTCTCTTTTGCGTATGCCTCCATGGAGCAACTTGTGGTTGGC")
+```
+
+We can see that the reads are 74 bases in length
+You can also see in the header of the fastq files that the Unique Dual Indexes are included in the sample headers (Library Index or UDI - UDI i7 + UDI i5 Reverse complement).
+The first ten bases in the Read2  files are the Sample_IDs, followed by the hexamer 'GCAGGG'. The hexamer is leftover from the template switching mechanism during the RT reaction.
+Therefore, we should be able to de-multiplex the fastq files into reads based off of what sample id they came from. The files are already demultiplexed by theur UDIs (They came in different folders depending on what Pool they came from)
+
+
+### QC of fastq files with Bioconductor and CLI tools
+
+#### Preliminary QC of barcode structure
+
+We must demultiplex the data based off of their sample ID in the first 10bps of the READ2 file
+
+Let's first check that the UDI barcodes for identifying Pools are appropriately selected... I will use the [`barcode`](https://barcode.readthedocs.io/en/latest/introduction.html) CLI tool to compare the observed barcodes to the barcodes listed on Qiagen's website from the [QIAseq DIRECT UDI Set 12](https://www.qiagen.com/us/products/discovery-and-translational-research/next-generation-sequencing/rna-sequencing/mirna-small-rnaseq/qiaseq-mirna-ngs/) kit
+
+From the introduction of the tool documentation: 
+
+"Barcodes are used in NGS to tag samples before pooling. After sequencing, these barcodes are used to demultiplex the data, thereby assigning the reads to the originating sample.
+
+The key aspect of a good set of barcodes is robustness against read errors. One read error should not be able to transform one barcode into another. This requirement can be met by selecting barcodes in such a way that the edit distance between any pair of barcodes is larger than one. An additional desired property is the ability to correct read errors. This can be done by increasing the minimal edit distance between barcodes to at least three. If one read error occurs, the sequenced barcode will have a distance of one to the original barcode and a minimum distance of two to any of the other barcodes. If the read error is high, the minimum edit distance should be increased to a higher (odd) number."
+
+```{bash}
+cd ~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files
+~/anaconda3/bin/barcode test -H QIAseq-UDIs.tsv
+```
+
+This tool tells us that none of the UDI barcodes could possibly become ambigious with a tolerance of 1 error in the base calling procedure (i.e. an N instead or A,C,G or T). This means we can be more confident that our reads have been demultiplexed by Pool_ID well enough.
+
+
+```{bash}
+cd ~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files
+~/anaconda3/bin/barcode test -H QIAseq-Sample_IDs.tsv
+```
+
+Now we know we have quality barcodes, so we can continue with the analysis.
+
+```{r filenames, include=FALSE}
+filepaths <- paste0("~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files/", list.files("~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files/", pattern = "*_001.fastq.gz"))
+
+filenames <- str_split(filepaths, pattern = "/", simplify = TRUE)[,6]
+```
+
+
+
+#### QC of UDI Barcodes
+
+```{bash demultiplex_guess_UDIs_from_header}
+# Enter the directory with all of the fastq files
+cd ~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files
+
+# Use the demultiplex command to gather lists of fastq barcode headers (There should be 2 - one for each of the unique dual indexes seperated by a plus sign), default sample size is a million
+for file in *.fastq.gz; do ~/anaconda3/bin/demultiplex guess -o "$file"_barcode_headers.csv -f $file; done
+```
+
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+#Import the raw data as a list
+fileNames <- list.files(path = "~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files/", pattern = "barcode_headers.csv$")
+
+poolNames <- str_split(fileNames, pattern = ".fastq", simplify = TRUE)[,1]
+
+list <- list()
+for (i in 1:length(fileNames)) {
+  list[[i]] <-
+    read_delim(
+      file = paste0(
+        "~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files/",
+        fileNames[[i]]
+      ),
+      col_names = FALSE,
+      delim = " "
+    )
+  
+  list[[i]][c("UDI_1", "UDI_2")] <- str_split_fixed(list[[i]]$X2, "\\+", 2)
+}
+names(list) <- poolNames #Name List objects
+udiBarcodes <- ldply(list)
+
+udiBarcodes <- udiBarcodes %>%
+  rename(Index = .id) %>%
+  select(Index, UDI_1, UDI_2)
+
+# Make data tibble that shows which UDIs are the true UDI based off of the frequency of observations
+udiBarcodes <- udiBarcodes %>% 
+  group_by(Index) %>%
+  add_count(UDI_1) %>%
+  rename(UDI_1_freq = n) %>%
+  add_count(UDI_2) %>%
+  rename(UDI_2_freq = n) %>%
+  mutate(is.UDI_1 = if_else(condition = UDI_1_freq == max(UDI_1_freq), true = TRUE, false = FALSE), 
+         is.UDI_2 = if_else(condition = UDI_2_freq == max(UDI_2_freq), true = TRUE, false = FALSE))
+```
+
+
+```{r Sample_barcodes, echo = FALSE, warning = FALSE, error=FALSE, message=FALSE}
+# Read the provided barcodes from the Qiagen website and sent by Martin (they are both included in one .tsv file)
+barcodes_template <- read_tsv(file = "~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files/QIAseq-UDIs_and_Sample_IDs.tsv", col_names = TRUE)
+
+udis_Template <- barcodes_template %>% 
+  filter(Well_ID == c("A01", "B01", "C01", "D01", "E01", "F01", "G01", "H01", "A02", "B02")) %>%
+  select(UDI_1, UDI_2)
+  
+  
+# # Read in the barcodes file generated by the `demultiplex guess` command line tool
+# barcodes <- read_delim(file = "~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files/barcode_headers.csv", col_names = FALSE, delim = " ")
+# 
+# # Seperate the two barcodes into seperate columns
+# barcodes[c("UDI_1", "UDI_2")] <- str_split_fixed(barcodes$X2, "\\+", 2)
+# 
+# # Most Frequently seen barcodes in population
+# UDI_1_bcode <- plyr::count(barcodes$UDI_1) %>%
+#   arrange(desc(x = freq)) %>%
+#   slice(which.max(freq))
+# 
+# UDI_2_bcode <- plyr::count(barcodes$UDI_2) %>%
+#   arrange(desc(x = freq)) %>%
+#   slice(which.max(freq))
+
+# Trim the observed barcode UDI index down to just the true Indexes
+udiBarcodes_TRUE <- udiBarcodes %>%
+  filter(is.UDI_1 & is.UDI_2 == TRUE) %>%
+  unique() %>%
+  mutate(Index = str_split(string = Index,pattern = "_", simplify = TRUE)[,1])
+
+# Just keep the unqiue barcodes for each pool and thor away the rest of the data to prepare for a comparison to the list of abrcodes wwe have from qiagen's website... Let's see if they match
+PoolBarcodes <- udiBarcodes_TRUE %>%
+  group_by(Index, UDI_1, UDI_2) %>%
+  summarise()
+# Do they match?
+PoolBarcodes <- PoolBarcodes %>%
+  mutate(UDI_1_match = if_else(condition = UDI_1 %in% udis_Template$UDI_1, true= TRUE, false = FALSE),
+         UDI_2_match = if_else(condition = UDI_2 %in% udis_Template$UDI_2, true= TRUE, false = FALSE))
+PoolBarcodes
+
+
+# # Subset the Sample_IDs
+# sample_ids <- barcodes_template$Sample_ID
+# 
+# # Parse the headers of the .fastq files to see if they match the Sample_ID barcodes
+# any(sample_ids %in% barcodes[,3]) # If true, barcode matches at least one of the Sample_IDs
+# any(sample_ids %in% barcodes[,4]) # If true, barcode matches at least one of the Sample_IDs
+```
+
+Now we know that the UDIs from the Qiagen website match the UDI barcodes located int headers of each of our fastq files.
+
+Next, I will explore the Sample_ID barcodes that are located int he Reads of the Read2 files of the sequence read files. 
+
+#### QC of Sample_ID barcodes
+
+
+```{bash demultiplex_guess_from_read2}
+# Enter the directory with all of the fastq files
+cd ~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files
+
+# Use the demultiplex command to gather a list of barcodes from the RRead2 files and later compare those to the Sample_IDs sent to us by Qiagen. I use the -r flag to tell the tool that the barcode is int he read and the -e 10 paramater to tell the tool that the barcode is the first ten bases
+for file in *.fastq.gz; do ~/anaconda3/bin/demultiplex guess -r -e 10 -o "$file"_barcode_read2.csv -f $file; done
+# ~/anaconda3/bin/demultiplex guess -r -e 10 -o barcode_read2.csv -f Pool-ID-1_S1_L001_R2_001.fastq.gz
+```
+
+```{r guess_sample_barcodes, echo = FALSE, warning=FALSE, message=FALSE}
+
+# sample_barcodes <- read_delim(file = "~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files/barcode_read2.csv", col_names = FALSE, delim =  " ")
+
+# Import the output of the demultiplex command
+fileNames <- list.files(path = "~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files/", pattern = "barcode_read2.csv$")
+
+list <- list()
+for (i in 1:length(fileNames)) {
+  list[[i]] <-
+    read_delim(
+      file = paste0(
+        "~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files/",
+        fileNames[[i]]
+      ),
+      col_names = FALSE,
+      delim = " "
+    )
+  
+  list[[i]]["Sample_ID"] <- list[[i]]$X2
+}
+names(list) <- poolNames #Name List objects
+Sample_IDs <- ldply(list)
+
+Sample_IDs %>%
+  group_by(Sample_ID,) %>%
+  tally() %>%
+  arrange(desc(n)) %>%
+  full_join(barcodes_template) %>%
+  mutate(percentage_of_reads = (n/nrow(Sample_IDs))*100) %>%
+  arrange(Well_ID) %>%
+  select(-c(UDI_1, UDI_2))
+
+# # Check which barcodes are missing (Should be missing H07-H12)
+missing_barcodes <- barcodes_template[which(barcodes_template$Sample_ID %in% Sample_IDs$Sample_ID),]
+missing_barcodes <- barcodes_template %>%
+  anti_join(missing_barcodes)
+missing_barcodes
+
+ # Percentage of exactly matching barcodes
+nrow(Sample_IDs[which(Sample_IDs$Sample_ID %in% barcodes_template$Sample_ID),])/nrow(Sample_IDs)*100
+
+
+# # See what samples are present
+# Samples_in_Pool <- arrange(barcodes_template[which(barcodes_template$Sample_ID %in% matching_barcodes),], Well_ID)
+
+# Save the report of what Samples have been demultiplexed based on the sample_ID barcodes present
+# write_csv(Samples_in_Pool, file = "~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Demultiplexed_Fastq_Files/")
+```
+
+
+```{bash}
+# Enter the directory with all of the fastq files
+cd ~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files
+
+# Use the demultiplex and demux sub/command to demultiplex the paired-read files with the sample barcodes located in the read_2 files
+
+# Look up using Arrays in bash
+
+# for file in *.fastq.gz
+# do
+#  READ2LIST=($(find . -maxdepth 1 -type f -name "*R2_001.fastq.gz"))
+#  READ1LIST=$(find . -maxdepth 1 -type f -name "*R1_001.fastq.gz")
+#  ~/anaconda3/bin/demultiplex demux -r -e 10 Sample_IDs.tsv Pool-ID-1_S1_L001_R2_001.fastq.gz Pool-ID-1_S1_L001_R1_001.fastq.gz
+```
+
+<!-- ```{bash} -->
+<!-- # Begin Writing loop -->
+<!-- for file in *.fastq.gz; do echo $file; done -->
+
+
+<!-- for i in {1..5}; do echo "F"$i > File$i; done -->
+<!-- ``` -->
+
+
+<!-- ```{r echo=FALSE, warning=FALSE} -->
+<!-- set.seed(123) -->
+
+<!-- sample_list <- list() -->
+<!-- for (i in 1:length(filepaths)) { -->
+<!-- sampler <- FastqSampler(filepaths[i], n = 100, verbose = FALSE, ordered = TRUE) -->
+<!-- sample <- yield(sampler) -->
+<!-- sample_list[[i]] <- sample -->
+<!-- } -->
+
+<!-- class(sample_list[[1]]) -->
+<!-- length(sample_list[[1]]) -->
+<!-- ``` -->
+
+<!-- ```{r duplicates, echo=FALSE, include = FALSE} -->
+<!-- # Sample with duplicates of class: ShortReadQ -->
+<!-- sample_list[[1]] -->
+
+<!-- # Get the reads of sample_list -->
+<!-- my_dup_reads <- sread(sample_list[[1]]) -->
+
+<!-- # Count the duplicates -->
+<!-- table(srduplicated(my_dup_reads)) -->
+
+<!-- # Keep the duplicate reads -->
+<!-- my_dup_reads <- my_dup_reads[srduplicated(my_dup_reads) == TRUE] -->
+
+<!-- # Percentage of duplicated reads from the sample -->
+<!-- percentage_dup <- (length(my_dup_reads)/length(sample_list[[1]]))*100 -->
+
+<!-- # Create a table of  -->
+<!-- ``` -->
+
+<!-- ```{r Quality, echo=FALSE, include=FALSE} -->
+<!-- qa_test <- qa(sample_list[[1]], type = "fastq", lane = 1) -->
+<!-- ``` -->
+
+### Notes on DE analysis
+
+Some important questions to consider
+* What genes are differenetially expressed between dsample groups?
+* ASre there any trends in gene expression over time or across conditions?
+* Which groups of genes change similarly over time or ascross conditions?
+* WHat processes or pathweatys are important dffor my condition of interest
+
+Some packages top use for DE analysis
+* DESeq2
+* RColorBrewer
+* pheatmap
+* tidyverse

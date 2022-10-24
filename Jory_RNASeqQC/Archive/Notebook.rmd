@@ -1,0 +1,384 @@
+---
+title: "RNA-seq Notebook"
+author: "Jory Curry"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  html_document:
+    code_folding: show
+    df_print: paged
+    toc: true
+    toc_depth: 5
+    toc_float: true
+    theme: readable
+---
+
+```{r 1setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen = 9)
+```
+
+```{r, include=FALSE}
+library(rlang)
+library(tidyverse)
+library(knitr)
+```
+
+
+## Questions
+
+* What steps were taken beforehand before sending us the .fastq files, if any?
+  * Why are there no UMIs?
+  * Has UMI Collapsing and De-Multiplexing already taken place?(likely yes from the looks of it)
+  * Have the files been trimmed and filtered?
+    * What pipelilne (fastq, trimmomatic, Skewer, etc) ?
+* Can we get a copy of the raw unprocessed files (off the illumina NextSeq)?
+* Why did so many of the Read2s -- (UMI - Cell ID - ACG + PolyT) not map?
+* Trimming reports say "Removal of homopolymer AG sequences, at 3' end when [9] nucleotides in a window of length [10] are homopolymer"... Does this mean trimming of both PolyA and POlyG (ex: AAATAAAAA - gets trimmed & GGGGGCGGG - gets trimmed, or AGAGAGAGAG - gets trimmed?)
+* What was the software used for trimming reads? CLC Genomic Workbench???
+* In the Filtering and trimming reports (round 1), Adapter sequences are defined: AAAAAAAAAACGT & ACGTTTT... are these accurate?
+* In the filtering and trimming report (round 1), reads that don't have any adapter sequences are... "Keep the read, Score: [2 : 3 : 10 : 4]". Can you clarify what this means?
+
+## RNA Quality/Quantity
+
+- RIN/RIS Numbers
+- amount of total RNA?
+
+## Library Preparation
+
+- QiaSeq 3' UPX
+- Qiagen's new kit???
+- Sequencing depth? (Samples per lane - different sequencing techniques provide higher or lower read counts)
+- Paired end or single end sequencing?
+
+![Batch Effects](./Screenshots/Screenshot_from_2022-07-26_11-19-25.png)
+
+## Checking our data
+
+![General RNA-seq Workflow](./Screenshots/RNAseq_workflow.png)
+
+
+![R-ODAF Workflow](./Screenshots/R-Odaf.jpg)
+Note that, "any major problems encountered during the sequencing itself would be identified prior to use of the samples by the sequencing facility (e.g., failure in the percentage of clusters passing threshold, base calling and demultiplexing) and are not included in the R-ODAF. We also did not include any removal of samples based on quality prior to trimming, since we considered that these decisions should be based on the number of reads remaining after cleaning the data rather than on the raw fastq files"
+
+
+```{bash check for paired end, echo = TRUE}
+cd ~/MastersBackup/Data/RAW_Qiagen_Data_1_Sept_2021/QNS30480_JasonOBrien_FASTQ
+# The output of this should read out both 1 and 2 in the output if paired end, and 
+grep --max-count=10000 -P "^@" *.fastq | grep -oP "\s\d+" | sort | uniq -c
+```
+We use paired-end sequencing with two reads per sample.\
+\
+Read one has a length of 100bp\
+Read two has a length of 27bp\
+\
+\
+Qiagen explains visually what each read file should contain\
+![reads](./Screenshots/Screenshot_from_2022-07-15_15-44-08.png)
+
+Here is a glimpse of what the transcripts (read 1) look like
+```{bash fastq reads, echo = FALSE}
+head -8 ~/MastersBackup/Data/RAW_Qiagen_Data_1_Sept_2021/QNS30480_JasonOBrien_FASTQ/30480-001_C1_R1.fastq
+```
+read1 is 100bp long
+
+Here is a glimpse of what the Cell ID & UMIs look like (read 2)
+```{bash read2 glimpse, echo = FALSE}
+head -8 ~/MastersBackup/Data/RAW_Qiagen_Data_1_Sept_2021/QNS30480_JasonOBrien_FASTQ/30480-001_C1_R2.fastq
+```
+We can see that Line 1 has some meta information about the transcript (read1),
+Line 2 has the 100bp sequence
+Line 3 is a seperator (+)
+Line 4 are the Quality scores for the base calls
+\
+Note: 
+- read2 only has a sequencing length of 17bp when it should have 27
+- The UMI has been omitted from the FASTQ files?????
+\
+Qiagen uses `bcl2fastq2 software (Illumina inc.)` for converting raw base calling data into FASTQ files after de-multiplexing.\
+From the bcl2fastq2 software manual\
+\
+![bcl2fastq2](./Screenshots/Screenshot_from_2022-07-15_15-38-55.png)
+Note that the `UMI` field is also missing from read1
+\
+\
+From Qiagen:\
+"In short, the reads are annotated with their UMI and are then trimmed for poly(A) and adapter sequences, minimum reads length (15 nucleotides), read quality, and ambiguous nucleotides (maximum of 2). They are then deduplicated using their UMI."
+\
+"Reads are grouped into UMI groups when they: 
+- (1) start at the same position based on the end of the read to which the UMI is ligated (i.e., Read2 for paired data), 
+- (2) are from the same strand, and 
+- (3) have identical UMIs. 
+Groups that contain only one read (singletons) are merged into non-singleton groups if the singleton’s UMI can be converted to a UMI of a non-singleton group by introducing an SNP (the biggest group is chosen)."\
+\
+The FASTQ files are then aligned and mapped to the danio rerio genome GRCz11... [Ensemble](https://www.ensembl.org/info/data/ftp/index.html?redirect=no).\
+To align and map yourself you would use the [soft-masked primary assembly reference genome (.fasta)](http://ftp.ensembl.org/pub/release-107/fasta/danio_rerio/dna/Danio_rerio.GRCz11.dna_sm.primary_assembly.fa.gz), and the [gene transfer format (.gtf) file](http://ftp.ensembl.org/pub/release-107/gtf/danio_rerio/Danio_rerio.GRCz11.107.gtf.gz)\
+\
+\
+Qiagen used `‘Empirical analysis of DGE’ algorithm of the CLC Genomics Workbench 21.0.4 ` for DGE analysis. it is an implementation of the 'Exact Test' for two-group comparisons from the `EdgeR Bioconductor` package\
+\
+We will use Deseq2\
+\
+
+The FastQ files we have are previously Filtered & Trimmed:
+
+1. Round 1
+    + Remove adapter sequences:
+    + polyA + CGT (AAAAAAAAAACGT) for read1, 
+      + when the adapter is found, trim the 3' end
+      + when no adapter, keep the read
+    + Score
+    + ACG + PolyT (ACGTTTT) for read2,
+      + when adapter is found, keep the 3' end
+      + when no adapter, keep the read
+    + Score
+    + Remove sequences shorter than 15 nucleotides
+2. Round 2
+    + Removal of homopolymer AG sequences
+      + at read 3' when 9 nucleotides in a window of length 10 are homoploymer
+    + Remove any sequences left with less than 15 nucleotides
+3. Round 3: 
+    + Remove low quality sequences (probability of error limit @ 0.05 or ~Q-score of 13) [Q-scores](http://drive5.com/usearch/manual/quality_score.html)
+    + Remove ambiguous nucleotides: maximal 2 nucleotides allowed
+    + Remove any sequences left that are less than 15 nucleotides
+
+Reports for the filtering results are available in a sample-by-sample .pdf format supplied by qiagen... or
+\
+I have run the fastq files through FastQC and generated html reports for each sample.
+\
+\
+```{r FastQC_Summary1, echo=FALSE}
+summary <- read.delim(file = "~/MastersBackup/Data/RAW_Qiagen_Data_1_Sept_2021/QNS30480_JasonOBrien_FASTQ/FastQc_Report/mergedfile.txt", header= FALSE) %>%
+  mutate(Lane = str_split(string = V3, pattern = "_", simplify = TRUE)[,1], Sample = str_split(string = V3, pattern = "_", simplify = TRUE)[,2], Read = str_split(string = V3, pattern = "_", simplify = TRUE)[,3]) %>%
+  setNames(., c("QC_result", "Paramater", "File", "Lane", "Sample", "Read")) %>%
+  mutate(Lane = str_split(string = Lane, pattern = "-", simplify = TRUE)[,2])
+
+kable1 <- summary %>%
+  group_by(QC_result) %>%
+  tally()
+
+kable(kable1, caption = "Distribution of QC Results")
+```
+
+```{r FastQC_Summary2, echo=FALSE}
+kable2 <- summary %>%
+  filter(QC_result == "FAIL") %>%
+  group_by(Paramater) %>%
+  tally()
+
+kable(kable2, caption = "Most common paramaters to cause FastQC to flag as `FAIL`")
+```
+  
+Here we can seee that of all of the results that came up as a failure to pass the QC thresholds, the most common-to-fail test was the `Per base sequence content`, with `Per base sequence quality`, and `Per base sequence GC content` comin in second and third respectively.\
+\
+Keep in mind that there are 90 samples, and 2 reads for each. so the maximum number of failures possible is 180.
+### `Per base sequence content` example: `PASS` vs `FAIL`\
+PASS:
+N/A
+FAIL:
+![`Per base sequence content` - `FAIL`](./FastQC_Examples/per_base_sequence_content_FAIL.png)
+All samples failed to pass this quality filter.
+
+
+### `Per base sequence quality` example: `PASS` vs `FAIL`\
+```{r fastQC_summary3, echo=FALSE}
+kable3 <- summary %>%
+  filter(QC_result == "FAIL", Paramater == "Per base sequence quality") %>%
+  group_by(Read) %>%
+  tally()
+
+kable(kable3, caption = "Closer look at `Per base sequence quality` FAILs show only read2s fail to pass QC based on PHRED/Q scores")
+```
+
+PASS:
+![`Per base sequence quality` - `PASS`](./FastQC_Examples/per_base_quality_PASS.png)
+FAIL:
+![`Per base sequence quality` - `FAIL`](./FastQC_Examples/per_base_quality_FAIL.png)
+
+
+### `Per sequence GC content` example: PASS vs FAIL
+```{r FastQc_Summary4, echo = FALSE}
+kable4 <- summary %>%
+  filter(Paramater == "Per sequence GC content", QC_result == "FAIL") %>%
+  group_by(Read) %>%
+  tally()
+kable(kable4, caption = "# of FAILS in the per sequence GC content paramater summarised by read #")
+```
+Almost all 62/90 samples failed the GC content quality control test
+
+PASS:
+![PASS](./FastQC_Examples/per_sequence_gc_content_PASS.png)
+FAIL:
+![PASS](./FastQC_Examples/per_sequence_gc_content_FAIL.png)
+
+### `Sequence Duplication Levels` examples: PASS vs FAIL
+```{r FastQC_summary5, echo = FALSE}
+kable5 <- summary %>%
+  filter(Paramater == "Sequence Duplication Levels", QC_result == "FAIL") %>%
+  group_by(Read, Sample) %>%
+  tally()
+kable(kable5, caption = "Sequence duplication level FAILs summarized by sample and Read")
+```
+Only Read1s failed to pass this parameter. And only 12/90 samples failed this QC paramater
+
+PASS:
+![PASS_dup](./FastQC_Examples/duplication_levels_PASS.png)
+
+FAIL:
+![PASS_dup](./FastQC_Examples/duplication_levels_FAIL.png)
+
+
+
+## Example of a bash pipeline
+
+```{bash A_Typical_pipeline, echo = TRUE}
+SECONDS=0
+
+# change working directory
+cd ~/MolToxLab/Jory_RNASeqQC
+
+
+
+# STEP 1: Run fastqc
+#fastqc data/30480-001_C1_R1.fastq -o data/
+
+
+# run trimmomatic to trim reads with poor quality
+#java -jar ~/Desktop/demo/tools/Trimmomatic-0.39/trimmomatic-0.39.jar SE -threads 4 data/demo.fastq data/demo_trimmed.fastq TRAILING:10 -phred33
+#echo "Trimmomatic finished running!"
+
+#Note: We already have trimmed files from Qiagen
+
+
+#Run fastqc again to look at the trimmed files
+# fastqc data/30480-001_C1_R1.fastq -o data/
+
+
+# STEP 2: Run HISAT2
+# mkdir HISAT2
+# get the genome indices
+# There is no zebrafish genome available in hisat2's website, so we are going to build a genome instead from Ensemble
+# cd ~/MolToxLab/Jory_RNASeqQC/HISAT2/genome
+# wget http://ftp.ensembl.org/pub/release-107/fasta/danio_rerio/dna/Danio_rerio.GRCz11.dna_sm.primary_assembly.fa.gz
+# echo "Downloaded reference genome from Ensemble"
+# cd ~/MolToxLab/Jory_RNASeqQC
+
+# Build Indexes - Part 1
+# hisat2-build HISAT2/genome/Danio_rerio.GRCz11.dna_sm.primary_assembly.fa HISAT2/genome/GRCz11/GRCz11
+
+# Prepare Splice sites
+# hisat2_extract_splice_sites.py \
+# HISAT2/genome/Danio_rerio.GRCz11.107.gtf >\
+# HISAT2/genome/ens107z11_splicesites.txt
+
+# Prepare Exon sites
+# hisat2_extract_exons.py \
+# HISAT2/genome/Danio_rerio.GRCz11.107.gtf >\
+# HISAT2/genome/ens107z11_exons.txt
+
+# Build Indexes - Part 2
+# hisat2-build --ss HISAT2/genome/ens107z11_splicesites.txt --exon HISAT2/genome/ens107z11_exons.txt HISAT2/genome/Danio_rerio.GRCz11.dna_sm.primary_assembly.fa HISAT2/genome/GRCz11/GRCz11
+#This Part keeps crashing on my computer, will be trying an alternative method
+
+# run alignment
+# hisat2 -q --rna-strandness R -x HISAT2/genome/GRCz11/GRCz11 -U data/30480-001_C1_R1.fastq | samtools sort -o HISAT2/30480-001_C1_R1_trimmed.bam
+# echo "HISAT2 finished running!"
+
+# STEP 3: Run featureCounts - Quantification
+
+# get gtf
+# wget http://ftp.ensembl.org/pub/release-106/gtf/homo_sapiens/Homo_sapiens.GRCh38.106.gtf.gz
+# featureCounts -S 2 -a ../hg38/Homo_sapiens.GRCh38.106.gtf -o quants/demo_featurecounts.txt HISAT2/demo_trimmed.bam
+# echo "featureCounts finished running!"
+
+
+duration=$SECONDS
+echo "$(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed."
+```
+
+
+## The R-ODAF-Health-Canada Pipeline
+
+### Pre-processing
+
+We must take the UMIs from the raw fastq files and extract them from either read, then add them to the file header before doing any trimming, mapping or alignment!
+
+UMIs distinguish PCR duplicates vs “molecular duplicates”...
+
+Here's some more information about RNAseq with UMIs:
+
+"RNA sequencing has become one of the most important research tools for investigating gene expression. By analyzing RNA-seq data, we can obtain comprehensive genome-scale information on Expression, Splicing and RNA editing of a sample.
+
+However, in RNA-seq data, there usually are identical reads in various proportions, ranging from 40% to 70% in the FastQC step.These duplicated/repeated reads may possibly be false-positive signals, lead to INACCURATE quantification on expression, Splicing or RNA editing.
+
+Repeated reads arise largely from the library preparation step. During this process, RNAs are first fragmented into small pieces about 200-400 nt, followed by reverse transcripiton, adapter ligation and finally PCR amplification.
+
+Two steps in this process may introduce repeated reads. 
+
+Firstly, when RNAs are ion fragmented, different mRNA copies of the same gene may break at the same site, producing identical RNA fragments. Repeated reads from these “molecular duplicates” indicate that multiple mRNA copies of a the gene are present in the sample, thus TRUE repeats. 
+
+Secondly, when cDNAs are amplified, a single cDNA copy may be amplified to multiple identical ones. Repeated reads from these “PCR duplicates” are actually originated from the same mRNA copy, thus FALSE POSITIVE repeats. PCR amplification bias can introduce different duplication levels to different genes, which is the main source of inaccuracy.
+
+To get accurate gene expression information, we need to get rid of PCR duplicates and keep the “molecular duplicates”. Unfortunately, these two kinds of duplicates can’t be treated differently because they are indistinguishable in current RNA-seq data. 
+
+To solve this problem, SeqHealth company developed UMI-enhanced deep sequencing technology, and applies it to RNA sequencing (KC-DigitalTM RNA-seq), miRNA sequencing, 16s rDNA sequencing, and TCR/BCR sequencing. KC-DigitalTM RNA-seq lables each RNA fragment with a Unique Molecular Identifier (UMI) before amplification.
+
+TRUE repeats have different UMIs, while FALSE repeats from the same mRNA copy have the same UMI. When analyzing the sequencing data, by combining all the duplicated reads with the same UMI, we can remove artificial “PCR duplicates” while keeping the meaningful “molecular duplicates”. 
+
+The duplicated reads may also be produced in the sequencing process. Patterned flow-cells used on Hiseq4000/X/Novaseq can produce “ExAmp duplicates". If the molecules in a nanowell hybridise to nearby empty nanowells, one or more "ExAmp duplicate" clusters can be created, which are also artificial duplicates.
+
+UMI-enhanced sequencing technology also has the power to get rid of these ExAmp duplicates: since all the ExAmp-derived duplicated reads have the same UMI label with the source read, they can be merged into one copy during data analysis.
+
+In addition, UMI enhanced sequencing technology can correct ERRORs from PCR/sequencing steps. With the help of UMI, we can trace the source of all the duplicated reads. The duplicated reads from the same source should have an identical sequence. By aligning all the reads from the same sources, we can generate an error-free consensus sequence for each alignment. This function is especially valuable when analyzing cSNP and RNA editing changes. 
+
+In summary, the UMI-enhanced deep sequencing technology developed by SeqHealth can help to get more accurate gene expression, alternative splicing and RNA editing information, improving the quality of deep sequencing in all aspects." [https://youtu.be/nFcKar9hOkc]
+
+```{r}
+
+```
+
+
+```{bash R-ODAF-install, echo = TRUE}
+# Dependencies
+# First, download conda (https://www.anaconda.com/products/distribution), and install
+bash Anaconda-latest-Linux-x86_64.sh
+# Update
+conda update conda
+# Second, download and install MambaForge (https://github.com/conda-forge/miniforge#mambaforge)
+bash Mambaforge-Linux-x86_64.sh
+# Install Snakemake
+conda activate base
+mamba create -c conda-forge -c bioconda -n snakemake snakemake
+  # Activate with
+  conda activate snakemake
+  snakemake --help
+
+# Clone the R-ODAF Repo
+git clone https://github.com/R-ODAF/R-ODAF_Health_Canada.git
+
+# Navigate to the Repo and open the R Project file
+# create the conda environment using the .yml file... add any other dependencies that are not included like samtools
+conda env create -f environment.yml # The default name of this environment is R-ODAF
+conda activate R-ODAF
+
+# Install more dependencies
+bash install.sh #In the R Project
+# This will create a config.yaml file that can be customized for our study
+
+#Pre-Processing Data
+snakemake --cores 5 --snakefile ./workflow/Snakefile
+
+```
+
+
+## Normalizing Quantified (couunts) data
+[Stat Quest - Normalization methods](https://www.youtube.com/watch?v=TTUrtCY2k-w)
+
+We should normalize using TPM (transcripts per million) to account for sequencing depth and gene length
+
+![Variability](./Screenshots/rcmb.2017-0430tr_f1.jpeg)
+
+## Determine Intra- and Intergroup Variability and outliers
+
+Using PCA or Correlation scores in a heatmap
+
+## Filter out Noise
