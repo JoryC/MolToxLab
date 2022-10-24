@@ -7,6 +7,7 @@ library(preprocessCore) # for quantile normalization
 library(PMCMRplus)  # for Williams Trend Test
 library(ggfortify)
 library(scales)
+library(DescTools)
 
 #source codes
 source("RNAseqFunctions.R")
@@ -38,6 +39,8 @@ for(i in dataFolders){
   }
 }
 
+####
+
 # join,
 allData <- purrr::reduce(loadRaw, full_join, by="gene") %>%
 # transpose,
@@ -48,10 +51,11 @@ allData <- purrr::reduce(loadRaw, full_join, by="gene") %>%
 # convert to tibble,
   as_tibble() %>%
 # merge with metadata,  
-  left_join(x = metadata, y = ., by="sample") %>%
+  left_join(x = metadata, y = ., by="sample")
 # convert chemical and dose to factors,
-  mutate(chemical = as.factor(chemical), dose = as.factor(dose))
-
+  # mutate(chemical = as.factor(chemical), dose = as.factor(dose))
+# add zeros
+allData[is.na(allData)] <- 0
 
 # Group by chemical and nest
 nestData <- allData %>%
@@ -109,18 +113,6 @@ nestData <- nestData %>%
   mutate(nSig80_avg=map_dbl(nSig80, ~mean(.x$nSig80))) %>%
   mutate(nSig80_sd=map_dbl(nSig80, ~sd(.x$nSig80)))
 
-#### FILTER ####
-filterData <- nestData %>%
-  select(chemical, data) %>%
-  mutate(filterData3 = map(data, ~countFilter(.x, grouping = "dose", median_threshold = 3, metadata=metadata))) %>%
-  select(-data) %>%
-  mutate(nGene_filt3 = map_dbl(filterData3, ~nGene(.x, metadata=metadata))) %>%
-  mutate(nOverlap_filt3 = map_dbl(filterData3, ~nGeneIntercept(.x, metadata = metadata))) %>%
-  mutate(nCov5=map(filterData3, ~nCovN(.x, metadata = metadata))) %>%
-  mutate(nCov5_avg=map_dbl(nCov5, ~mean(.x$nCovN))) %>%
-  mutate(nSig80=map(filterData3, ~nSig80_V2(.x, metadata = metadata))) %>%
-  mutate(nSig80_avg=map_dbl(nSig80, ~mean(.x$nSig80)))
-
 ####Plotting####
 QCplots <- list()
 
@@ -173,11 +165,20 @@ QCplots[["nSig80_plot"]] <-
   geom_jitter(position = position_jitter(width = 0.2,height = 0, seed = 42069),
               colour = "black") +
   # geom_hline(color = "red", yintercept  = 1000) +
-  ylim(0, 5000) +
+  ylim(0, 4000) +
   labs(x = "Chemical", y = "nSig80", title = "nSig80") +
   theme_classic()
 
-multiplot(plotlist = QCplots, layout = matrix(c(1:4), nrow=4, byrow=TRUE))
+if(TRUE){
+  png(file = "QC.png", width = 500, height = 1600)
+  multiplot(plotlist = QCplots, layout = matrix(c(1:4), nrow=4, byrow=TRUE))
+  dev.off()
+  multiplot(plotlist = QCplots, layout = matrix(c(1:4), nrow=4, byrow=TRUE))
+} else {
+  multiplot(plotlist = QCplots, layout = matrix(c(1:4), nrow=4, byrow=TRUE))
+}
+
+
 
 #######################################################################
 
@@ -194,82 +195,194 @@ QC_sample_summary <- nestData %>%
 
 write.csv(QC_sample_summary, "QC/QC_sample_summary.csv", row.names = F)
 
+######################
 
-#### NORMALIZE ####
-filterData <- filterData %>%
-  mutate(normData = map(filterData3, tmmNorm)) %>% 
-  mutate(logData = map(filterData3, logCount)) %>%
-  mutate(logNormData = map(logData, tmmNorm)) 
+#create data list
+data_list <- list()
 
+for(i in as.character(unique(allData$chemical))){
+  data_list[[i]] <- filter(allData, chemical == i) %>%
+    select(-chemical) %>%
+    column_to_rownames(var = "sample") %>%
+    t()
+}
 
-# # plot before normazliation
-# filterData$logData[[2]] %>%
-#   select(-dose) %>%
-#   column_to_rownames("sample") %>%
-#   #mutate_all(~log2(.+1)) %>%
-#   as.data.frame() %>%
-#   t() %>%
-#   boxplot()
-# 
-
-par(mfrow=c(2,3))
-for(i in 1:5){
-  # plot before normazliation
-  filterData$logNormData[[i]] %>%
-    #bind_rows() %>%
-    select(-dose) %>%
-    column_to_rownames("sample") %>%
-    #mutate_all(~log2(.+1)) %>%
-    as.data.frame() %>%
+filter_list <- lapply(data_list, function(x) {
+  x %>%
     t() %>%
-    boxplot(horizontal=TRUE)
+    as.data.frame() %>%
+    countFilter(grouping = "dose", median_threshold = 3, metadata = metadata) %>%
+    select(-dose) %>%
+    t()
+})
+
+
+#create metadata list
+metadata_list <- list()
+
+for(i in as.character(unique(metadata$chemical))){
+  metadata_list[[i]] <- filter(metadata, chemical == i) %>%
+    select(-chemical) %>%
+    column_to_rownames(var = "sample")
 }
 
-#### EXPORT NORM DATA ####
+library(DESeq2)
 
-if(TRUE){   #switch to TRUE if you want to save the output files
-  apply(filterData, 1, FUN = function(x){
-    
-    outData <- x$normData %>%
-      select(-sample, -dose) %>%
-      t() %>%
-      as.data.frame() 
-    
-    colnames(outData) <- x$normData$dose
-    outData <- data.frame(gene=rownames(outData), outData, check.names = FALSE)
-   
-    write_delim(outData,
-                paste0("RNAseqData/normalizedData/",x$chemical, "_normData.txt"),
-                delim = "\t"
-      )
-  })
+# DESeq_norm <- function(data, metadata, fact){
+#   dds <- DESeqDataSetFromMatrix(countData = data,
+#                                 colData = metadata,
+#                                 design = ~ fact)
+#   dds <- estimateSizeFactors(dds)
+#   normalized_counts <- counts(dds, normalized=TRUE)
+#   return(normalized_counts)
+# }
+
+norm_counts <- list()
+
+for(i in names(filter_list)){
+  dds <- DESeqDataSetFromMatrix(countData = filter_list[[i]],
+                                colData = metadata_list[[i]],
+                                design = ~ dose)
+  dds <- estimateSizeFactors(dds)
+  norm_counts[[i]] <- counts(dds, normalized=TRUE) %>%
+    t()
 }
 
 
-#### PCA ####
-# PCA of using prcomp and plotted using autoplot
-
-filterData <- filterData %>%
-  mutate(PCAplots = map(normData, function(x){
-    x <- x %>% mutate(controlcol = ifelse(dose == 0, "Control", "Treated"))
-    x %>%
-      select(-sample, -dose, -controlcol) %>%
-      prcomp(center=TRUE, scale.=TRUE) %>%
-      autoplot(data=x, 
-               colour="dose", 
-               # shape = "controlcol",
-               size = 3) +
-      theme_bw() +
-      scale_shape_manual(values = c(15, 16)) +
-      labs(title = paste(chemical), colour = "Dose(µg/L)", shape = "") +
-      guides(shape = FALSE) +
-      theme(plot.title = element_text(hjust = 0.5))
-  }))
-
-# single plot
-# nestData$PCAplots[[1]]
-
-# multiplot
-multiplot(plotlist=filterData$PCAplots, cols=3)
+for(i in names(norm_counts)){
+  outData <- norm_counts[[i]] %>% as.data.frame()
+  doses <- filter(metadata, chemical == i) %>%
+    select(dose)
+  outData <- outData %>%
+    mutate(dose = doses) %>%
+    relocate(dose) %>%
+    t() %>%
+    as.data.frame() %>%
+    rownames_to_column()
+  write_delim(outData,
+              paste0("RNAseqData/DESeqnormalizedData/",i, "_DESeq_normData.txt"),
+              col_names = F,
+              delim = "\t")
+}
 
 
+
+# 
+# #### FILTER ####
+# filterData <- nestData %>%
+#   select(chemical, data) %>%
+#   mutate(filterData3 = map(data, ~countFilter(.x, grouping = "dose", median_threshold = 3, metadata=metadata))) %>%
+#   select(-data) %>%
+#   mutate(nGene_filt3 = map_dbl(filterData3, ~nGene(.x, metadata=metadata))) %>%
+#   mutate(nOverlap_filt3 = map_dbl(filterData3, ~nGeneIntercept(.x, metadata = metadata))) %>%
+#   mutate(nCov5=map(filterData3, ~nCovN(.x, metadata = metadata))) %>%
+#   mutate(nCov5_avg=map_dbl(nCov5, ~mean(.x$nCovN))) %>%
+#   mutate(nSig80=map(filterData3, ~nSig80_V2(.x, metadata = metadata))) %>%
+#   mutate(nSig80_avg=map_dbl(nSig80, ~mean(.x$nSig80)))
+# 
+# 
+# #### NORMALIZE ####
+# filterData <- filterData %>%
+#   mutate(normData = map(filterData3, tmmNorm)) %>% 
+#   mutate(logData = map(filterData3, logCount)) %>%
+#   mutate(logNormData = map(logData, tmmNorm)) 
+# 
+# 
+# #### EXPORT NORM DATA ####
+# 
+# if(TRUE){   #switch to TRUE if you want to save the output files
+#   apply(filterData, 1, FUN = function(x){
+#     
+#     outData <- x$normData %>%
+#       select(-sample, -dose) %>%
+#       t() %>%
+#       as.data.frame() 
+#     
+#     colnames(outData) <- x$normData$dose
+#     outData <- data.frame(gene=rownames(outData), outData, check.names = FALSE)
+#     
+#     write_delim(outData,
+#                 paste0("RNAseqData/normalizedData/",x$chemical, "_normData.txt"),
+#                 delim = "\t"
+#     )
+#   })
+# }
+# 
+# 
+# ########################
+# 
+# # # plot before normazliation
+# # filterData$logData[[2]] %>%
+# #   select(-dose) %>%
+# #   column_to_rownames("sample") %>%
+# #   #mutate_all(~log2(.+1)) %>%
+# #   as.data.frame() %>%
+# #   t() %>%
+# #   boxplot()
+# # 
+# # 
+# # par(mfrow=c(2,3))
+# # for(i in 1:5){
+# #   # plot before normazliation
+# #   filterData$logNormData[[i]] %>%
+# #     #bind_rows() %>%
+# #     select(-dose) %>%
+# #     column_to_rownames("sample") %>%
+# #     #mutate_all(~log2(.+1)) %>%
+# #     as.data.frame() %>%
+# #     t() %>%
+# #     boxplot(horizontal=TRUE)
+# # }
+# 
+# 
+# 
+# 
+# 
+# #### EXPORT NORM DATA ####
+# 
+# if(TRUE){   #switch to TRUE if you want to save the output files
+#   apply(filterData, 1, FUN = function(x){
+#     
+#     outData <- x$normData %>%
+#       select(-sample, -dose) %>%
+#       t() %>%
+#       as.data.frame() 
+#     
+#     colnames(outData) <- x$normData$dose
+#     outData <- data.frame(gene=rownames(outData), outData, check.names = FALSE)
+#    
+#     write_delim(outData,
+#                 paste0("RNAseqData/normalizedData/",x$chemical, "_normData.txt"),
+#                 delim = "\t"
+#       )
+#   })
+# }
+# 
+# 
+# #### PCA ####
+# # PCA of using prcomp and plotted using autoplot
+# 
+# filterData <- filterData %>%
+#   mutate(PCAplots = map(normData, function(x){
+#     x <- x %>% mutate(controlcol = ifelse(dose == 0, "Control", "Treated"))
+#     x %>%
+#       select(-sample, -dose, -controlcol) %>%
+#       prcomp(center=TRUE, scale.=TRUE) %>%
+#       autoplot(data=x, 
+#                colour="dose", 
+#                # shape = "controlcol",
+#                size = 3) +
+#       theme_bw() +
+#       scale_shape_manual(values = c(15, 16)) +
+#       labs(title = paste(chemical), colour = "Dose(µg/L)", shape = "") +
+#       guides(shape = FALSE) +
+#       theme(plot.title = element_text(hjust = 0.5))
+#   }))
+# 
+# # single plot
+# # nestData$PCAplots[[1]]
+# 
+# # multiplot
+# multiplot(plotlist=filterData$PCAplots, cols=3)
+# 
+# 

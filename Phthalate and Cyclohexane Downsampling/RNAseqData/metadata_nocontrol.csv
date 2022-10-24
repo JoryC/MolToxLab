@@ -1,0 +1,16 @@
+sample,chemical,dose
+DBP_10-1_A-GQReadsPerGene.out.tab,DBP,0.3
+DBP_10-1_B-GQReadsPerGene.out.tab,DBP,0.3
+DBP_10-1_C-GQReadsPerGene.out.tab,DBP,0.3
+DBP_10-2_A-GQReadsPerGene.out.tab,DBP,0.03
+DBP_10-2_B-GQReadsPerGene.out.tab,DBP,0.03
+DBP_10-2_C-GQReadsPerGene.out.tab,DBP,0.03
+DBP_10-3_A-GQReadsPerGene.out.tab,DBP,0.003
+DBP_10-3_B-GQReadsPerGene.out.tab,DBP,0.003
+DBP_10-3_C-GQReadsPerGene.out.tab,DBP,0.003
+DBP_10-4_A-GQReadsPerGene.out.tab,DBP,0.0003
+DBP_10-4_B-GQReadsPerGene.out.tab,DBP,0.0003
+DBP_10-4_C-GQReadsPerGene.out.tab,DBP,0.0003
+DBP_3uM_A-GQReadsPerGene.out.tab,DBP,3
+DBP_3uM_B-GQReadsPerGene.out.tab,DBP,3
+DBP_3uM_C-GQReadsPerGene.out.tab,DBP,3
