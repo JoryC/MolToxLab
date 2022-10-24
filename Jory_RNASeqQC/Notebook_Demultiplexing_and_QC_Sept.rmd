@@ -23,46 +23,35 @@ library(tidyverse)
 library(DT)
 ```
 
-
 ## Notes
 
 ### QIASeq UPXome RNA Library Manual Notes
 
-* Inclusion of QIAseq FastSelect in the workflow enables rapid and efficient removal of
-ribosomal RNA (rRNA) during the preparation of the NGS RNA library -- increases the number of usable reads during
-sequencing
-* Library Indexes (Unique dual-index) are 10-bases long
+-   Inclusion of QIAseq FastSelect in the workflow enables rapid and efficient removal of ribosomal RNA (rRNA) during the preparation of the NGS RNA library -- increases the number of usable reads during sequencing
+-   Library Indexes (Unique dual-index) are 10-bases long
 
+![Recommended reads per sample](./Screenshots/Screenshot%20from%202022-08-23%2009-53-00.png)
 
-![Recommended reads per sample](./Screenshots/Screenshot from 2022-08-23 09-53-00.png)
+-   Qiagen recommends 20 million reads per sample for complete transcriptome sequencing... (We sent 10ng RNA samples)
+-   Qiagen says ideally, RINs should be at or above 8
+    -   Our sample RINs were on average around 7
+-   During reverse transcription, a unique sample ID (10 bases) is incorporated into each transcript
+-   "For standard expression analysis, 74 bp paired-end sequencing with dual 10 bp indexes should be used" -- So reads should be 74bp
+-   Read1
+    -   74bp = 74bp Insert
+-   Read2
+    -   74bp = 10bp Sample_IDs + 6bp Hexamer (leftover from TS mechanism) + 58bp Insert
 
-
-* Qiagen recommends 20 million reads per sample for complete transcriptome sequencing... (We sent 10ng RNA samples)
-* Qiagen says ideally, RINs should be at or above 8
-  * Our sample RINs were on average around 7
-
-
-
-
-* During reverse transcription, a unique sample ID (10 bases) is incorporated into each transcript
-* "For standard expression analysis, 74 bp paired-end sequencing with dual 10 bp indexes should be used" --  So reads should be 74bp
-* Read1
-  * 74bp = 74bp Insert
-* Read2
-  * 74bp = 10bp Sample_IDs + 6bp Hexamer (leftover from TS mechanism) + 58bp Insert
-
-![Library Workflow](./Screenshots/Screenshot from 2022-08-23 11-16-32.png)
+![Library Workflow](./Screenshots/Screenshot%20from%202022-08-23%2011-16-32.png)
 
 ![Library Structure](./Screenshots/SMART.png)
 
-* Sam provided this description of what the library structure looks like (before adapter trimming):
-  * CTACACGACGCTCTTCCGATCT[22bp]--[Insert]--CCCTGC[6bp]--[10bpID]--AGATCGGAAGAGCACACGTCTG[22bp]
-
+-   Sam provided this description of what the library structure looks like (before adapter trimming):
+    -   CTACACGACGCTCTTCCGATCT[22bp]--[Insert]--CCCTGC[6bp]--[10bpID]--AGATCGGAAGAGCACACGTCTG[22bp]
 
 Our Sequences had a per-base sequence-read structure as follows:
 
 ![Read structure](./Screenshots/Per-Base-Sequence-Read.png)
-
 
 Note: The fastq files we have, are already demultiplexed into their respective pools by UDI... The UDIs are contained in the headers of the fastq files (I will prove this later in the notebook). The sample IDs are still contained in the Read2s for each set of paired-end fastq files.
 
@@ -78,7 +67,6 @@ READ1=*R1_001.fastq.gz
 READ2=*R2_001.fastq.gz
 ~/anaconda3/bin/demultiplex demux -r -e 10 ~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files/Sample_IDs.tsv $READ2 $READ1
 ```
-
 
 ```{bash, eval=FALSE}
 # First, make sure there are only the un-demultiplexed read 1 and read 2 files present in directory & the small `demultiplex_script.sh`
@@ -168,11 +156,9 @@ write_csv(x = tib_demux_fastqc_dat, file = "~/MastersBackup/Data/Qiaseq_UPXome_W
 tib_demux_fastqc_dat <- read_csv("~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files/Demultiplexed_Fastq_Files/Demux_N_Reads.csv")
 ```
 
-
 ```{r, echo=FALSE, include=FALSE}
 Sample_Multiplex_IDs <- read_tsv(file = "~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files/Demultiplexed_Fastq_Files/Sample_Multiplex_IDs.csv")
 ```
-
 
 ### Demultiplex Report
 
@@ -205,4 +191,140 @@ Demux_data_by_sample <- tib_demux_fastqc_dat %>%
   arrange(Chemical, Dose)
 
 datatable(Demux_data_by_sample)
+```
+
+```{bash Fastpp_whole_dir, eval=FALSE}
+#!/bin/bash
+
+for READ1 in *R1*.fastq.gz
+do
+READ2=${READ1%%R1*.fastq.gz}"R2_001"${READ1#*_001*}
+SAMPLE=${READ2%%_R2*fastq.gz}${READ2#*_001}
+~/anaconda3/bin/fastp --in1 $READ1 \
+--out1 Trimmed/${READ1} \
+--in2  $READ2 \
+--out2 Trimmed/${READ2} \
+--html Trimmed/${SAMPLE}"_PE_fastp.html" \
+--json Trimmed/${SAMPLE}"_PE_fastp.json" \
+-U \
+--umi_loc=read2 \
+--umi_len=10 \
+--trim_front2 6 \
+--trim_front1 6 \
+--trim_tail1 2 \
+--trim_tail2 2 \
+--disable_trim_poly_g \
+--cut_front \
+--cut_tail \
+--length_required 36
+done
+
+```
+
+
+```{bash fastpp_whole_dir_take_2, eval=FALSE}
+#!/bin/bash
+
+for READ1 in *R1*.fastq.gz
+do
+READ2=${READ1%%R1*.fastq.gz}"R2_001"${READ1#*_001*}
+SAMPLE=${READ2%%_R2*fastq.gz}${READ2#*_001}
+~/anaconda3/bin/fastp --in1 $READ1 \
+--out1 Trimmed/${READ1} \
+--in2  $READ2 \
+--out2 Trimmed/${READ2} \
+--html Trimmed/${SAMPLE}"_PE_fastp.html" \
+--json Trimmed/${SAMPLE}"_PE_fastp.json" \
+-U \
+--umi_loc=read2 \
+--umi_len=10 \
+--trim_front2 6 \
+--disable_trim_poly_g \
+--cut_front \
+--cut_tail \
+--detect_adapter_for_pe \
+--length_required 36
+done
+
+
+```
+
+
+```{bash Copy_Fastp_Whole_Dir_Script_to_Each_Dir, eval=FALSE}
+search_dir=~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files/Demultiplexed_Fastq_Files
+for entry in "$search_dir"*/*/*/
+do
+cp ${search_dir}"/fastp_whole_dir.sh" $entry
+echo "Copied to " $entry
+done
+```
+
+```{bash Fastpp_loop, eval=FALSE}
+
+search_dir=~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files/Demultiplexed_Fastq_Files
+for entry in "$search_dir"*/*/*/
+do
+cd $entry
+bash fastp_whole_dir.sh
+done
+
+```
+
+```{bash, eval=FALSE}
+# Perform fastqc on all of the fastq.gz files in a (this) directory
+
+search_dir=~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files/Demultiplexed_Fastq_Files
+for entry in "$search_dir"*/*/*/Trimmed
+do
+cp ${search_dir}"/fastqc_whole_dir.sh" $entry
+echo "fastqc_whole_dir.sh copied to" $entry
+done
+
+
+```
+
+```{bash, eval=FALSE}
+search_dir=~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files/Demultiplexed_Fastq_Files
+for entry in "$search_dir"*/*/*/Trimmed
+do
+cd $entry
+bash fastqc_whole_dir.sh
+done
+```
+
+```{bash, eval=FALSE}
+search_dir=~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files/Demultiplexed_Fastq_Files
+cd $search_dir
+/home/joryc/anaconda3/bin/multiqc --interactive --file-list Fastp_Trimmed_Multiqc_input_Files.txt
+```
+
+```{bash, eval=FALSE}
+search_dir=~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files/Demultiplexed_Fastq_Files
+cd $search_dir
+/home/joryc/anaconda3/bin/multiqc --file-list Known_Samples_Fastp_Filepaths.txt
+```
+
+```{bash Fastpp, eval=FALSE}
+<!-- cd ~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files/Demultiplexed_Fastq_Files/Pool-ID-1/L001/Test -->
+
+<!-- READ1=*R1*.fastq.gz -->
+<!-- READ2=*R2*.fastq.gz -->
+
+<!-- ~/anaconda3/bin/fastp --in1 $READ1 \ -->
+<!-- --out1 Trimmed/${READ1} \ -->
+<!-- --in2  $READ2 \ -->
+<!-- --out2 Trimmed/${READ2} \ -->
+<!-- --html ${SAMPLE}"PE_fastp.html" \ -->
+<!-- -U \ -->
+<!-- --umi_loc=read2 \ -->
+<!-- --umi_len=10 \ -->
+<!-- --trim_front2 6 \ -->
+<!-- --trim_front1 6 \ -->
+<!-- --trim_tail1 2 \ -->
+<!-- --trim_tail2 2 \ -->
+<!-- --disable_trim_poly_g \ -->
+<!-- --cut_front \ -->
+<!-- --cut_tail \ -->
+<!-- --length_required 36 -->
+
 ```

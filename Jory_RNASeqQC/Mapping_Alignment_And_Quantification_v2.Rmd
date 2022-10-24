@@ -1,0 +1,571 @@
+---
+title: "Mapping_Alignment_And_Quantification_v2"
+author: "Jory Curry"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+library(tximport)
+library(tidyverse)
+library(DT)
+library(DESeq2)
+```
+
+
+```{bash, eval=FALSE}
+# Install salmon from the verion release page on github (https://github.com/COMBINE-lab/salmon/releases)
+# Extract
+tar xzvf salmon-1.9.0_linux_x86_64.tar.gz
+```
+
+```{bash, eval=FALSE}
+# Add extracted salmon folder to $HOME/bin, then add to $PATH
+# Add this line to .profile or .bash_profile or .bashrc
+for d in $HOME/bin/*; do PATH="$PATH:$d/bin"; done
+```
+
+```{bash, eval=FALSE}
+# Install other dependencies
+
+# Boost_1_80_0 (https://www.boost.org/doc/libs/1_80_0/more/getting_started/unix-variants.html)
+  # navigae to directory
+  tar --bzip2 -xf ./boost_1_80_0.tar.bz2
+  # build
+  mkdir ~/boost
+  DST_DIR=${HOME}/boost
+  ./bootstrap.sh --prefix=${DST_DIR}
+  # install
+  ./b2 install --prefix=${DST_DIR}
+  
+# MashMap (https://github.com/marbl/MashMap)
+  # Clone repo
+  mkdir ~/git
+  cd ~/git
+  git clone https://github.com/marbl/MashMap
+  cd ./MashMap
+  autoupdate
+  ./bootstrap.sh
+  ./configure --with-boost=${HOME}/boost
+  make
+  cd ..
+  cp ./MashMap ~/bin
+  
+# bedtools2
+sudo apt install bedtools
+
+```
+
+## Salmon Tutorial
+Reference (https://combine-lab.github.io/salmon/getting_started/)
+
+#### Obtaining a transcriptome and building an index
+
+In order to quantify transcript-level abundances, Salmon requires a target *transcriptome*. This transcriptome is given to Salmon in the form of a (possibly compressed) multi-FASTA file, with each entry providing the sequence of a transcript^[1](https://combine-lab.github.io/salmon/getting_started/#fn:1)^. For this example, we'll be analyzing some *Arabidopsis thaliana* data, so we'll download and index the *A. thaliana* transcriptome. First, create a directory where we'll do our analysis, let's call it `salmon_tutorial`:
+
+```{bash, eval=FALSE}
+mkdir salmon_tutorial
+cd salmon_tutorial
+```
+
+Now, download the transcriptome:
+
+```{bash, eval=FALSE}
+curl ftp://ftp.ensemblgenomes.org/pub/plants/release-28/fasta/arabidopsis_thaliana/cdna/Arabidopsis_thaliana.TAIR10.28.cdna.all.fa.gz -o athal.fa.gz
+```
+
+
+Here, we've used a reference transcriptome for *Arabidopsis*. However, one of the benefits of performing quantification directly on the transcriptome (rather than via the host genome), is that one can easily quantify assembled transcripts as well (obtained via software such as [StringTie](https://ccb.jhu.edu/software/stringtie/) for organisms with a reference or [Trinity](https://github.com/trinityrnaseq/trinityrnaseq/wiki) for *de novo* RNA-seq experiments).
+
+Next, we're going to build an *index* on our transcriptome. The index is a structure that salmon uses to [quasi-map](http://bioinformatics.oxfordjournals.org/content/32/12/i192.abstract) RNA-seq reads during quantification. The index need only be constructed once per transcriptome, and it can then be reused to quantify many experiments. We use the *index* command of salmon to build our index:
+
+```{bash, eval=FALSE}
+salmon index -t athal.fa.gz -i athal_index
+```
+
+
+There are a number of different options you can pass to the indexer to change its behavior (read more about those [here](http://salmon.readthedocs.io/en/latest/)), but the default should work well for most data.
+
+#### Obtaining sequencing data
+
+In addition to the *index*, salmon obviously requires the RNA-seq reads from the experiment to perform quantification. In this tutorial, we'll be analyzing data from [this 4-condition experiment](https://www.ebi.ac.uk/ena/data/view/DRP001761) [accession PRJDB2508]. You can use the following shell script to obtain the raw data and place the corresponding read files in the proper locations. Here, we're simply placing all of the data in a directory called `data`, and the left and right reads for each sample in a sub-directory labeled with that sample's ID (i.e. `DRR016125_1.fastq.gz` and `DRR016125_2.fastq.gz` go in a folder called `data/DRR016125`).
+
+
+```{bash, eval=FALSE}
+#!/bin/bash
+mkdir data
+cd data
+for i in `seq 25 40`; 
+do 
+  mkdir DRR0161${i}; 
+  cd DRR0161${i}; 
+  wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/DRR016/DRR0161${i}/DRR0161${i}_1.fastq.gz; 
+  wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/DRR016/DRR0161${i}/DRR0161${i}_2.fastq.gz; 
+  cd ..; 
+done
+cd .. 
+```
+
+We'll place these commands in a script called [`dl_tut_reads.sh`](https://raw.githubusercontent.com/COMBINE-lab/salmon/gh-pages/assets/dl_tut_reads.sh). To download the data, just run the script and wait for it to complete:
+
+```{bash, eval=FALSE}
+bash dl_tut_reads.sh
+```
+
+*Now might be a good time to grab a cup of coffee (or tea)*.
+
+#### Quantifying the samples
+
+Now that we have our index built and all of our data downloaded, we're ready to quantify our samples. Since we'll be running the same command on each sample, the simplest way to automate this process is, again, a simple shell script ([`quant_tut_samples.sh`](https://raw.githubusercontent.com/COMBINE-lab/salmon/gh-pages/assets/quant_tut_samples.sh)):
+
+
+```{bash, eval=FALSE}
+#!/bin/bash
+for fn in data/DRR0161{25..40};
+do
+samp=`basename ${fn}`
+echo "Processing sample ${samp}"
+salmon quant -i athal_index -l A \
+-1 ${fn}/${samp}_1.fastq.gz \
+-2 ${fn}/${samp}_2.fastq.gz \
+-p 4 --validateMappings -o quants/${samp}_quant
+done 
+```
+
+This script simply loops through each sample and invokes `salmon` using fairly barebone options. The `-i` argument tells salmon where to find the index `-l A` tells salmon that it should automatically determine the library type of the sequencing reads (e.g. stranded vs. unstranded etc.). The `-1` and `-2` arguments tell salmon where to find the left and right reads for this sample (notice, salmon will accept gzipped FASTQ files directly). Finally, the `-p 4` argument tells salmon to make use of 4 threads and the `-o` argument specifies the directory where salmon's quantification results should be written. Salmon exposes *many* different options to the user that enable extra features or modify default behavior. However, the purpose and behavior of all of those options is beyond the scope of this introductory tutorial. You can read about salmon's many options in the [documentation](http://salmon.readthedocs.io/en/latest/).
+
+After the salmon commands finish running, you should have a directory named `quants`, which will have a sub-directory for each sample. These sub-directories contain the quantification results of salmon, as well as a lot of other information salmon records about the sample and the run. The main output file (called `quant.sf`) is rather self-explanatory. For example, take a peek at the quantification file for sample `DRR016125` in `quants/DRR016125/quant.sf` and you'll see a simple TSV format file listing the name (`Name`) of each transcript, its length (`Length`), effective length (`EffectiveLength`) (more details on this in the documentation), and its abundance in terms of Transcripts Per Million (`TPM`) and estimated number of reads (`NumReads`) originating from this transcript.
+
+
+## Using Salmon with our ZF data
+
+
+Create directory for running salmon
+```{bash, eval=FALSE}
+mkdir ~/MastersBackup/salmon_UPXome
+cd ~/MastersBackup/salmon_UPXome
+```
+
+Create an index for salmon to use
+```{bash, eval=FALSE}
+# Download Genome fasta file
+curl http://ftp.ensembl.org/pub/release-107/fasta/danio_rerio/dna/Danio_rerio.GRCz11.dna.primary_assembly.fa.gz -o Danio_rerio.GRCz11.dna.primary_assembly.fa.gz
+# Download transcriptome fasta file
+curl http://ftp.ensembl.org/pub/release-107/fasta/danio_rerio/cdna/Danio_rerio.GRCz11.cdna.all.fa.gz -o Danio_rerio.GRCz11.cdna.all.fa.gz
+# Download gene annotation (gene transfer format - .gtf - file)
+curl http://ftp.ensembl.org/pub/release-107/gtf/danio_rerio/Danio_rerio.GRCz11.107.gtf.gz -o Danio_rerio.GRCz11.107.gtf.gz
+# Download gene features
+curl https://www.umassmed.edu/globalassets/lawson-lab/downloadfiles/v4_3_2geneinfo.txt -o Danio_rerio_Geneinfo_v4_3_2.tsv
+```
+
+
+```{bash, eval=FALSE}
+
+# Copy script from github to create a decoy index file for salmon
+
+# In shell I use nano to create the file
+nano generateDecoyTranscriptome.sh
+
+#!/bin/bash
+# Using getopt
+
+abort()
+{
+    echo >&2 '
+***************
+*** ABORTED ***
+***************
+'
+    echo "An error occurred. Exiting..." >&2
+    exit 1
+}
+
+trap 'abort' 0
+
+set -e
+
+###############################################
+## It assumes awk, bedtools and mashmap is 
+## available.
+## We have tested this script with 
+## awk 4.1.3, bedtools v2.28.0 and mashmap v2.0 
+## on an Ubuntu system.
+###############################################
+
+threads=1
+awk="awk"
+bedtools="bedtools"
+mashmap="mashmap"
+
+# Argument Parsing
+print_usage_and_exit () {
+    echo "Usage: $0 [-j <N> =1 default] [-b <bedtools binary path> =bedtools default] [-m <mashmap binary path> =mashmap default] -a <gtf file> -g <genome fasta> -t <txome fasta> -o <output path>"
+    exit 1
+}
+
+echo "****************"
+echo "*** getDecoy ***"
+echo "****************"
+while getopts ":a:b:o:j:h:g:t:m:" opt; do
+    case $opt in
+        b)
+            bedtools=`realpath $OPTARG`
+            echo "-b <bedtools binary> = $bedtools"
+            ;;
+        m)
+            mashmap=`realpath $OPTARG`
+            echo "-m <mashmap binary> = $mashmap"
+            ;;
+        a)
+            gtffile=`realpath $OPTARG`
+            echo "-a <Annotation GTF file> = $gtffile"
+            ;;
+        o)
+            outfolder="$OPTARG"
+            echo "-o <Output files Path> = $outfolder"
+            ;;
+        j)
+            threads="$OPTARG"
+            echo "-j <Concurrency level> = $threads"
+            ;;
+        g)
+            genomefile=`realpath $OPTARG`
+            echo "-g <Genome fasta> = $genomefile"
+            ;;
+        t)
+            txpfile=`realpath $OPTARG`
+            echo "-t <Transcriptome fasta> = $txpfile"
+            ;;
+        h)
+            print_usage_and_exit
+            ;;
+        \?)
+            echo "Invalid option: -$OPTARG"
+            print_usage_and_exit
+            ;;
+        :)
+            echo "Option -$OPTARG requires an argument."
+            print_usage_and_exit
+            ;;
+    esac
+done
+
+# Required arguments
+if [ -z "$gtffile" -o -z "$outfolder" -o -z "$genomefile" -o -z "$txpfile" -o -z "$mashmap" -o -z "$awk" -o -z "$bedtools" -o -z "$threads" ]
+then
+    echo "Error: missing required argument(s)"
+    print_usage_and_exit
+fi
+
+mkdir -p $outfolder
+cd $outfolder
+
+# extracting all the exonic features to mask
+echo "[1/10] Extracting exonic features from the gtf"
+$awk -v OFS='\t' '{if ($3=="exon") {print $1,$4,$5}}' $gtffile > exons.bed
+
+# masking the exonic regions from the genome
+echo "[2/10] Masking the genome fasta"
+$bedtools maskfasta -fi $genomefile -bed exons.bed -fo reference.masked.genome.fa
+
+# aligning the transcriptome to the masked genome
+echo "[3/10] Aligning transcriptome to genome"
+$mashmap -r reference.masked.genome.fa -q $txpfile -t $threads --pi 80 -s 500
+
+# extracting the bed files from the reported alignment
+echo "[4/10] Extracting intervals from mashmap alignments"
+$awk -v OFS='\t' '{print $6,$8,$9}' mashmap.out | sort -k1,1 -k2,2n - > genome_found.sorted.bed
+
+# merging the reported intervals
+echo "[5/10] Merging the intervals"
+$bedtools merge -i genome_found.sorted.bed > genome_found_merged.bed
+
+# extracting relevant sequence from the genome
+echo "[6/10] Extracting sequences from the genome"
+$bedtools getfasta -fi reference.masked.genome.fa -bed genome_found_merged.bed -fo genome_found.fa
+
+# concatenating the sequence at per chromsome level to extract decoy sequences
+echo "[7/10] Concatenating to get decoy sequences"
+$awk '{a=$0; getline;split(a, b, ":");  r[b[1]] = r[b[1]]""$0} END { for (k in r) { print k"\n"r[k] } }' genome_found.fa > decoy.fa
+
+# concatenating decoys to transcriptome
+echo "[8/10] Making gentrome"
+cat $txpfile decoy.fa > gentrome.fa
+
+# extracting the names of the decoys
+echo "[9/10] Extracting decoy sequence ids"
+grep ">" decoy.fa | $awk '{print substr($1,2); }' > decoys.txt
+
+# removing extra files
+echo "[10/10] Removing temporary files"
+rm exons.bed reference.masked.genome.fa mashmap.out genome_found.sorted.bed genome_found_merged.bed genome_found.fa decoy.fa reference.masked.genome.fa.fai
+
+trap : 0
+echo >&2 '
+**********************************************
+*** DONE Processing ...
+*** You can use files `$outfolder/gentrome.fa` 
+*** and $outfolder/decoys.txt` with 
+*** `salmon index`
+**********************************************
+'
+```
+
+```{bash, eval=FALSE}
+# Run the script to index the transcriptome and output index file
+bash generateDecoyTranscriptome.sh -j 1 -b /usr/bin/bedtools -m /home/joryc/bin/MashMap/bin/mashmap -a Danio_rerio_v4.3.2.gtf -g Danio_rerio.GRCz11.dna.primary_assembly.fa.gz -t Danio_rerio.GRCz11.cdna.all.fa.gz -o /home/joryc/MastersBackup/salmon_UPXome/index
+```
+
+```{bash, eval=FALSE}
+# The previous command is extremely resource intensive and won't run on my local PC so I am going to do the simpler steps of creating my own index as described here (https://combine-lab.github.io/alevin-tutorial/2019/selective-alignment/)
+
+# Extract genome targets
+grep "^>" <(gunzip -c Danio_rerio.GRCz11.dna.primary_assembly.fa.gz) | cut -d " " -f 1 > decoys.txt
+sed -i.bak -e 's/>//g' decoys.txt
+
+# Concatenate the genome and transcriptome together
+cat Danio_rerio.GRCz11.cdna.all.fa.gz Danio_rerio.GRCz11.dna.primary_assembly.fa.gz > gentrome.fa.gz
+
+# Index (kmer length ref https://www.biostars.org/p/336854/)
+salmon index -k 29 -t gentrome.fa.gz -d decoys.txt -i salmon_index --gencode Danio_rerio.GRCz11.107.gtf.gz
+```
+
+kmer 31 = 67.75%
+kmer 29 = 67.74%
+kmer 27 = 67.68%
+kmer 25 = 67.59%
+kmer 23 = 67.48%
+kmer 21 = 67.37%
+kmer 19 = Job killed
+kmer 17 = Job killed
+
+```{bash, eval=FALSE}
+salmon quant -i salmon_index -l A -1 Pool-ID-1_S1_L001_R1_001_A01.fastq.gz -2 Pool-ID-1_S1_L001_R2_001_A01.fastq.gz --validateMappings --useVBOpt --seqBias -o transcripts_quant
+```
+
+
+```{r, eval=FALSE}
+list_of_fastq_files <- read_delim(file = "~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files/Demultiplexed_Fastq_Files/Full_filepaths_to_trimmed_fastq_files.txt", delim = "\t", col_names = FALSE)
+
+list_of_fastq_files <- list_of_fastq_files %>%
+  mutate(X2 = str_split(string = list_of_fastq_files$X1, pattern = "/", simplify = TRUE)[,10]) %>%
+  mutate(Pool = str_split(string = X2, pattern = "_", simplify = TRUE)[,1],
+         Text2 = str_split(string = X2, pattern = "_", simplify = TRUE)[,2],
+         Lane = str_split(string = X2, pattern = "_", simplify = TRUE)[,3], 
+         Read = str_split(string = X2, pattern = "_", simplify = TRUE)[,4], 
+         Text2 = str_split(string = X2, pattern = "_", simplify = TRUE)[,5], 
+         Sample = str_split(string = X2, pattern = "_", simplify = TRUE)[,6])
+
+list_of_fastq_files %>%
+  group_by(Sample, Read) %>%
+  tally()
+```
+
+```{bash, eval = FALSE}
+# Make directories for each sample
+cd ~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files/Demultiplexed_Fastq_Files
+
+
+for LETTER in {A..H};
+do
+  for NUMBER in {01..12}
+  do
+    mkdir ${LETTER}${NUMBER}
+  done;
+done
+
+
+
+for LETTER in {A..H};
+do
+  for NUMBER in {01..12}
+  do
+    mkdir ${LETTER}${NUMBER}/Pooled
+  done;
+done
+```
+
+```{bash, eval=FALSE}
+cd ~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files/Demultiplexed_Fastq_Files
+# Go into each trimmed directory that contains the iteration of the sample id (A01...H12), and copy it into its parent directory
+for LETTER in {A..H};
+do
+  for NUMBER in {01..12};
+  do
+    WELL=${LETTER}${NUMBER}
+    echo "Printing $WELL"
+    for SAMPLE in ./Pool-ID*/*/Trimmed/*${LETTER}${NUMBER}.fastq.gz
+    do
+    cp ${SAMPLE} ./${LETTER}${NUMBER}/Pooled
+    done;
+  done;
+done
+```
+
+
+```{bash, eval=FALSE}
+#Go into each sample directory and create a list of all of the read1s and read2s to use later on in our salmon quant loop
+
+WD=~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files/Demultiplexed_Fastq_Files
+cd $WD
+# 
+for LETTER in {A..H};
+do
+  for NUMBER in {01..12};
+  do
+    WELL=${LETTER}${NUMBER}
+    echo "Creating list of Read1s and Read2s for $WELL"
+    for SAMPLE in ./${WELL}/Pooled/
+    do
+    cd $WD/${WELL}
+    find "$(pwd -P)" -name "*.fastq.gz" | grep -e "_R1" | sed "s|^\.||" | sort | paste -sd " " > ${WELL}R1.list
+    find "$(pwd -P)" -name "*.fastq.gz" | grep -e "_R2" | sed "s|^\.||" | sort | paste -sd " " > ${WELL}R2.list
+    done;
+  done;
+done
+```
+
+
+```{bash, eval=FALSE}
+#Quantify files in a while loop
+
+
+
+WD=~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files/Demultiplexed_Fastq_Files
+cd $WD
+
+for LETTER in {A..H};
+do
+  for NUMBER in {01..12};
+  do
+  WELL=${LETTER}${NUMBER}
+  cd $WD/${WELL}
+  echo "Quantifying ${WELL} Samples"
+    for RUN in $WD/${WELL};
+    do
+    mkdir -p Output/
+    mkdir -p Output/Salmon/
+    READ1=$(cat ${WELL}R1.list)
+    READ2=$(cat ${WELL}R2.list)
+    echo -e "\n"
+    echo -e "--Input file(s) is/are:\n""READ1:${READ1}""\n\n""READ2:${READ2}"
+    OUTDIR=$(echo "${WELL}_OUT")
+    echo -e "\n\n--Output directory is:\tOutput/Salmon/""${OUTDIR}"
+    mkdir -p "Output/Salmon/""${OUTDIR}"
+    cd $WD/${WELL}
+    salmon quant \
+    --index ~/MastersBackup/salmon_UPXome/salmon_index \
+    -l A \
+    --seqBias \
+    --useVBOpt \
+    -1 $READ1 \
+    -2 $READ2 \
+    --reduceGCMemory \
+    --validateMappings \
+    --output="Output/Salmon/""${OUTDIR}"
+    done;
+  done;
+done
+```
+
+Extract Sample_ids from gtf file
+```{bash, eval=FALSE}
+#!/bin/bash
+#Extract gene names, gene ids, transcript ids, and biotypes from GTF file (pass gtf file as argument '$1' to script)
+grep gene_name $1 \
+| grep transcript_id \
+| grep gene_id \
+| grep gene_biotype \
+| sed -E 's/.*gene_id \"(ENSDARG[0-9]+)\";.+transcript_id \"(ENSDART[0-9]+)\";.*gene_name \"([^\"]+)\";.*gene_biotype \"([^\"]+)\";.+/\1\t\2\t\3\t\4/' > tx2gene.tev
+```
+
+Install TxImport and ensembledb which will be used to summarize transcript abundance data to the gene-level
+```{r, warning=FALSE, message=FALSE}
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("tximport")
+
+browseVignettes("tximport")
+
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("ensembldb")
+
+browseVignettes("ensembldb")
+
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("tximeta")
+
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("DESeq2")
+```
+
+```{r, include=FALSE}
+salmon_files <- list.files(path = "~/MastersBackup/Data/Qiaseq_UPXome_Whole_transcriptome_results/Compressed_Fastq_Files/Demultiplexed_Fastq_Files/", pattern = ".sf", full.names = TRUE, recursive = TRUE)
+```
+
+
+```{r, include=FALSE}
+tx2gene <- list.files(path = "/home/joryc/MastersBackup/salmon_UPXome", pattern = ".tev", full.names = TRUE)
+tx2gene <- read_tsv(file = tx2gene, col_names = FALSE)
+colnames(tx2gene) <- c("GENEID", "TXNAME", "GENENAME", "BIOTYPE")
+
+tx2gene <- tx2gene[which(duplicated(tx2gene) == FALSE),]
+tx2gene <- tx2gene %>%
+  select(TXNAME, GENEID)
+```
+
+```{r, include=FALSE}
+# Ignore Transcript versions in the quant.sf file and adjust the counts data to account for transcript length and library size
+txi <- tximport(files = salmon_files, type = "salmon", tx2gene = tx2gene, ignoreTxVersion = TRUE, countsFromAbundance = "lengthScaledTPM")
+```
+
+```{r, echo=FALSE}
+colnames(txi$counts) <- paste0(rep(LETTERS[1:8], each = 12), rep(01:12, each = 1))
+
+DT::datatable(head(txi$counts, n = 100))
+```
+
+
+```{r, include=FALSE, echo=FALSE}
+cols <- paste0(rep(LETTERS[1:8], each = 12), rep(01:12, each = 1))
+sampleTable <- data.frame(condition = factor(cols))
+rownames(sampleTable) <- colnames(txi$counts)
+
+txi$counts[is.na(txi$counts)] <- 0
+dds <- DESeqDataSetFromTximport(txi, sampleTable, ~condition)
+```
+
+
+```{r, include=FALSE, echo=FALSE}
+# Do not use this for DESeq2
+for (i in 1:length(colnames(txi$counts))){
+  column <- colnames(txi$counts)[i]
+  counts <- rownames_to_column(as.data.frame(txi$counts), "gene")
+  temp <- counts %>%
+    select(gene, all_of(column))
+  names(temp)[2]="Counts"
+  names(temp)[1]=column
+  write_csv(x = temp, file = paste0(column, "Gene_Counts_Data_UPXome-Salmon.csv"), col_names = TRUE)
+}
+```
+
+```{r}
+# Use this for DESeq2
+for (i in 1:length(colnames(dds@assays@data@listData[["counts"]]))){
+  column <- colnames(dds@assays@data@listData[["counts"]])[i]
+  counts <- rownames_to_column(as.data.frame(dds@assays@data@listData[["counts"]]), "gene")
+  temp <- counts %>%
+    select(gene, all_of(column))
+  names(temp)[2]="Counts"
+  names(temp)[1]=column
+  write_csv(x = temp, file = paste0(column, "Gene_Counts_Data_UPXome-Salmon.csv"), col_names = TRUE)
+}
+```
+
