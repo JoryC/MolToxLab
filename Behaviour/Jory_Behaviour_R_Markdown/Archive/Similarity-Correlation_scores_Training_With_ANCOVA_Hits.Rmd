@@ -12,7 +12,7 @@ output:
     theme: readable
 params:
   value: totaldist
-  sample_size: 100
+  sample_size: 10
 ---
 
 ```{r 1setup, include=FALSE}
@@ -91,12 +91,50 @@ lfishBehavDat <- split(as.data.frame(lfishBehavDat), ~ plate_id) # Split into li
 # chemicalNames <- chemicalNames[-which(chemicalNames %in% c("BPAF", "24DMP"))]
 ```
 
-The analysis pipeline included in this report was adapted from [Hsieh et al 2019](https://pubmed.ncbi.nlm.nih.gov/30321397/).\
+Curvep is a heuristic algorithm for dose-response curve processing. It assumes monotonicity, but does not fit curve to observed responses (as isotonic regression). Instead, it minimizes the number of corrections that need to be made to restore monotonicity.
+OR
+CurveP assumes each dose–response curve has to exhibit monotonic behavior: increasing, decreasing, or flat (constant), and tries to find a minimal set of correctable test points to achieve that
+
+Key parameters are 
+	baseline noise threshold (-THR=) - points with smaller response are suppressed
+	maximum allowed deviation from the  monotonicity (-MXDV=) - affects adjacent points
+	range of response values (-RNG=) - can be negative (e.g., inhibition) or positive (e.g., agonism)
+	
+Curvep adjusts data points that violate monotonic concentration-response pattern and suppresses near-baseline noise using a user-defined
+baseline noise threshold (AKA, BMR)
+
+The POD (BMD for similarity scores) is defined as the concentration at which the response exceeds the assay-dependent noise threshold and is calculated by linear interpolation between the two concentration points, where their range of response includes the noise threshold.
+
+The wAUC is the product of the point of departure (POD) and the AUC, normalized by the test concentration range:
+
+wAUC = (AUC/range of concentration)*POD
+
+I propose: instead of flagging active chemicals with an ANOVA (because we are violating normality assumptions) we use an approach similar to the following (which the authors of the RcurveP package have done before):
+
+![Pipeline](./Data/Screenshot from 2022-11-02 16-49-39.png)   
+
+
+CurveP’s major limitation is its tacit dependency on a given order of test concentrations. Those are treated as a predefined sequence of measurements, and in case of irregularly spaced test concentrations or changes in their number or range for different samples, the comparisons of resulting CurveP values will be biased. 
+
+```{r 10Distribution_of_concentrations, echo=FALSE, message=FALSE, warning=FALSE}
+qplot(x = log10(Dose_mg_L), data = fishBehavDat, xlab = "log10(Dose in mg/L)", ylab = "count", main = "Distribution of dose concentrations")
+```
+
+CurveP is biased towards those samples that fall under the log dose range of -5 (0.00001mg/L) to 1 (10mg/L).
+
+Those chemicals that have dose range beyond this include:
+- DMF (Highest 1000)
+- TEG (Highest 100)
+- EE2 (Lowest 0.0000001)
+
+Therefore, I think that should be excluded from the training set.
+
+The analysis pipeline included in this report was adapted from [Hsieh et al 2018](https://pubmed.ncbi.nlm.nih.gov/30321397/).\
 \
 The general workflow is to first, calculate similarity scores (Pearson's correlation coefficient/ Spearman's rank-order correlation coefficient) for observations, normalize data to the median of control group, then perform statistical analyses and post-hoc tests (ANCOVA, Dunnett's test). Data are noise-filtered using [Rcurvep package](https://github.com/moggces/Rcurvep) prior to model fitting. Finally, a benchmark dose (BMD) is estimated for each chemical after fitting the data to various dose-response models.\
 \
 RcurveP is a tunable, heuristic, and non-parametric noise-filtering algorithm that attempts to find the minimum number of corrections possible that would produce a monotonic dose-response relationship. RcurveP assumes that the dose-response relationship follows a monotonic behaviour (increasing, decreasing or flat) and attempts to find a set of minimally corrected response values that fit that behaviour ( [Sedykh A.](https://pubmed.ncbi.nlm.nih.gov/27518631/) ).\
-Naturally, zebrafish behavioural data is complex and noisy. Normalization of transformed data is a preliminary step pior to RCurveP to help reduce the noise of the raw data within different plates/experiments.
+Naturally, zebrafish behavioural data is complex and noisy. Normalization of transformed data is a preliminary step prior to RCurveP to help reduce the noise of the raw data within different plates/experiments.
 \
 Similarity endpoints are calculated by iteratively performing pairwise comparisons between chemical-treated fish across the duration of the experiment, and all of the chemically treated treated embryos (e.g. embryo_id Dose1_1 vs embryo_id Control_1, embryo_id Dose1_1 vs embryo_id Control_2, embryo_id Dose1_1 vs embryo_id Control_3... embryo_id Dose1_1 vs embryo_id Control_9). After nine iterations (Control group n = 9), the mean Pearson's correlation coefficient/Spearman's rank-order correlation coefficient is used as the similarity endpoint.\
 
@@ -233,12 +271,21 @@ for(i in chemicalNames) {
 summarystats_list_nobin_spearman <- lapply(simi_norm_nobin_spearman, summarystats)
 ```
 
+
+
 #### ANCOVA
 
 ```{r 49.2_Removing_Outliers, include=FALSE}
 temp_pearson <-
   ldply(simi_norm_nobin_pearson) %>% #Convert from list to tibble
   mutate(.id = NULL)
+
+#### Testing for Normal Distribution
+qqnorm(temp_pearson$endpoint_value_norm)
+qqline(temp_pearson$endpoint_value_norm)
+shapiro.test(temp_pearson$endpoint_value_norm)
+# Data are not normally distributed. Thus violating an assumption of ANCOVA
+
 
 temp_pearson <- temp_pearson %>%
   group_by(plate_id, dose) %>%
@@ -255,6 +302,14 @@ outliers_pearson <- temp_pearson %>%
 temp_pearson <- temp_pearson %>%
   anti_join(outliers_pearson)
 
+
+#### Testing for Normal Distribution after removing outliers
+qqnorm(temp_pearson$endpoint_value_norm)
+qqline(temp_pearson$endpoint_value_norm)
+shapiro.test(temp_pearson$endpoint_value_norm)
+# Data are not normally distributed. Thus violating an assumption of ANCOVA
+
+
 simi_norm_nobin_pearson <- temp_pearson %>%
   group_by(plate_id) %>%
   group_split(.keep = FALSE) %>%
@@ -265,6 +320,12 @@ simi_norm_nobin_pearson <- temp_pearson %>%
 temp_spearman <-
   ldply(simi_norm_nobin_spearman) %>% #Convert from list to tibble
   mutate(.id = NULL)
+
+#### Testing for Normal Distribution
+qqnorm(temp_spearman$endpoint_value_norm)
+qqline(temp_spearman$endpoint_value_norm)
+shapiro.test(temp_spearman$endpoint_value_norm)
+# Data are not normally distributed. Thus violating an assumption of ANCOVA
   
 temp_spearman <- temp_spearman %>%
   group_by(plate_id, dose) %>%
@@ -281,6 +342,12 @@ outliers_spearman <- temp_spearman %>%
 temp_spearman <- temp_spearman %>%
   anti_join(outliers_spearman)
 
+
+#### Testing for Normal Distribution after removing outliers
+qqnorm(temp_pearson$endpoint_value_norm)
+qqline(temp_pearson$endpoint_value_norm)
+shapiro.test(temp_pearson$endpoint_value_norm)
+# Data are not normally distributed. Thus violating an assumption of ANCOVA
 
 
 simi_norm_nobin_spearman <- temp_spearman %>%
@@ -476,9 +543,15 @@ Dunnett_results <- Nobin_dunnet_results_both_endpoints %>%
   rename(plate_id = .id) %>%
   mutate(dose = str_split(string = dose, pattern = "-", simplify = TRUE)[,1])
 
+ANCOVA_results <- ancova_summary_both_endpoints %>%
+  rename(plate_id = .id) %>%
+  filter(Df == 5) %>%
+  mutate(ANCOVA_is_sig = is.significant)
+  
+
 p_pearson <- simi_norm_tib_pearson %>%
   inner_join(Dunnett_results, by = c("plate_id", "dose", "endpoint")) %>%
-  filter(plate_id %in% c("BPA","BPAF", "DES", "TGSH", "EE2")) %>%
+  inner_join(ANCOVA_results, by = c("plate_id", "endpoint")) %>%
   mutate(dose = factor(
     dose,
     levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"),
@@ -488,10 +561,11 @@ p_pearson <- simi_norm_tib_pearson %>%
   summarise(dose = dose,
             endpoint_value_norm = endpoint_value_norm,
             Group = Group,
-            pval = pval) %>%
+            pval = pval,
+            ANCOVA_is_sig = ANCOVA_is_sig) %>%
   ggplot(aes(x = dose, y = endpoint_value_norm, group = 1)) +
   geom_boxplot(
-    aes(x = dose, y = endpoint_value_norm, group = dose),
+    aes(x = dose, y = endpoint_value_norm, group = dose, color = ANCOVA_is_sig),
     outlier.shape = NA,
     width = 0.5
   ) +
@@ -545,7 +619,7 @@ p_pearson <- simi_norm_tib_pearson %>%
 
 p_spearman <- simi_norm_tib_spearman %>%
   inner_join(Dunnett_results, by = c("plate_id", "dose", "endpoint")) %>%
-  filter(plate_id %in% c("BPA","BPAF", "DES", "TGSH", "EE2")) %>%
+  inner_join(ANCOVA_results, by = c("plate_id", "endpoint")) %>%
   mutate(dose = factor(
     dose,
     levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"),
@@ -555,10 +629,11 @@ p_spearman <- simi_norm_tib_spearman %>%
   summarise(dose = dose,
             endpoint_value_norm = endpoint_value_norm,
             Group = Group,
-            pval = pval) %>%
+            pval = pval,
+            ANCOVA_is_sig = ANCOVA_is_sig) %>%
   ggplot(aes(x = dose, y = endpoint_value_norm, group = 1)) +
   geom_boxplot(
-    aes(x = dose, y = endpoint_value_norm, group = dose),
+    aes(x = dose, y = endpoint_value_norm, group = dose, color = ANCOVA_is_sig),
     outlier.shape = NA,
     width = 0.5
   ) +
@@ -653,6 +728,30 @@ simi_norm_tib_4rcurvep_pearson <- simi_norm_tib_pearson %>%
 ```
 
 
+```{r 55prep_4_rcurvep_noextrm, include=FALSE}
+filter_out <- simi_norm_tib_4rcurvep_pearson %>%
+  filter(conc > 1 | conc < -5) %>%
+  summarise(unique(chemical))
+
+simi_norm_tib_4rcurvep_spearman_no_extrm <- simi_norm_tib_spearman %>%
+  rename(resp = endpoint_value_norm,
+         chemical = plate_id) %>%
+  filter(is_VC == 0) %>%
+  mutate(conc = log10(Dose_mg_L)) %>%
+  filter(!(chemical %in% as.vector(filter_out)[[1]])) %>%
+  select(endpoint, chemical, conc, resp)
+```
+
+```{r 55.1prep_4_rcurvep_noextrm, include=FALSE}
+simi_norm_tib_4rcurvep_pearson_no_extrm <- simi_norm_tib_pearson %>%
+  rename(resp = endpoint_value_norm,
+         chemical = plate_id) %>%
+  filter(is_VC == 0) %>%
+  mutate(conc = log10(Dose_mg_L)) %>%
+  filter(!(chemical %in% as.vector(filter_out)[[1]])) %>%
+  select(endpoint, chemical, conc, resp)
+```
+
 Since we do not know what the benchmark response is for each one of the chemicals, a method will be used that can estimate a benchmark response (empirically) when given a large enough set of data. The RcurveP package includes an automated process to select an appropriate BMR based off of the data. From Hsieh et al. 2019 manuscript: "The pooled variance of potency of all chemicals per [threshold value (i.e. 5 through 99)] was calculated. The BMR was considered as the [threshold value] at which the potency variance was sufficiently reduced and was the lowest threshold that potency variance was stabilized".
 
 #### Negative Direction
@@ -665,13 +764,157 @@ Since we do not know what the benchmark response is for each one of the chemical
 ```{r 56estimating_BMR/CurveSimulation, include=FALSE, warning=FALSE, message=FALSE}
 set.seed(42069)
 
-ancova_summary_both_endpoints <- ancova_summary_both_endpoints %>%
-  rename(chemical = .id, pval = `Pr(>F)`)
+#Whole set of data to train
+#BMR of Pearson - 35
+#BMR of Spearman - 35
+#Active Pearson - 4TPP, ClofibricAcid, Fluoxetine, Vinclozolin
+#Active Spearman - 1decanol, Fadrozole, ClofibricAcid, Fluoxetine, Prochloraz, Trenbolone
 
-BMR_training_set_pearson <- simi_norm_tib_4rcurvep_pearson %>%
-  inner_join(ancova_summary_both_endpoints) %>%
-  filter(is.significant == TRUE) %>%
+#Whole set of training data minus EE2, DMF and TEG
+#BMR of Pearson - 35
+#BMR of Spearman - 35
+#Active Pearson - 4TPP, ClofibricAcid, Fluoxetine, Prochloraz
+#Active Spearman - 1decanol, Fadrozole, ClofibricAcid, Fluoxetine, Prochloraz, Vinclozolin
+train_set <- c("4TPP", "ClofibricAcid", "Fluoxetine", "Prochloraz", "Fadrozole", "Vinclozolin", "1decanol")
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+
+# train_set <- c("1octanol", "24DNP", "4TPP", "ClofibricAcid", "DES", "DMSO", "EE2", "Fadrozole", "Fenitrothion", "Fluoxetine", "Malathion", "Prochloraz", "Trenbolone")
+#Train_set - Positive ANCOVA results
+#BMR of pearson - 35
+#BMR of spearman - 35
+
+# filter_out <- simi_norm_tib_4rcurvep_pearson %>%
+#   filter(chemical %in% train_set) %>%
+#   filter(conc > 1 | conc < -5) %>%
+#   summarise(unique(chemical))
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+
+#train_set <- c("4TPP", "ClofibricAcid", "Fluoxetine", "Prochloraz", "Fadrozole", "Vinclozolin")
+# Only 'active' chemicals - Hit confidence > 0.5 (after training with entire data set)
+# BMR of pearson - 40
+# BMR os spearman - 40
+
+# BMR_training_set_pearson <- simi_norm_tib_4rcurvep_pearson %>%
+#   filter(!(conc > 1 | conc < -5)) %>%
+#   filter(chemical %in% train_set) %>%
+#   select(endpoint, chemical, conc, resp)
+# BMR_training_set_spearman <- simi_norm_tib_4rcurvep_spearman %>%
+#   filter(!(conc > 1 | conc < -5)) %>%
+#   filter(chemical %in% train_set) %>%
+#   select(endpoint, chemical, conc, resp)
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+
+#train_set <- c("4TPP", "ClofibricAcid", "Fluoxetine", "Prochloraz", "Fadrozole", "Vinclozolin", "Trenbolone", "1decanol")
+#Only 'active' chemicals - Hit confidence > 0.5 (after training with entire data set AKA - BMR of 35 for both)
+#BMR of pearson - 
+#BMR os spearman - 
+
+# BMR_training_set_pearson <- simi_norm_tib_4rcurvep_pearson %>%
+#   filter(!(conc > 1 | conc < -5)) %>%
+#   filter(chemical %in% train_set) %>%
+#   select(endpoint, chemical, conc, resp)
+# BMR_training_set_spearman <- simi_norm_tib_4rcurvep_spearman %>%
+#   filter(!(conc > 1 | conc < -5)) %>%
+#   filter(chemical %in% train_set) %>%
+#   select(endpoint, chemical, conc, resp)
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+
+# train_set <- c("ClofibricAcid", "Fluoxetine", "Prochloraz", "Vinclozolin", "4TPP")
+# #Only 'active' chemicals - Hit confidence > 0.5 (after training with entire data set AKA - BMR of 35 for both)
+# #BMR of pearson - 35
+# #BMR os spearman - 35
+# 
+# BMR_training_set_pearson <- simi_norm_tib_4rcurvep_pearson %>%
+#   filter(!(conc > 1 | conc < -5)) %>%
+#   filter(chemical %in% train_set) %>%
+#   select(endpoint, chemical, conc, resp)
+# 
+# train_set <- c("4TPP", "ClofibricAcid", "Fluoxetine", "Prochloraz", "Fadrozole", "Vinclozolin", "Trenbolone", "1decanol")
+# #Only 'active' chemicals - Hit confidence > 0.5 (after training with entire data set AKA - BMR of 35 for both)
+# #BMR of pearson - 35
+# #BMR os spearman - 35
+# 
+# BMR_training_set_spearman <- simi_norm_tib_4rcurvep_spearman %>%
+#   filter(!(conc > 1 | conc < -5)) %>%
+#   filter(chemical %in% train_set) %>%
+#   select(endpoint, chemical, conc, resp)
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+
+#First try training with 'active' hits from the run with all chemicals except for EE2, DES, TEG
+# training_set_pearson <- c("4TPP", "Prochloarz")
+# training_set_spearman <- c("ClofibricAcid", "Fadrozole", "Fluoxetine", "Vinclozolin")
+#BMR Pearson 40
+#BMR Spearman 40
+
+
+#Now training with also the fitted results that came back as active
+# training_set_pearson <- c("4TPP", "Prochloraz", "Fluoxetine")
+# training_set_spearman <- c("ClofibricAcid", "Fadrozole", "Fluoxetine", "Vinclozolin", "4TPP", "Trenbolone")
+#BMR Pearson 50
+#BMR Spearman 40
+
+# BMR_training_set_pearson <- simi_norm_tib_4rcurvep_pearson %>%
+#   filter(!(conc > 1 | conc < -5)) %>%
+#   filter(chemical %in% training_set_pearson) %>%
+#   select(endpoint, chemical, conc, resp)
+# BMR_training_set_spearman <- simi_norm_tib_4rcurvep_spearman %>%
+#   filter(!(conc > 1 | conc < -5)) %>%
+#   filter(chemical %in% training_set_spearman) %>%
+#   select(endpoint, chemical, conc, resp)
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+
+# #Training both seperately based off of active chemicals in each endpoint
+# traning_set_pearson <- c("4TPP", "ClofibricAcid", "Fluoxetine", "Prochloraz")
+# training_set_spearman <- c("1decanol", "ClofibricAcid", "Fadrozole", "Fluoxetine", "Prochloraz", "Vinclozolin")
+# #Pearson - bmr = 40
+# BMR_training_set_pearson <- simi_norm_tib_4rcurvep_pearson_no_extrm %>%
+#   filter(chemical %in% training_set_pearson) %>%
+#   select(endpoint, chemical, conc, resp)
+# #Spearman - bmr = 40
+# BMR_training_set_spearman <- simi_norm_tib_4rcurvep_spearman_no_extrm %>%
+#   filter(chemical %in% training_set_spearman) %>%
+#   select(endpoint, chemical, conc, resp)
+# 
+# 
+# #Braining Both with the same chemicals regardless of what endpoint it is from
+# training_set <- c("4TPP", "ClofibricAcid", "Fluoxetine", "Prochloraz", "1decanol", "Fadrozole", "Vinclozolin")
+# #Pearson - bmr = 35
+# BMR_training_set_pearson <- simi_norm_tib_4rcurvep_pearson_no_extrm %>%
+#   filter(chemical %in% training_set) %>%
+#   select(endpoint, chemical, conc, resp)
+# #Spearman - bmr = 40
+# BMR_training_set_spearman <- simi_norm_tib_4rcurvep_spearman_no_extrm %>%
+#   filter(chemical %in% training_set) %>%
+#   select(endpoint, chemical, conc, resp)
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+
+# train_set <- c("ClofibricAcid", "Fluoxetine", "4TPP")
+# #Only 'active' chemicals - Hit confidence > 0.5 (after training with entire data set AKA - BMR of 35 for both)
+# #BMR of pearson - 35
+# 
+BMR_training_set_pearson <- simi_norm_tib_4rcurvep_pearson_no_extrm %>%
+  filter(chemical %in% train_set) %>%
+  filter(chemical == "Fadrozole") %>%
   select(endpoint, chemical, conc, resp)
+# 
+# train_set <- c("4TPP", "ClofibricAcid", "Fluoxetine", "Prochloraz", "Fadrozole", "Vinclozolin", "Trenbolone", "1decanol")
+# #Only 'active' chemicals - Hit confidence > 0.5 (after training with entire data set AKA - BMR of 35 for both)
+# #BMR os spearman - 35
+# 
+BMR_training_set_spearman <- simi_norm_tib_4rcurvep_spearman_no_extrm %>%
+  filter(chemical %in% train_set) %>%
+  filter(chemical == "Fadrozole") %>%
+  select(endpoint, chemical, conc, resp)
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+
 
 BMR_training_set_act_pearson <- combi_run_rcurvep(
   BMR_training_set_pearson,
@@ -679,20 +922,14 @@ BMR_training_set_act_pearson <- combi_run_rcurvep(
   keep_sets = c("act_set", "resp_set", "fp_set"),
   TRSH = seq(5, 95, by = 5),
   RNGE = -1000000,
-  TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
+  TrustHi = FALSE, #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
+  seed = 42069
 )
 
-bmr_output_pearson <-
-  estimate_dataset_bmr(BMR_training_set_act_pearson, plot = TRUE)
 ```
 
 ```{r 56.1estimating_BMR/CurveSimulation, include=FALSE, warning=FALSE, message=FALSE}
 set.seed(42069)
-
-BMR_training_set_spearman <- simi_norm_tib_4rcurvep_spearman %>%
-  inner_join(ancova_summary_both_endpoints) %>%
-  filter(is.significant == TRUE) %>%
-  select(endpoint, chemical, conc, resp)
 
 BMR_training_set_act_spearman <- combi_run_rcurvep(
   BMR_training_set_spearman,
@@ -700,14 +937,19 @@ BMR_training_set_act_spearman <- combi_run_rcurvep(
   keep_sets = c("act_set", "resp_set", "fp_set"),
   TRSH = seq(5, 95, by = 5),
   RNGE = -1000000,
-  TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
+  TrustHi = FALSE, #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
+  seed = 42069
 )
 
-bmr_output_spearman <-
-  estimate_dataset_bmr(BMR_training_set_act_spearman, plot = TRUE)
 ```
 
 ```{r 57.2estimating_BMR_2, include=FALSE, fig.cap= "Figure 17. Summary of Benchmark response estimation", fig.align='center', warning=FALSE, message=FALSE}
+bmr_output_pearson <-
+  estimate_dataset_bmr(BMR_training_set_act_pearson, plot = TRUE, p1 = 1, p2 = 19)
+
+bmr_output_spearman <-
+  estimate_dataset_bmr(BMR_training_set_act_spearman, plot = TRUE)
+
 bmr_output_summary <- list(plot(bmr_output_pearson), plot(bmr_output_spearman))
 names(bmr_output_summary) <- c("Pearson", "Spearman")
 bmr_output <- rbind(bmr_output_pearson$outcome, bmr_output_spearman$outcome)
@@ -766,6 +1008,8 @@ From the sampling method, it the benchmark response threshold should be set to `
 
 BMR - The lowest response threshold at which the variance in potency estimation is sufficiently reduced
 
+CurveP adjust data points that violate monotonic concentration-reponse pattern and supppress near-baseline noise using a baseline noise threshold  (the BMR)
+
 ```{r 59.2Clear_up_Memory_Before_moving_on_to_next_step, include=FALSE}
 rm(BMR_training_set_act_spearman, BMR_training_set_act_pearson, bmr_output_pearson, bmr_output_spearman, bmr_output)
 gc()
@@ -792,29 +1036,31 @@ gc()
 
 ```{r 60calculating_benchmark_dose, include = FALSE}
 bmd_dat_nobin_neg_pearson <- combi_run_rcurvep(
-  simi_norm_tib_4rcurvep_pearson, 
+  simi_norm_tib_4rcurvep_pearson_no_extrm, 
   n_samples = params$sample_size, #Increase this number to 100 or 1000 for better results (takes a long time to run)
   keep_sets = c("act_set", "resp_set"), 
   TRSH = bmr_thresh_pearson,
   RNGE = -1000000,
-  TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
+  TrustHi = FALSE, #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
+  seed = 42069
 )
 ```
 
 ```{r 60.1calculating_benchmark_dose, include = FALSE}
 bmd_dat_nobin_neg_spearman <- combi_run_rcurvep(
-  simi_norm_tib_4rcurvep_spearman, 
+  simi_norm_tib_4rcurvep_spearman_no_extrm, 
   n_samples = params$sample_size, #Increase this number to 100 or 1000 for better results (takes a long time to run)
   keep_sets = c("act_set", "resp_set"), 
   TRSH = bmr_thresh_spearman,
   RNGE = -1000000,
-  TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
+  TrustHi = FALSE, #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
+  seed = 42069
 )
 ```
 
-```{r 61calculating_benchmark_dose_2, echo=FALSE, collapse=TRUE}
-sum_bmd_dat_nobin_neg_pearson <- summarize_rcurvep_output(bmd_dat_nobin_neg_pearson, inactivate = "INVERSE", ci_level = 0.95)
-sum_bmd_dat_nobin_neg_spearman <- summarize_rcurvep_output(bmd_dat_nobin_neg_spearman, inactivate = "INVERSE", ci_level = 0.95)
+```{r 61calculating_benchmark_dose_2, echo=FALSE, collapse=TRUE, warning=FALSE}
+sum_bmd_dat_nobin_neg_pearson <- summarize_rcurvep_output(bmd_dat_nobin_neg_pearson, inactivate = c("U_SHAPE", "NOISY", "BLIP", "PART_U?"), ci_level = 0.95)
+sum_bmd_dat_nobin_neg_spearman <- summarize_rcurvep_output(bmd_dat_nobin_neg_spearman, inactivate = c("U_SHAPE", "NOISY", "BLIP", "PART_U?"), ci_level = 0.95)
 
 sum_bmd_dat_nobin_neg <- rbind(sum_bmd_dat_nobin_neg_pearson$act_summary, sum_bmd_dat_nobin_neg_spearman$act_summary)
 ```
@@ -836,8 +1082,7 @@ simulated_curves_pearson_summary <-
     act_set = sum_bmd_dat_nobin_neg_pearson$result$act_set,
     act_summary = sum_bmd_dat_nobin_neg_pearson$act_summary,
     reject_hit_conf_under = 0.5
-  ) %>%
-    filter(chemical %in% c("BPA", "BPAF", "DES", "TGSH", "EE2"))
+  )
 
 bmds_pearson <- bmd_results(simulated_curves_pearson_summary)
 
@@ -880,8 +1125,7 @@ simulated_curves_spearman_summary <-
     act_set = sum_bmd_dat_nobin_neg_spearman$result$act_set,
     act_summary = sum_bmd_dat_nobin_neg_spearman$act_summary,
     reject_hit_conf_under = 0.5
-  ) %>%
-    filter(chemical %in% c("BPA", "BPAF", "DES", "TGSH", "EE2"))
+  )
 
 bmds_spearman <- bmd_results(simulated_curves_spearman_summary)
 
@@ -1030,7 +1274,6 @@ p_spearman <- ggplot(NULL, aes(conc, resp)) +
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 # Use the NORMALIZED data
 temp_pearson <- simi_norm_tib_4rcurvep_pearson %>%
-  filter(chemical %in% c("BPA", "BPAF", "TGSH", "DES", "EE2")) %>%
   select(endpoint, chemical, conc, resp) %>%
   group_by(chemical)
 
@@ -1048,7 +1291,6 @@ pearson_fitted <- run_fit(
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 # Use the NORMALIZED data
 temp_spearman <- simi_norm_tib_4rcurvep_spearman %>%
-  filter(chemical %in% c("BPA", "BPAF", "TGSH", "DES", "EE2")) %>%
   select(endpoint, chemical, conc, resp) %>%
   group_by(chemical)
 

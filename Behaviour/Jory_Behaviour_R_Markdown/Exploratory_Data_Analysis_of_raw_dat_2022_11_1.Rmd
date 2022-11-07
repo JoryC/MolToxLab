@@ -532,8 +532,8 @@ fishBehavDat <- raw_data %>%
     totaldist = lardist + smldist # recalculating variable after poorQuality observations were removed
   ) %>%
   inner_join(doseData) %>% # join dose info
-  select(plate_id, embryo_id, replicate, Dose, Dose_mg_L, is_VC, Group, time_end, inact, smlct, larct, inadur, smldur, lardur, activedur, smldist, lardist, totaldist, outliers) %>%
-  filter(outliers == FALSE)
+  select(plate_id, embryo_id, replicate, Dose, Dose_mg_L, is_VC, Group, time_end, inact, smlct, larct, inadur, smldur, lardur, activedur, smldist, lardist, totaldist, outliers)
+  #filter(outliers == FALSE)
 ```
 
 
@@ -679,7 +679,42 @@ fishBehavDat <- raw_data %>%
 
 
 
-### ggplots
+### Plots
+
+#### Normality
+
+![Statistical Analysis of Zebrafish Locomotor Behaviour by Generalized Linear Mixed Models](https://pubmed.ncbi.nlm.nih.gov/28592855/)
+
+```{r 31.2Testing_Normality_of_different_vars, include=FALSE}
+
+vars <- c("inact", "smlct","larct", "inadur", "smldur","lardur", "activedur", "smldist", "lardist", "totaldist")
+
+op <- par(mfrow=c(2,5))
+for(i in vars){
+  qqnorm(pull(fishBehavDat, var=i), main=i)
+  qqline(pull(fishBehavDat, var=i))
+}
+par(op)
+rm(i)
+dev.off()
+
+fishBehavDat <- fishBehavDat %>%
+  mutate(smlvelo = smldist/60,
+         larvelo = lardist/60,
+         totalvelo = totaldist/60)
+
+vars <- c("smlvelo", "larvelo", "totalvelo")
+
+op <- par(mfrow=c(1,3))
+for(i in vars){
+  qqnorm(pull(fishBehavDat, var=i), main=i)
+  qqline(pull(fishBehavDat, var=i))
+}
+par(op)
+rm(i)
+dev.off()
+
+```
 
 #### Bar Graphs
 
