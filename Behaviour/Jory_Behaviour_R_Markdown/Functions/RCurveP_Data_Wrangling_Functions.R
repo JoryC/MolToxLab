@@ -45,7 +45,8 @@ summarise_rcurvep_results <-
       inner_join(bmd_summary) %>%
       ungroup() %>%
       group_by(chemical) %>%
-      mutate(resp = if_else(correction == 1, true = corrected_resp, false = resp)) %>%
+      mutate(resp = if_else(correction == 1, true = corrected_resp, false = resp),
+             lowest_conc = highest_conc-(number_of_dose_groups_per_chem-1)) %>%
       select(-corrected_resp) %>%
       mutate(median_POD = if_else(
         condition = POD == lowest_conc,
@@ -175,6 +176,7 @@ summarise_fitted_results <- function (resp_set,
       hit = unique(hit),
       hit_confidence = unique(hit_confidence)
     ) %>%
+    mutate(lowest_conc = highest_conc-(number_of_dose_groups_per_chem-1)) %>%
     mutate(median_POD = if_else(
       condition = POD == lowest_conc,
       true = unique(highest_conc),
@@ -288,7 +290,8 @@ bmd_results <- function(summary_dat) {
       hit_confidence = unique(hit_confidence),
       lowest_conc = unique(lowest_conc),
       highest_conc = unique(highest_conc)
-    )
+    ) %>%
+    mutate(lowest_conc = highest_conc-(number_of_dose_groups_per_chem-1))
 }
 
 
