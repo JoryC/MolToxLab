@@ -12,7 +12,7 @@ output:
     theme: readable
 params:
   value: totaldist
-  sample_size: 1000
+  sample_size: 10
 ---
 
 ```{r 1setup, include=FALSE}
@@ -81,7 +81,7 @@ metaData <- read.csv(file = "Data/MetaData.csv") #Import the Meta Data that incl
 doseData <- metaData %>%
   select(plate_id, Dose1:Control) %>%
   gather(key = Dose, value = "Dose_mg_L", Dose1:Control)
-number_of_dose_groups_per_chem <- 5 # Set this to the number of dose groups you have
+number_of_dose_groups_per_chem <- 6 # Set this to the number of dose groups you have (including control)
 ```
 
 ```{r 1_remove_outlier_control_fish, include=FALSE}
@@ -181,7 +181,7 @@ Key parameters are
 	range of response values (-RNG=) - can be negative (e.g., inhibition) or positive (e.g., agonism)
 	
 Curvep adjusts data points that violate monotonic concentration-response pattern and suppresses near-baseline noise using a user-defined
-baseline noise threshold (AKA, BMR)
+baseline noise threshold (AKA, MXDV)
 
 The POD (BMD for similarity scores) is defined as the concentration at which the response exceeds the assay-dependent noise threshold and is calculated by linear interpolation between the two concentration points, where their range of response includes the noise threshold.
 
@@ -812,7 +812,9 @@ simi_norm_tib_4rcurvep_spearman <- simi_norm_tib_spearman %>%
  #filter(is_VC == 0) %>%
   mutate(Dose_mg_L = Dose_mg_L/0.00001) %>% #Normalize the doses to lowest dose in dataset (excluding EE2 from this so lowest will be 0.00001)
   mutate(conc = log10(Dose_mg_L)) %>%
-  mutate(conc = if_else(condition = conc == -Inf, true = 0, false = conc)) %>%
+  group_by(chemical, endpoint) %>%
+  mutate(control_conc = max(conc)-5) %>% #making sure there are no infinite values for conncentrations. Controls are made to be 1 dose group down from the lowest concentration
+  mutate(conc = if_else(condition = conc == -Inf, true = control_conc, false = conc)) %>%
   select(endpoint, chemical, conc, resp)
 ```
 
@@ -823,7 +825,9 @@ simi_norm_tib_4rcurvep_pearson <- simi_norm_tib_pearson %>%
   #filter(is_VC == 0) %>%
   mutate(Dose_mg_L = Dose_mg_L/0.00001) %>% #Normalize the doses to lowest dose in dataset (excluding EE2 from this so lowest will be 0.00001)
   mutate(conc = log10(Dose_mg_L)) %>%
-   mutate(conc = if_else(condition = conc == -Inf, true = 0, false = conc)) %>%
+  group_by(chemical, endpoint) %>%
+  mutate(control_conc = max(conc)-5) %>% #making sure there are no infinite values for conncentrations. Controls are made to be 1 dose group down from the lowest concentration
+  mutate(conc = if_else(condition = conc == -Inf, true = control_conc, false = conc)) %>%
   select(endpoint, chemical, conc, resp)
 ```
 
@@ -832,37 +836,77 @@ Those chemicals that have dose range beyond this include:
 - TEG (Highest 100)
 - EE2 (Lowest 0.0000001)
 ```{r 55prep_4_rcurvep_noextrm, include=FALSE}
-filter_out <- simi_norm_tib_4rcurvep_pearson %>%
-  filter(chemical %in% c("Dimethylformamide", "TEG", "EE2")) %>%
-  summarise(unique(chemical))
+# filter_out <- simi_norm_tib_4rcurvep_pearson %>%
+#   filter(chemical %in% c("Dimethylformamide", "TEG", "EE2")) %>%
+#   summarise(unique(chemical))
 
-simi_norm_tib_4rcurvep_spearman_no_extrm <- simi_norm_tib_spearman %>%
-  rename(resp = endpoint_value_norm,
-         chemical = plate_id) %>%
- #filter(is_VC == 0) %>%
-  mutate(Dose_mg_L = Dose_mg_L/0.00001) %>% #Normalize the doses to lowest dose in dataset (excluding EE2 from this so lowest will be 0.00001)
-  mutate(conc = log10(Dose_mg_L)) %>%
-   mutate(conc = if_else(condition = conc == -Inf, true = 0, false = conc)) %>%
-  filter(!(chemical %in% as.vector(filter_out)[[1]])) %>%
-  select(endpoint, chemical, conc, resp)
+# simi_norm_tib_4rcurvep_spearman_no_extrm <- simi_norm_tib_spearman %>%
+#   rename(resp = endpoint_value_norm,
+#          chemical = plate_id) %>%
+#  #filter(is_VC == 0) %>%
+#   mutate(Dose_mg_L = Dose_mg_L/0.00001) %>% #Normalize the doses to lowest dose in dataset (excluding EE2 from this so lowest will be 0.00001)
+#   mutate(conc = log10(Dose_mg_L)) %>%
+#    mutate(conc = if_else(condition = conc == -Inf, true = 0, false = conc)) %>%
+#   filter(!(chemical %in% as.vector(filter_out)[[1]])) %>%
+#   select(endpoint, chemical, conc, resp)
 ```
 
 ```{r 55.1prep_4_rcurvep_noextrm, include=FALSE}
-simi_norm_tib_4rcurvep_pearson_no_extrm <- simi_norm_tib_pearson %>%
-  rename(resp = endpoint_value_norm,
-         chemical = plate_id) %>%
- #filter(is_VC == 0) %>%
-  mutate(Dose_mg_L = Dose_mg_L/0.00001) %>% #Normalize the doses to lowest dose in dataset (excluding EE2 from this so lowest will be 0.00001)
-  mutate(conc = log10(Dose_mg_L)) %>%
-   mutate(conc = if_else(condition = conc == -Inf, true = 0, false = conc)) %>%
-  filter(!(chemical %in% as.vector(filter_out)[[1]])) %>%
-  select(endpoint, chemical, conc, resp)
+# simi_norm_tib_4rcurvep_pearson_no_extrm <- simi_norm_tib_pearson %>%
+#   rename(resp = endpoint_value_norm,
+#          chemical = plate_id) %>%
+#  #filter(is_VC == 0) %>%
+#   mutate(Dose_mg_L = Dose_mg_L/0.00001) %>% #Normalize the doses to lowest dose in dataset (excluding EE2 from this so lowest will be 0.00001)
+#   mutate(conc = log10(Dose_mg_L)) %>%
+#    mutate(conc = if_else(condition = conc == -Inf, true = 0, false = conc)) %>%
+#   filter(!(chemical %in% as.vector(filter_out)[[1]])) %>%
+#   select(endpoint, chemical, conc, resp)
 ```
 
 Since we do not know what the benchmark response is for each one of the chemicals, a method will be used that can estimate a benchmark response (empirically) when given a large enough set of data. The RcurveP package includes an automated process to select an appropriate BMR based off of the data. From Hsieh et al. 2019 manuscript: "The pooled variance of potency of all chemicals per [threshold value (i.e. 5 through 99)] was calculated. The BMR was considered as the [threshold value] at which the potency variance was sufficiently reduced and was the lowest threshold that potency variance was stabilized".
 
 ```{r 55.1Clear_Memory, include=FALSE}
-rm(p_spearman, p_pearson, ANCOVA_results, Dunnett_results, Nobin_dunnet_results_both_endpoints, dunnett_comb_nobin_pearson, ancova_summary_both_endpoints, ancova_comb_nobin_spearman, ancova_comb_nobin_pearson, temp_pearson, temp_spearman, outliers_pearson, outliers, spearman, summarystats_list_nobin_spearman, summarystats_list_nobin_pearson, simi_endpoints_nobin_spearman, simi_endpoints_nobin_pearson, cor_dat_long, p1, p2, cor_dat, temp, temp2, simi_norm_nobin_pearson, simi_endpoints_nobin_spearman, p_both_endpoints, outliers_pearson, outliers_spearman, ggBoxPlotOutliers, filter_out, dunnett_temp, dunnett_list_nobin_pearson, dunnett_comb_nobin_spearman, dunnett_list_nobin_spearman, BoxPlotOutliers, BoxPlotOutliersRemove, ancova_list_nobin_pearson, ancova_list_nobin_spearman)
+rm(
+  p_spearman,
+  p_pearson,
+  ANCOVA_results,
+  Dunnett_results,
+  Nobin_dunnet_results_both_endpoints,
+  dunnett_comb_nobin_pearson,
+  ancova_summary_both_endpoints,
+  ancova_comb_nobin_spearman,
+  ancova_comb_nobin_pearson,
+  temp_pearson,
+  temp_spearman,
+  outliers_pearson,
+  outliers,
+  spearman,
+  summarystats_list_nobin_spearman,
+  summarystats_list_nobin_pearson,
+  simi_endpoints_nobin_spearman,
+  simi_endpoints_nobin_pearson,
+  cor_dat_long,
+  p1,
+  p2,
+  cor_dat,
+  temp,
+  temp2,
+  simi_norm_nobin_pearson,
+  simi_endpoints_nobin_spearman,
+  p_both_endpoints,
+  outliers_pearson,
+  outliers_spearman,
+  ggBoxPlotOutliers,
+  filter_out,
+  dunnett_temp,
+  dunnett_list_nobin_pearson,
+  dunnett_comb_nobin_spearman,
+  dunnett_list_nobin_spearman,
+  BoxPlotOutliers,
+  BoxPlotOutliersRemove,
+  ancova_list_nobin_pearson,
+  ancova_list_nobin_spearman
+)
 gc()
 ```
 
@@ -1028,22 +1072,22 @@ set.seed(42069)
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 
 
-# BMR_training_set_act_pearson_eval <- expression(
-#   value(
-#     future({
-#       combi_run_rcurvep(
-#   simi_norm_tib_4rcurvep_pearson_no_extrm,
-#   n_samples = params$sample_size, #Increase this number to 100 or 1000 for better results (takes a long time to run)
-#   keep_sets = c("act_set", "resp_set", "fp_set"),
-#   TRSH = seq(5, 95, by = 5),
-#   RNGE = -1000000,
-#   TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
-#       )
-#     }, seed = 42069)
-#   )
-# )
-# 
-# BMR_training_set_act_pearson <- eval(BMR_training_set_act_pearson_eval)
+BMR_training_set_act_pearson_eval <- expression(
+  value(
+    future({
+      combi_run_rcurvep(
+  simi_norm_tib_4rcurvep_pearson,
+  n_samples = params$sample_size, #Increase this number to 100 or 1000 for better results (takes a long time to run)
+  keep_sets = c("act_set", "resp_set", "fp_set"),
+  TRSH = seq(5, 95, by = 5),
+  RNGE = -1000000,
+  TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
+      )
+    }, seed = 42069)
+  )
+)
+
+BMR_training_set_act_pearson <- eval(BMR_training_set_act_pearson_eval)
 
 
 
@@ -1051,17 +1095,17 @@ set.seed(42069)
 
 
 ```{r store_bmr, include=FALSE}
-# bmr_output_pearson <-
-#   estimate_dataset_bmr(BMR_training_set_act_pearson, plot = TRUE)
-# bmr_output_pearson_out <- bmr_output_pearson$outcome
+bmr_output_pearson <-
+  estimate_dataset_bmr(BMR_training_set_act_pearson, plot = TRUE)
+bmr_output_pearson_out <- bmr_output_pearson$outcome
 
 #BMR of 35 after 1000 samples seed 42069 - Nov 10 2022
-bmr_output_pearson_out <- tibble(RNGE = -1000000, endpoint = "pearson", bmr_exp = 35)
+#bmr_output_pearson_out <- tibble(RNGE = -1000000, endpoint = "pearson", bmr_exp = 35)
 ```
 
 ```{r 56.1Clear_up_Memory_Before_moving_on_to_next_step, include=FALSE}
-# rm(BMR_training_set_act_pearson)
-# gc()
+rm(BMR_training_set_act_pearson)
+gc()
 ```
 
 ```{r 56.1estimating_BMR/CurveSimulation, include=FALSE, warning=FALSE, message=FALSE}
@@ -1069,7 +1113,7 @@ BMR_training_set_act_spearman_eval <- expression(
   value(
     future({
       combi_run_rcurvep(
-  simi_norm_tib_4rcurvep_spearman_no_extrm,
+  simi_norm_tib_4rcurvep_spearman,
   n_samples = params$sample_size, #Increase this number to 100 or 1000 for better results (takes a long time to run)
   keep_sets = c("act_set", "resp_set", "fp_set"),
   TRSH = seq(5, 95, by = 5),
@@ -1089,9 +1133,9 @@ bmr_output_spearman <-
   estimate_dataset_bmr(BMR_training_set_act_spearman, plot = TRUE)
 bmr_output_spearman_out <- bmr_output_spearman$outcome
 
-# bmr_output_summary <- list(plot(bmr_output_pearson), plot(bmr_output_spearman))
-# names(bmr_output_summary) <- c("Pearson", "Spearman")
-# bmr_output <- rbind(bmr_output_pearson$outcome, bmr_output_spearman$outcome)
+bmr_output_summary <- list(plot(bmr_output_pearson), plot(bmr_output_spearman))
+names(bmr_output_summary) <- c("Pearson", "Spearman")
+bmr_output <- rbind(bmr_output_pearson$outcome, bmr_output_spearman$outcome)
 
 
 
@@ -1105,12 +1149,12 @@ gc()
 
 ##### Benchmark Response Plots {.tabset}
 ```{r 57.3estimating_BMR_2, echo=FALSE, fig.cap= "Figure 17. Summary of Benchmark response estimation", fig.align='center', warning=FALSE, message=FALSE, results='asis', out.height="1080px", out.width="1920px"}
-# for (i in seq_along(bmr_output_summary)){
-#   temp <- bmr_output_summary[[i]]
-#   cat("######", names(bmr_output_summary)[i], " \n")
-#   print(temp)
-#   cat(' \n\n')
-# }
+for (i in seq_along(bmr_output_summary)){
+  temp <- bmr_output_summary[[i]]
+  cat("######", names(bmr_output_summary)[i], " \n")
+  print(temp)
+  cat(' \n\n')
+}
 ```
 
 ##### {-}
@@ -1118,34 +1162,34 @@ gc()
 
 
 ```{r 58estimating_BMR_3, echo=FALSE}
-# bmr_output %>%
-#   select(endpoint, qc, cor_exp_fit, cor_lm_fit, bmr_exp, bmr_ori) %>%
-#   kable(
-#     col.names = c(
-#       "Endpoint",
-#       "Quality Control Message",
-#       "Correlation of expotential fit",
-#       "Correlation of linear model fit",
-#       "BMR of exponential model",
-#       "BMR of linear model"
-#     ),
-#     align = 'llrrrr',
-#     caption = "Table 8. Summary of the estimated BMR"
-#   ) %>%
-#   kable_styling() %>%
-#   scroll_box()
+bmr_output %>%
+  select(endpoint, qc, cor_exp_fit, cor_lm_fit, bmr_exp, bmr_ori) %>%
+  kable(
+    col.names = c(
+      "Endpoint",
+      "Quality Control Message",
+      "Correlation of expotential fit",
+      "Correlation of linear model fit",
+      "BMR of exponential model",
+      "BMR of linear model"
+    ),
+    align = 'llrrrr',
+    caption = "Table 8. Summary of the estimated BMR"
+  ) %>%
+  kable_styling() %>%
+  scroll_box()
 ```
 
 
 ```{r 59lowest_BMR, include=FALSE}
-# bmr_output_pearson$outcome[which(is.na(bmr_output_pearson$outcome))] = 0
-# bmr_thresh_pearson <- bmr_output_pearson$outcome %>%
-#     mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
-#     pull(bmr)
-# 
-# input_pearson_tib <- bmr_output_pearson_out %>%
-#   nest_join(simi_norm_tib_4rcurvep_pearson_no_extrm, by = c("endpoint"), keep = TRUE, name = "data") %>%
-#   select(RNGE, endpoint, bmr_exp, data)
+bmr_output_pearson$outcome[which(is.na(bmr_output_pearson$outcome))] = 0
+bmr_thresh_pearson <- bmr_output_pearson$outcome %>%
+    mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
+    pull(bmr)
+
+input_pearson_tib <- bmr_output_pearson_out %>%
+  nest_join(simi_norm_tib_4rcurvep_pearson, by = c("endpoint"), keep = TRUE, name = "data") %>%
+  select(RNGE, endpoint, bmr_exp, data)
 ```
 
 ```{r 59.1lowest_BMR, include=FALSE}
@@ -1155,7 +1199,7 @@ bmr_thresh_spearman <- bmr_output_spearman$outcome %>%
     pull(bmr)
 
 input_spearman_tib <- bmr_output_spearman_out %>%
-  nest_join(simi_norm_tib_4rcurvep_spearman_no_extrm, by = c("endpoint"), keep = TRUE, name = "data") %>%
+  nest_join(simi_norm_tib_4rcurvep_spearman, by = c("endpoint"), keep = TRUE, name = "data") %>%
   select(RNGE, endpoint, bmr_exp, data)
 ```
 
@@ -1248,50 +1292,50 @@ system.time(
 ```
 
 ```{r 61calculating_benchmark_dose_2, echo=FALSE, collapse=TRUE, warning=FALSE}
-sum_bmd_dat_nobin_neg_pearson <- summarize_rcurvep_output(bmd_dat_nobin_neg_pearson[[1]], inactivate = c("U_SHAPE", "NOISY", "BLIP", "PART_U?"), ci_level = 0.95)
-sum_bmd_dat_nobin_neg_spearman <- summarize_rcurvep_output(bmd_dat_nobin_neg_spearman[[1]], inactivate = c("U_SHAPE", "NOISY", "BLIP", "PART_U?"), ci_level = 0.95)
+sum_bmd_dat_nobin_neg_pearson <- summarize_rcurvep_output(bmd_dat_nobin_neg_pearson[[1]], inactivate = c("U_SHAPE", "NOISY", "BLIP", "PART_U?", "INVERSE"), ci_level = 0.95)
+sum_bmd_dat_nobin_neg_spearman <- summarize_rcurvep_output(bmd_dat_nobin_neg_spearman[[1]], inactivate = c("U_SHAPE", "NOISY", "BLIP", "PART_U?", "INVERSE"), ci_level = 0.95)
 
 sum_bmd_dat_nobin_neg <- rbind(sum_bmd_dat_nobin_neg_pearson$act_summary, sum_bmd_dat_nobin_neg_spearman$act_summary)
 ```
 
 
 ```{r 61.1write_data, include=FALSE}
-saveRDS(object = sum_bmd_dat_nobin_neg_pearson, file = "Output/sum_bmd_dat_nobin_neg_pearson.rds")
-saveRDS(object = bmd_dat_nobin_neg_spearman, file = "Output/bmd_dat_nobin_neg_spearman.rds")
-saveRDS(object = bmd_dat_nobin_neg_pearson, file = "Output/bmd_dat_nobin_neg_pearson.rds")
-saveRDS(object = sum_bmd_dat_nobin_neg_spearman, file = "Output/sum_bmd_dat_nobin_neg_spearman.rds")
-saveRDS(object = sum_bmd_dat_nobin_neg, file = "Output/sum_bmd_dat_nobin_neg.rds")
-saveRDS(object = input_pearson_tib, file = "Output/input_pearson_tib.rds")
-saveRDS(object = input_spearman_tib, file = "Output/input_spearman_tib.rds")
-
-############
-
-saveRDS(object = bmds_fitted_pearson, file = "Output/bmds_fitted_pearson.rds")
-saveRDS(object = fitted_hits_pearson, file = "Output/fitted_hits_pearson.rds")
-saveRDS(object = pearson_fitted_output_summary, file = "Output/pearson_fitted_output_summary.rds")
-
-saveRDS(object = bmds_fitted_spearman, file = "Output/bmds_fitted_spearman.rds")
-saveRDS(object = fitted_hits_spearman, file = "Output/fitted_hits_spearman.rds")
-saveRDS(object = spearman_fitted_output_summary, file = "Output/spearman_fitted_output_summary.rds")
+# saveRDS(object = sum_bmd_dat_nobin_neg_pearson, file = "Output/sum_bmd_dat_nobin_neg_pearson.rds")
+# saveRDS(object = bmd_dat_nobin_neg_spearman, file = "Output/bmd_dat_nobin_neg_spearman.rds")
+# saveRDS(object = bmd_dat_nobin_neg_pearson, file = "Output/bmd_dat_nobin_neg_pearson.rds")
+# saveRDS(object = sum_bmd_dat_nobin_neg_spearman, file = "Output/sum_bmd_dat_nobin_neg_spearman.rds")
+# saveRDS(object = sum_bmd_dat_nobin_neg, file = "Output/sum_bmd_dat_nobin_neg.rds")
+# saveRDS(object = input_pearson_tib, file = "Output/input_pearson_tib.rds")
+# saveRDS(object = input_spearman_tib, file = "Output/input_spearman_tib.rds")
+# 
+# ############
+# 
+# saveRDS(object = bmds_fitted_pearson, file = "Output/bmds_fitted_pearson.rds")
+# saveRDS(object = fitted_hits_pearson, file = "Output/fitted_hits_pearson.rds")
+# saveRDS(object = pearson_fitted_output_summary, file = "Output/pearson_fitted_output_summary.rds")
+# 
+# saveRDS(object = bmds_fitted_spearman, file = "Output/bmds_fitted_spearman.rds")
+# saveRDS(object = fitted_hits_spearman, file = "Output/fitted_hits_spearman.rds")
+# saveRDS(object = spearman_fitted_output_summary, file = "Output/spearman_fitted_output_summary.rds")
 ```
 
 ```{r 61.1read_data, include=FALSE}
-sum_bmd_dat_nobin_neg_pearson <- readRDS(file = "Output/sum_bmd_dat_nobin_neg_pearson.rds")
-bmd_dat_nobin_neg_spearman <- readRDS(file = "Output/bmd_dat_nobin_neg_spearman.rds")
-bmd_dat_nobin_neg_pearson <- readRDS(file = "Output/bmd_dat_nobin_neg_pearson.rds")
-sum_bmd_dat_nobin_neg_spearman <- readRDS(file = "Output/sum_bmd_dat_nobin_neg_spearman.rds")
-sum_bmd_dat_nobin_neg <- readRDS(file = "Output/sum_bmd_dat_nobin_neg.rds")
-input_pearson_tib <- readRDS(file = "Output/input_pearson_tib.rds")
-input_spearman_tib <- readRDS(file = "Output/input_spearman_tib.rds")
-
-############
-bmds_fitted_pearson <- readRDS(file = "Output/bmds_fitted_pearson.rds")
-fitted_hits_pearson <- readRDS(file = "Output/fitted_hits_pearson.rds")
-pearson_fitted_output_summary <- readRDS(file = "Output/pearson_fitted_output_summary.rds")
-
-bmds_fitted_spearman <- readRDS(file = "Output/bmds_fitted_spearman.rds")
-fitted_hits_spearman <- readRDS(file = "Output/fitted_hits_spearman.rds")
-spearman_fitted_output_summary <- readRDS(file = "Output/spearman_fitted_output_summary.rds")
+# sum_bmd_dat_nobin_neg_pearson <- readRDS(file = "Output/sum_bmd_dat_nobin_neg_pearson.rds")
+# bmd_dat_nobin_neg_spearman <- readRDS(file = "Output/bmd_dat_nobin_neg_spearman.rds")
+# bmd_dat_nobin_neg_pearson <- readRDS(file = "Output/bmd_dat_nobin_neg_pearson.rds")
+# sum_bmd_dat_nobin_neg_spearman <- readRDS(file = "Output/sum_bmd_dat_nobin_neg_spearman.rds")
+# sum_bmd_dat_nobin_neg <- readRDS(file = "Output/sum_bmd_dat_nobin_neg.rds")
+# input_pearson_tib <- readRDS(file = "Output/input_pearson_tib.rds")
+# input_spearman_tib <- readRDS(file = "Output/input_spearman_tib.rds")
+# 
+# ############
+# bmds_fitted_pearson <- readRDS(file = "Output/bmds_fitted_pearson.rds")
+# fitted_hits_pearson <- readRDS(file = "Output/fitted_hits_pearson.rds")
+# pearson_fitted_output_summary <- readRDS(file = "Output/pearson_fitted_output_summary.rds")
+# 
+# bmds_fitted_spearman <- readRDS(file = "Output/bmds_fitted_spearman.rds")
+# fitted_hits_spearman <- readRDS(file = "Output/fitted_hits_spearman.rds")
+# spearman_fitted_output_summary <- readRDS(file = "Output/spearman_fitted_output_summary.rds")
 ```
 
 
@@ -1508,7 +1552,7 @@ pearson_fitted_expr <- expression(value(future({
     create_dataset(d = temp_pearson, n_samples = params$sample_size),
     modls = c("hill", "cnst"),
     keep_sets = c("fit_set", "resp_set"),
-    n_samples = 100,
+    n_samples = 1,
     hill_pdir = -1
   )
 }, seed = 42069)))
@@ -1530,7 +1574,7 @@ spearman_fitted_expr <- expression(value(future({
     create_dataset(d = temp_spearman, n_samples = params$sample_size),
     modls = c("hill", "cnst"),
     keep_sets = c("fit_set", "resp_set"),
-    n_samples = 100,
+    n_samples = 1,
     hill_pdir = -1
   )
 }, seed = 42069)))
@@ -1548,7 +1592,7 @@ spearman_fitted <- eval(spearman_fitted_expr)
 
 #Wrangling
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
-number_of_dose_groups_per_chem <- 5 # Set this to the number of dose groups you have
+#number_of_dose_groups_per_chem <- 6 # Set this to the number of dose groups you have
 #Pearson
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 pearson_fitted_output <-
@@ -1631,18 +1675,22 @@ bmds_fitted_spearman <- spearman_fitted_output_summary %>%
 #Pearson
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 p_pearson_fitted <- ggplot(NULL, aes(conc, resp)) +
-  geom_line(
+  geom_smooth(
     data = pearson_fitted_output_summary,
     mapping = aes(x = conc, y = fitted_resp, group = sample_id),
     color = "gray75",
-    alpha = 0.4
+    alpha = 0.4,
+    se = FALSE,
+    method = ""
   ) +
   # geom_point(data = pearson_fitted_output_summary, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9", alpha = 0.7) +
-  geom_line(
+  geom_smooth(
     data = fitted_hits_pearson,
     mapping = aes(x = conc, y = fitted_resp, group = sample_id),
     color = "#a9a9a9",
-    alpha = 0.7
+    alpha = 0.7,
+    se = FALSE,
+    method = "lm"
   ) +
   # geom_line(data = confident_fitted_hits_pearson[["cil"]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "purple") +
   # geom_line(data = confident_fitted_hits_pearson[["ciu"]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "yellow") +
