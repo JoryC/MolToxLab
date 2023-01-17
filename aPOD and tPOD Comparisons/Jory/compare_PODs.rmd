@@ -1,0 +1,90 @@
+---
+title: "Comparing Points of Departure"
+author: "Jory Curry"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  html_document:
+    code_folding: show
+    df_print: paged
+    toc: true
+    toc_depth: 5
+    toc_float: true
+    theme: readable
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r library, include=FALSE}
+library(readr)
+library(stringr)
+library(dplyr)
+library(ggplot2)
+library(scales)
+```
+
+
+```{r import, echo=FALSE, message=FALSE}
+files <- list.files(recursive = TRUE, pattern = "*.csv", full.names = TRUE)
+
+dat <- lapply(files, read_csv)
+names(dat) <- str_remove(files, pattern = "./BMDs/")
+names(dat) <- str_remove(names(dat), pattern = ".csv")
+all_dat <- plyr::ldply(dat)
+```
+
+```{r wrangling, echo=TRUE}
+dat <- all_dat %>%
+  mutate(chemical = if_else(condition = chemical == "1decanol", true = "1-Decanol", false = chemical)) %>%
+  mutate(chemical = if_else(condition = chemical == "1octanol", true = "1-Octanol", false = chemical)) %>%
+  mutate(chemical = if_else(condition = chemical == "24DMP", true = "24-DMP", false = chemical)) %>%
+  mutate(chemical = if_else(condition = chemical == "24DNP", true = "24-DNP", false = chemical)) %>%
+  mutate(chemical = if_else(condition = chemical == "34DCA", true = "34-DCA", false = chemical)) %>%
+  mutate(chemical = if_else(condition = chemical == "4TPP", true = "4-TPP", false = chemical)) %>%
+  mutate(chemical = if_else(condition = chemical == "ClofibricAcid", true = "Clofibric-acid", false = chemical)) %>%
+  mutate(chemical = if_else(condition = chemical == "Dimethylformamide", true = "NN-Dimethylformamide", false = chemical)) %>%
+  mutate(chemical = if_else(condition = chemical == "Fenitrothione", true = "Fenitrothion", false = chemical)) %>%
+  group_by(.id, chemical) %>%
+  summarise(min = min(lowest_conc),
+            max = max(highest_conc),
+            median_POD = median_POD,
+            POD_med = POD_med,
+            mean_POD = mean_POD,
+            low_conf = cil_POD,
+            high_conf = ciu_POD,
+            hit_confidence = hit_confidence)
+```
+
+```{r}
+p <- ggplot() +
+  #y axis
+  scale_y_discrete(name = "Endpoint") +
+  #x axis
+  scale_x_log10(name = "Dose (mg/L)") +
+  #layout
+  theme_classic() +
+  #Median Points
+  geom_point(data = dat,
+             aes(x = median_POD,
+                 y = .id)) +
+  #RCurveP Median Points
+  geom_point(data = dat,
+             aes(x = POD_med,
+                 y = .id),
+             position = position_nudge(y = 0.4),
+             color = "red") +
+  #Confidence intervals
+  geom_errorbarh(data = dat, 
+                 aes(xmin = low_conf,
+                     xmax = high_conf,
+                     y = .id)) +
+  #Dummy data for x-axis-limits
+  geom_blank(data = dat,
+             aes(x = min, y = .id)) +
+  geom_blank(data = dat,
+             aes(x = max, y = .id)) +
+  #Facet wrap plots by chemical
+  facet_wrap( ~ chemical, scales = "free")
+```
+

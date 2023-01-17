@@ -1,0 +1,374 @@
+---
+title: "4.1_CurveP_z_score_negative_direction"
+author: "Jory Curry"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  html_document:
+    code_folding: show
+    df_print: paged
+    toc: true
+    toc_depth: 5
+    toc_float: true
+    theme: readable
+params:
+  direction: "dir"
+  sample_size: "sample_size"
+  n_dose_groups: "n_dose_groups"
+---
+
+```{r setup, include=FALSE}
+#knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r Libraries, include=FALSE}
+library(Rcurvep)
+library(tidyverse)
+library(future)
+library(future.apply)
+library(furrr)
+library(kableExtra)
+source("Functions/RCurveP_Data_Wrangling_Functions.R")
+```
+
+```{r import_data, include=FALSE, message=FALSE, warning=FALSE}
+z_dat <- read_csv(file = "Data/z-score_data.csv")
+
+metaData <- read.csv(file = "Data/MetaData.csv") #Import the Meta Data that includes information about the data in the folders
+#CAS is the Chemical Abstract Service, MOA is the Mode of Action. This table includes useful information about the exposure concentrations for each chemical dose in mg/L. We'll use this later to create our final data frame
+doseData <- metaData %>%
+  dplyr::select(plate_id, Dose1:Control) %>%
+  gather(key = Dose, value = "Dose_mg_L", Dose1:Control)
+
+lowest_dose_treatment_group <- doseData %>%
+  filter(Dose != "Control") %>%
+  dplyr::summarize(lowest_dose_treatment_group = min(Dose_mg_L))
+lowest_dose_treatment_group <- lowest_dose_treatment_group[1,][[1]]
+
+ss <- params$sample_size
+dir <- params$direction
+number_of_dose_groups_per_chem <- params$n_dose_groups # Set this to the number of dose groups you have (including control)
+
+bmr_thresh <- readRDS("Data/negative_direction_bmr.R")
+input_tib <- readRDS("Data/negative_direction_bmr_tibble.R")
+```
+
+```{r prep_data_for_rCurveP, echo=TRUE}
+z_dat <- z_dat %>%
+  mutate(endpoint = "z_score") %>%
+  rename(resp = z_score,
+         chemical = Chemical) %>%
+  mutate(`Dose(mg/L)` = `Dose(mg/L)`/lowest_dose_treatment_group[[1]]) %>%
+  mutate(conc = log10(`Dose(mg/L)`)) %>%
+  group_by(chemical, endpoint) %>%
+  mutate(control_conc = max(conc)-5) %>% #making sure there are no infinite values for concentrations. Controls are made to be 1 dose group down from the lowest concentration
+  mutate(conc = if_else(condition = conc == -Inf, true = control_conc, false = conc)) %>%
+  dplyr::select(endpoint, chemical, conc, resp)
+```
+
+```{r CurveP_calc, echo=TRUE}
+#calculate the BMD step 1
+system.time(
+  bmd_dat_neg <-
+    future_pmap(
+      input_tib,
+      ~ combi_run_rcurvep(
+        ..4,
+        TRSH = ..3,
+        RNGE = ..1,
+        MXDV = (6*0.05), #Default value is 5/100 so adjusting scale... Maximum allowed deviation from monotonicity (default = 5).
+        n_samples = ss,
+        keep_sets = c("act_set", "resp_set"),
+        TrustHi = FALSE,
+        seed = 42069
+      ),
+      .options = furrr_options(seed = 42069)
+    )
+)
+```
+
+```{r summarise_rcurveP_results, echo=TRUE}
+#calculate the BMD step 2
+sum_bmd_dat_neg <-
+  summarize_rcurvep_output(
+    bmd_dat_neg[[1]],
+    inactivate = "INVERSE",
+    ci_level = 0.95
+  )
+
+#summarise the results
+simulated_curves_summary <-
+  summarise_rcurvep_results(
+    resp_set = sum_bmd_dat_neg$result$resp_set,
+    act_set = sum_bmd_dat_neg$result$act_set,
+    act_summary = sum_bmd_dat_neg$act_summary,
+    reject_hit_conf_under = 0.1
+  )
+
+bmds <- bmd_results(simulated_curves_summary)
+
+curve_hits <- simulated_curves_summary %>%
+  filter(hit == 1)
+
+confident_curves <- confident_hits(summary_dat = simulated_curves_summary, reject_hit_conf_under = 0.1)
+# If Error says "out of bounds", reduce conf filter
+```
+
+```{r plot_results, echo=FALSE}
+p <- ggplot(NULL, aes(conc, resp)) +
+  geom_point(
+    data = simulated_curves_summary,
+    mapping = aes(x = conc, y  = resp, group = sample_id),
+    color = "gray75",
+    alpha = 0.2
+  ) +
+  geom_point(
+    data = curve_hits,
+    mapping = aes(x = conc, y = resp, group = sample_id),
+    color = "#a9a9a9",
+    alpha = 0.7
+  ) +
+  geom_line(
+    data = simulated_curves_summary,
+    mapping = aes(x = conc, y = resp, group = sample_id),
+    color = "gray75",
+    alpha = 0.2
+  ) +
+  geom_line(
+    data = curve_hits,
+    mapping = aes(x = conc, y = resp, group = sample_id),
+    color = "#a9a9a9",
+    alpha = 0.7
+  ) +
+  # geom_line(data = confident_curves[["cil"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "purple") +
+  # geom_line(data = confident_curves[["ciu"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_curves[["mean"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "green") +
+  # geom_line(data = confident_curves[["median"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "blue") +
+  geom_hline(
+    yintercept = -bmr_thresh,
+    linetype = "dashed",
+    color = "red"
+  ) +
+  geom_vline(data = bmds,
+             aes(xintercept = median_POD),
+             color = "blue") +
+  # geom_vline(data = bmds,
+  #            aes(xintercept = POD_med),
+  #            color = "green") +
+  geom_vline(data = bmds, aes(xintercept = ciu_POD), color = "yellow") +
+  # geom_vline(data = bmds_pearson, aes(xintercept = mean_POD), color = "green") +
+  geom_vline(data = bmds, aes(xintercept = cil_POD), color = "purple") +
+  geom_text(
+    data = bmds,
+    mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc +
+                    1),
+    y = -85,
+    inherit.aes = FALSE,
+    size = 4
+  ) +
+  facet_wrap( ~ chemical, scales = "free") +
+  ylim(-6, 6) +
+  theme_minimal() +
+  theme(
+    panel.border = element_rect(colour = "grey50", fill = NA),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+```
+
+```{r save_the_resutls, include=FALSE}
+#save the image
+ggsave(
+  plot = p,
+  filename = paste0(
+    "Output/Images/", "z_score_", dir, "_", "_processed_curves_",
+    ss,
+    "_samples.svg"
+  ),
+  device = "svg",
+  units = "px",
+  width = 1920,
+  height = 1080,
+  bg = "white",
+  scale = 3
+)
+```
+
+```{r print_image, echo=FALSE}
+knitr::include_graphics(
+  paste0(
+    "Output/Images/",
+    "z_score_",
+    dir,
+    "_",
+    "_processed_curves_",
+    ss,
+    "_samples.svg"
+  )
+)
+```
+
+```{r alternativeplot_results, echo=FALSE}
+p <- ggplot(NULL, aes(conc, resp)) +
+  geom_point(
+    data = simulated_curves_summary,
+    mapping = aes(x = conc, y  = resp, group = sample_id),
+    color = "gray75",
+    alpha = 0.2
+  ) +
+  geom_point(
+    data = curve_hits,
+    mapping = aes(x = conc, y = resp, group = sample_id),
+    color = "#a9a9a9",
+    alpha = 0.7
+  ) +
+  geom_line(
+    data = simulated_curves_summary,
+    mapping = aes(x = conc, y = resp, group = sample_id),
+    color = "gray75",
+    alpha = 0.2
+  ) +
+  geom_line(
+    data = curve_hits,
+    mapping = aes(x = conc, y = resp, group = sample_id),
+    color = "#a9a9a9",
+    alpha = 0.7
+  ) +
+  # geom_line(data = confident_curves[["cil"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "purple") +
+  # geom_line(data = confident_curves[["ciu"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_curves[["mean"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "green") +
+  # geom_line(data = confident_curves[["median"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "blue") +
+  geom_hline(
+    yintercept = -bmr_thresh,
+    linetype = "dashed",
+    color = "red"
+  ) +
+  geom_vline(data = bmds,
+             aes(xintercept = median_POD),
+             color = "blue") +
+  geom_vline(data = bmds,
+             aes(xintercept = POD_med),
+             color = "green") +
+  geom_vline(data = bmds, aes(xintercept = ciu_POD), color = "yellow") +
+  # geom_vline(data = bmds_pearson, aes(xintercept = mean_POD), color = "green") +
+  geom_vline(data = bmds, aes(xintercept = cil_POD), color = "purple") +
+  geom_text(
+    data = bmds,
+    mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc +
+                    1),
+    y = -85,
+    inherit.aes = FALSE,
+    size = 4
+  ) +
+  facet_wrap( ~ chemical, scales = "free") +
+  ylim(-6, 6) +
+  theme_minimal() +
+  theme(
+    panel.border = element_rect(colour = "grey50", fill = NA),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+```
+
+```{r alternative_save_the_resutls, include=FALSE}
+#save the image
+ggsave(
+  plot = p,
+  filename = paste0(
+    "Output/Images/", "z_score_", dir, "_", "_processed_curves_",
+    ss,
+    "_samples_alternative.svg"
+  ),
+  device = "svg",
+  units = "px",
+  width = 1920,
+  height = 1080,
+  bg = "white",
+  scale = 3
+)
+```
+
+```{r alternative_print_image, echo=FALSE}
+knitr::include_graphics(
+  paste0(
+    "Output/Images/",
+    "z_score_",
+    dir,
+    "_",
+    "_processed_curves_",
+    ss,
+    "_samples_alternative.svg"
+  )
+)
+```
+
+```{r table_the_results, echo=TRUE}
+#Table the results
+temp <- list(bmds)
+names(temp) <- c(paste0("z_score_", dir, "_dir"))
+all_summarized_bmd_dat <- plyr::ldply(temp)
+all_summarized_bmd_dat <- all_summarized_bmd_dat %>%
+  arrange(chemical)
+
+all_summarized_bmd_dat %>%
+  mutate(lowest_conc = lowest_conc + 1) %>%
+  mutate(
+    lowest_conc = (10 ^ lowest_conc)*lowest_dose_treatment_group,
+    highest_conc = sprintf((10 ^ highest_conc)*lowest_dose_treatment_group, fmt = '%.7f'),
+    cil_POD = (10 ^ cil_POD)*lowest_dose_treatment_group,
+    POD_med = (10 ^ POD_med)*lowest_dose_treatment_group,
+    ciu_POD = (10 ^ ciu_POD)*lowest_dose_treatment_group,
+    median_POD = (10 ^ median_POD)*lowest_dose_treatment_group,
+    mean_POD = (10 ^ mean_POD)*lowest_dose_treatment_group
+  ) %>%
+  mutate(POD_med = if_else(is.na(POD_med), true = median_POD, false = POD_med)) %>%
+  dplyr::select(
+    chemical,
+    .id,
+    lowest_conc,
+    highest_conc,
+    cil_POD,
+    POD_med,
+    ciu_POD,
+    hit_confidence
+  ) %>%
+  kable(
+    col.names = c(
+      "Chemical",
+      "endpoint",
+      "Low Dose (mg/L)",
+      "High Dose (mg/L)",
+      "BMD - low confidence interval (0.05)",
+      "BMD",
+      "BMD - high confidence interval (0.95)",
+      "Hit Confidence"
+    ),
+    caption = "Table 9. Summary of all the benchmark doses (BMDs) of every chemical"
+  ) %>%
+  kable_styling() %>%
+  row_spec(
+    which(
+      all_summarized_bmd_dat$median_POD < all_summarized_bmd_dat$highest_conc
+    ),
+    bold = TRUE,
+    background = "gray"
+  ) %>%
+  scroll_box()
+```
+
+```{r 2.save_the_resutls, include=FALSE}
+#Save the data
+data <- all_summarized_bmd_dat %>%
+  mutate(lowest_conc = lowest_conc + 1) %>%
+  mutate(
+    lowest_conc = (10 ^ lowest_conc)*lowest_dose_treatment_group,
+    highest_conc = sprintf((10 ^ highest_conc)*lowest_dose_treatment_group, fmt = '%.7f'),
+    cil_POD = (10 ^ cil_POD)*lowest_dose_treatment_group,
+    POD_med = (10 ^ POD_med)*lowest_dose_treatment_group,
+    ciu_POD = (10 ^ ciu_POD)*lowest_dose_treatment_group,
+    median_POD = (10 ^ median_POD)*lowest_dose_treatment_group,
+    mean_POD = (10 ^ mean_POD)*lowest_dose_treatment_group
+  ) %>%
+  mutate(POD_med = if_else(is.na(POD_med), true = median_POD, false = POD_med))
+
+write_csv(x = data, file = paste0("Output/", "BMDs/", "z_score_", dir, "_", "BMDs_", ss, "_samples.csv"))
+```
