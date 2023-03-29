@@ -1,0 +1,166 @@
+---
+title: "Estimating BMR - Report for `r params$endpoint` using the `r params$method` method with sample size of `r params$sample_size`"
+author: "Jory Curry"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  html_document:
+    code_folding: show
+    df_print: paged
+    toc: true
+    toc_depth: 5
+    toc_float: true
+    theme: readable
+params:
+  value: "value"
+  sample_size: "sample_size"
+  endpoint: "pearson"
+  method: "rcurvep"
+---
+
+```{r 1setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE)
+options(scipen = 9)
+```
+
+```{r 2libraries, include=FALSE}
+library(knitr)
+library(kableExtra)
+library(gridExtra)
+library(rlang)
+library(Rcurvep)
+library(DescTools)
+library(data.table)
+library(car)
+library(lazyeval)
+library(DT)
+library(here)
+library(future) 
+library(future.apply) # from original future author
+library(furrr) # use future.apply but similar to purrr package
+library(tidyverse)
+future::plan(multisession, workers = availableCores()) # windows, Mac needs multicore
+source("Functions/cal_auc_simi_endpoints.R")
+source("Functions/behavioural_endpoint_calc.R")
+source("Functions/RCurveP_Data_Wrangling_Functions.R")
+```
+
+
+
+# Toxicology Behavioural Analysis Report
+
+## Version Control
+```{r 3version_control, comment="", class.source ='fold-hide'}
+# - My Machine Info:
+#   - R version 4.2.1 (2022-06-23)
+#   - Platform: x86_64-pc-linux-gnu (64-bit)         5.11.0-34-generic / Ubuntu 22.04.1 LTS
+#   - Desktop: GNOME 3.36.5
+#   - Hardware: CPU - Intel Core i5-9400F 6 core 4.1GHz / RAM - 15924MiB
+```
+
+
+```{r 8directory, include=FALSE}
+dir <- paste0(getwd(), "/Data/All")
+```
+
+```{r 9directory_files_filenames, include=FALSE}
+fileNames <- list.files("Data/Raw") #Get the name of each .csv file
+chemicalNames <- str_split(string = fileNames, pattern = ".csv", simplify = TRUE)[,1] #Identify the chemicals included in the files
+metaData <- read.csv(file = "Data/MetaData.csv") #Import the Meta Data that includes information about the data in the folders
+#CAS is the Chemical Abstract Service, MOA is the Mode of Action. This table includes useful information about the exposure concentrations for each chemical dose in mg/L. We'll use this later to create our final data frame
+#HighDose <- setNames(metaData[,6], chemicalNames) #subsetting metadata
+doseData <- metaData %>%
+  select(plate_id, Dose1:Control) %>%
+  gather(key = Dose, value = "Dose_mg_L", Dose1:Control)
+number_of_dose_groups_per_chem <- 6 # Set this to the number of dose groups you have (including control)
+lowest_dose_treatment_group <- doseData %>%
+    filter(Dose != "Control") %>%
+    dplyr::summarize(lowest_dose_treatment_group = min(Dose_mg_L))
+lowest_dose_treatment_group <- lowest_dose_treatment_group[1,][[1]]
+simi_norm_tib_4rcurvep_pearson <- readRDS(file = paste0("Data/", "simi_norm_tib_4rcurvep_pearson.rds"))
+```
+
+
+## Similarity Scores/Correlation coefficients
+
+### Benchmark Dose
+
+Since we do not know what the benchmark response is for each one of the chemicals, a method will be used that can estimate a benchmark response (empirically) when given a large enough set of data. The RcurveP package includes an automated process to select an appropriate BMR based off of the data. From Hsieh et al. 2019 manuscript: "The pooled variance of potency of all chemicals per [threshold value (i.e. 5 through 99)] was calculated. The BMR was considered as the [threshold value] at which the potency variance was sufficiently reduced and was the lowest threshold that potency variance was stabilized". AKA, "the lowest threshold (which gives the highest potency), at which a decrease of variance in potency estimation is stabilized"
+
+#### Negative Direction
+
+```{r 56estimating_BMR/CurveSimulation, include=FALSE, warning=FALSE, message=FALSE}
+
+set.seed(42069)
+
+BMR_training_set_act_pearson_eval <- expression(
+  value(
+    future({
+      combi_run_rcurvep(
+  simi_norm_tib_4rcurvep_pearson,
+  n_samples = params$sample_size, #Increase this number to 100 or 1000 for better results (takes a long time to run)
+  keep_sets = c("act_set", "resp_set", "fp_set"),
+  TRSH = seq(5, 95, by = 5),
+  RNGE = -1000000,
+  TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
+      )
+    }, seed = 42069)
+  )
+)
+
+BMR_training_set_act_pearson <- eval(BMR_training_set_act_pearson_eval)
+
+
+
+```
+
+```{r store_bmr, echo=FALSE, fig.height=6, fig.width=9}
+bmr_output_pearson <-
+  estimate_dataset_bmr(BMR_training_set_act_pearson, plot = FALSE)
+bmr_output_pearson_out <- bmr_output_pearson$outcome
+
+plot(bmr_output_pearson)
+```
+
+```{r 56.1Clear_up_Memory_Before_moving_on_to_next_step, include=FALSE}
+rm(BMR_training_set_act_pearson)
+gc()
+```
+
+```{r 58estimating_BMR_3, echo=FALSE}
+bmr_output_pearson_out %>%
+  select(endpoint, qc, cor_exp_fit, cor_lm_fit, bmr_exp, bmr_ori) %>%
+  kable(
+    col.names = c(
+      "Endpoint",
+      "Quality Control Message",
+      "Correlation of expotential fit",
+      "Correlation of linear model fit",
+      "BMR of exponential model",
+      "BMR of linear model"
+    ),
+    align = 'llrrrr',
+    caption = "Table 8. Summary of the estimated BMR"
+  ) %>%
+  kable_styling() %>%
+  scroll_box()
+```
+
+```{r 59lowest_BMR, include=FALSE}
+bmr_output_pearson$outcome[which(is.na(bmr_output_pearson$outcome))] = 0
+bmr_thresh_pearson <- bmr_output_pearson$outcome %>%
+    mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
+    pull(bmr)
+
+input_pearson_tib <- bmr_output_pearson_out %>%
+  nest_join(simi_norm_tib_4rcurvep_pearson, by = c("endpoint"), keep = TRUE, name = "data") %>%
+  select(RNGE, endpoint, bmr_exp, data)
+
+saveRDS(object = bmr_thresh_pearson, file = paste0("Data/", params$endpoint, "_", params$method, "BMR.rds"))
+saveRDS(object = input_pearson_tib, file = paste0("Data/", "input_pearson_tib.rds"))
+```
+
+```{r 59.2Clear_up_Memory_Before_moving_on_to_next_step, include=FALSE}
+rm(BMR_training_set_act_pearson, BMR_training_set_act_pearson, bmr_output_pearson, bmr_output_pearson, bmr_output)
+gc()
+```

@@ -1,0 +1,7 @@
+.id,chemical,min,max,median_POD,POD_med,mean_POD,low_conf,high_conf,n_genes,Assay,confidence
+Chronic LOEC,4-TPP,1e-4,1,0.212,NA,NA,NA,NA,NA,Literature POD,1
+Acute LOEC,Fluoxetine,1e-5,0.1,0.25,NA,NA,NA,NA,NA,Literature POD,1
+Chronic LOEC,Fluoxetine,1e-5,0.1,5.4e-4,NA,NA,NA,NA,NA,Literature POD,1
+Chronic LOEC,17betaestradiol,1e-5,0.1,2.83e-5,NA,NA,NA,NA,NA,Literature POD,1
+Acute LOEC,BPAF,1e-4,1,0.01,NA,NA,NA,NA,NA,Literature POD,1
+Chronic LOEC,BPAF,1e-4,1,0.05,NA,NA,NA,NA,NA,Literature POD,1

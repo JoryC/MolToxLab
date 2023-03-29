@@ -1,0 +1,143 @@
+---
+title: "3.2_CurveP_z_score_positive_direction BMR Estimation"
+author: "Jory Curry"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  html_document:
+    code_folding: show
+    df_print: paged
+    toc: true
+    toc_depth: 5
+    toc_float: true
+    theme: readable
+params:
+  direction: "dir"
+  sample_size: "sample_size"
+  n_dose_groups: "n_dose_groups"
+---
+
+```{r setup, include=FALSE}
+#knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r Libraries, include=FALSE}
+library(Rcurvep)
+library(tidyverse)
+library(future)
+library(future.apply)
+library(furrr)
+library(kableExtra)
+source("Functions/RCurveP_Data_Wrangling_Functions.R")
+```
+
+```{r import_data, include=FALSE}
+z_dat <- read_csv(file = "Data/z-score_data.csv")
+
+metaData <- read.csv(file = "Data/MetaData.csv") #Import the Meta Data that includes information about the data in the folders
+#CAS is the Chemical Abstract Service, MOA is the Mode of Action. This table includes useful information about the exposure concentrations for each chemical dose in mg/L. We'll use this later to create our final data frame
+doseData <- metaData %>%
+  dplyr::select(plate_id, Dose1:Control) %>%
+  gather(key = Dose, value = "Dose_mg_L", Dose1:Control)
+
+lowest_dose_treatment_group <- doseData %>%
+  filter(Dose != "Control") %>%
+  dplyr::summarize(lowest_dose_treatment_group = min(Dose_mg_L))
+lowest_dose_treatment_group <- lowest_dose_treatment_group[1,][[1]]
+
+number_of_dose_groups_per_chem <- params$n_dose_groups # Set this to the number of dose groups you have (including control)
+```
+
+```{r prep_data_for_rCurveP, include=FALSE}
+z_dat <- z_dat %>%
+  mutate(endpoint = "z_score") %>%
+  rename(resp = z_score,
+         chemical = Chemical) %>%
+  mutate(`Dose(mg/L)` = `Dose(mg/L)`/lowest_dose_treatment_group[[1]]) %>%
+  mutate(conc = log10(`Dose(mg/L)`)) %>%
+  group_by(chemical, endpoint) %>%
+  mutate(control_conc = max(conc)-5) %>% #making sure there are no infinite values for concentrations. Controls are made to be 1 dose group down from the lowest concentration
+  mutate(conc = if_else(condition = conc == -Inf, true = control_conc, false = conc)) %>%
+  dplyr::select(endpoint, chemical, conc, resp)
+```
+
+```{r 1.Estimate_BMR, include=FALSE}
+set.seed(550)
+
+#sample size
+ss <- params$sample_size
+
+#BMR estimating step 1 in the negative direction
+BMR_training_set <- expression(
+  value(
+    future({
+      combi_run_rcurvep(
+        z_dat,
+        n_samples = ss, #Increase this number to 100 or 1000 for better results (takes a long time to run)
+        keep_sets = c("act_set", "resp_set", "fp_set"),
+        TRSH = seq(0.25, 6, by = 0.25),
+        MXDV = (6*0.05), #Default value is 5/100 so adjusting scale... Maximum allowed deviation from monotonicity (default = 5).
+        RNGE = 1000000,
+        TrustHi = FALSE #We assume that there is more noise at the higher concentration, so if two correction sets are equal, go with the lower concentration set
+      )
+    }, seed = 550)
+  )
+)
+
+BMR_training_set_act <- eval(BMR_training_set)
+```
+
+```{r 2.Estimate_BMR, echo=FALSE, warning=FALSE, message=FALSE}
+#Bmr estimation step 2
+bmr_output <-
+  estimate_dataset_bmr(BMR_training_set_act, plot = FALSE)
+bmr_output_outcome <- bmr_output$outcome
+
+plot(bmr_output)
+```
+
+```{r clear_memory, include=FALSE}
+rm(BMR_training_set_act)
+gc()
+```
+
+```{r 3.Estimate_BMR, echo=FALSE}
+#Outcome of BMR estimation
+bmr_output_outcome %>%
+  dplyr::select(endpoint, qc, cor_exp_fit, cor_lm_fit, bmr_exp, bmr_ori) %>%
+  kable(
+    col.names = c(
+      "Endpoint",
+      "Quality Control Message",
+      "Correlation of expotential fit",
+      "Correlation of linear model fit",
+      "BMR of exponential model",
+      "BMR of linear model"
+    ),
+    align = 'llrrrr',
+    caption = "Table 8. Summary of the estimated BMR from the pooled variance from varying thresholds"
+  ) %>%
+  kable_styling() %>%
+  scroll_box()
+```
+
+```{r save_brm_and_tibble, include=FALSE}
+#Pull out the BMR
+bmr_output$outcome[which(is.na(bmr_output$outcome))] = 0
+bmr_thresh <- bmr_output$outcome %>%
+  mutate(bmr = if_else(condition = .$cor_lm_fit > .$cor_exp_fit, true = .$bmr_ori, false = .$bmr_exp)) %>%
+  pull(bmr)
+
+saveRDS(bmr_thresh, file = "Data/positive_direction_bmr.R")
+
+#Create input tibble for Benchmark Dose Calculation
+input_tib <- bmr_output_outcome %>%
+  nest_join(z_dat, by = c("endpoint"), keep = TRUE, name = "data") %>%
+  dplyr::select(RNGE, endpoint, bmr_exp, data)
+
+saveRDS(input_tib, file = "Data/positive_direction_bmr_tibble.R")
+```
+
+```{r Clear_up_Memory_Before_moving_on_to_next_step, include=FALSE}
+rm(bmr_output)
+gc()
+```

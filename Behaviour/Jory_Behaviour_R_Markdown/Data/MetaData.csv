@@ -1,30 +1,30 @@
 CAS,NAME,plate_id,MOA,RATIONALE,Dose1,Dose2,Dose3,Dose4,Dose5,Control
-50-28-2,17b-Estradiol,17beta_estradiol,ER binder (estrogenic),Used in multigen validation,0.1,0.01,0.001,0.0001,1E-05,0
+50-28-2,17b-Estradiol,17betaestradiol,ER binder (estrogenic),Used in multigen validation,0.1,0.01,0.001,0.0001,0.00001,0
 112-30-1,1-Decanol,1decanol,Polar Narcosis/weaker surfactant,Related to octanol,1,0.1,0.01,0.001,0.0001,0
 111-87-5,1-Octanol,1octanol,Polar Narcosis/weaker surfactant,In FET validation,10,1,0.1,0.01,0.001,0
 105-67-9,"2,4-Dimethylphenol",24DMP,NA,Related to 4-t octyl and pentylphenol/high ACR,1,0.1,0.01,0.001,0.0001,0
 51-28-5,"2,4 Dinitrophenol",24DNP,Respiratory un-coupler,In FET validation,10,1,0.1,0.01,0.001,0
 95-76-1,"3,4 dichloroanaline",34DCA,NA (negative control for endrocrine disruption),"Positive control in FET, chronic data available",1,0.1,0.01,0.001,0.0001,0
 59-50-7,4-chloro 3-methylphenol,4C3MP,Perhaps very weak ER or perhaps non-endocrine,"related to 2,4 dimethyl phenol, used in multigen validation",1,0.1,0.01,0.001,0.0001,0
-140-66-9,4-t Octylphenol,4TOP,Weak ER,Used in multigen validation/high ACR,0.1,0.01,0.001,0.0001,1E-05,0
+140-66-9,4-t Octylphenol,4TOP,Weak ER,Used in multigen validation/high ACR,0.1,0.01,0.001,0.0001,0.00001,0
 80-46-6,4-Tert Pentylphenol,4TPP,Weak ER,Related to 4-t-octylphenol/high ACR,1,0.1,0.01,0.001,0.0001,0
 62-53-3,Aniline,Aniline,NA,"Related to 3,4-dichloroaniline",10,1,0.1,0.01,0.001,0
 80-50-7,Bisphenol A,BPA,ER binder (estrogenic),Estrogenic BPA – Positive Control,1,0.1,0.01,0.001,0.0001,0
 1478-61-1,Bisphenol AF,BPAF,ER binder (estrogenic),Suspected estrogenic replacement,1,0.1,0.01,0.001,0.0001,0
-882-09-7,Clofibric Acid,Clofibric_Acid,"PPAR alpha, and interferes with auxin",Chronic data available,10,1,0.1,0.01,0.001,0
-56-53-1,Diethylstilbestrol,DES,ER binder (estrogenic),Estrogenic Control,0.1,0.01,0.001,0.0001,1E-05,0
+882-09-7,Clofibric Acid,ClofibricAcid,"PPAR alpha, and interferes with auxin",Chronic data available,10,1,0.1,0.01,0.001,0
+56-53-1,Diethylstilbestrol,DES,ER binder (estrogenic),Estrogenic Control,0.1,0.01,0.001,0.0001,0.00001,0
 68-12-2,NN-Dimethylformamide,Dimethylformamide,NA,NA,1000,100,10,1,0.1,0
 67-68-5,Dimethyl Sulfoxide,DMSO,Control,In validation set (Busquet et al 2014). High ACR. Chronic fish data,10,1,0.1,0.01,0.001,0
-57-63-6,Ethinyl estradiol,EE2,ER binder (estrogenic),Estrogenic Control,0.001,0.0001,1E-05,1E-06,1E-07,0
+57-63-6,Ethinyl estradiol,EE2,ER binder (estrogenic),Estrogenic Control,0.001,0.0001,0.00001,0.000001,0.0000001,0
 102676-47-1,Fadrozole,Fadrozole,Aromatase inhibitor,NA,1,0.1,0.01,0.001,0.0001,0
 122-14-5,Fenitrothion,Fenitrothion,Cholisesterase inhibitor (neurotoxic),Similar to malathion,1,0.1,0.01,0.001,0.0001,0
-54910-89-3,Fluoxetine,Fluoxetine,Selective Serotonin Re-uptake Inhibitor,Chronic toxicity data available,0.1,0.01,0.001,0.0001,1E-05,0
+54910-89-3,Fluoxetine,Fluoxetine,Selective Serotonin Re-uptake Inhibitor,Chronic toxicity data available,0.1,0.01,0.001,0.0001,0.00001,0
 13311-84-7,Flutamide,Flutamide,Anti-androgen,NA,1,0.1,0.01,0.001,0.0001,0
 1071-83-6,Glyphosate,Glyphosate,"Herbicide, amino acid inhibition",NA,1,0.1,0.01,0.001,0.0001,0
 121-75-5,Malathion,Malathion,Cholinesterase inhibitor (neurotox),In FET validation set (busquet et al 2014). Chronic fish data available. Related to fenitrothion,1,0.1,0.01,0.001,0.0001,0
 67747-09-5,Prochloraz,Prochloraz,Aromatase inhibitor/steroidogenesis inhibitor ,"Inlcuded in multigen study, in FET validation",1,0.1,0.01,0.001,0.0001,0
-151-21-3,Sodium Dodceyl Sulfate,SDS,Polar Narcosis/stronger surfactant,In the 21d literature review report (negative),0.1,0.01,0.001,0.0001,1E-05,0
+151-21-3,Sodium Dodceyl Sulfate,SDS,Polar Narcosis/stronger surfactant,In the 21d literature review report (negative),0.1,0.01,0.001,0.0001,0.00001,0
 112-27-6,Triethylene Glycol,TEG,Polar Narcosis/weaker surfactant,In FET validation set (Busquet et al 2014). Chronic fish data available,1000,100,10,1,0.1,0
 41481-66-7,"Phenol, 4,4'-sulfonylbis[2-(2-propenyl)-",TGSH,ER binder (estrogenic),Suspected NON-estr replacement,1,0.1,0.01,0.001,0.0001,0
-10161-33-8,17B-Trenbolone,Trenbolone,AR agonist,used in multigen validation,0.1,0.01,0.001,0.0001,1E-05,0
+10161-33-8,17B-Trenbolone,Trenbolone,AR agonist,used in multigen validation,0.1,0.01,0.001,0.0001,0.00001,0
 50471-44-8,Vinclozolin,Vinclozolin,AR antagonist,Used in multigen validation,1,0.1,0.01,0.001,0.0001,0

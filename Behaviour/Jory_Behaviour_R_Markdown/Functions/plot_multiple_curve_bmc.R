@@ -232,3 +232,68 @@ get_continuous_plot <- function(dd, annotation) {
                         labeller = labeller(endpoint = str_wrap_30))
   return(p)
 }
+
+#Function for visualizing the 'variable' for each dose with a geom_smooth, faceted by chemical... each geom_smooth represents the mean of 9 fish from that dose group. All 50 minutes of the experiment by default
+gg_smooth_AllChems <- function (data, y, ylab, min_start = 0, min_end = 50) {
+  start <- c(20,30,40)
+  end <- c(25,35,45)
+  dark <- data.frame(start, end)
+  data %>%
+    filter(time_end >= min_start & time_end <= min_end) %>%
+    group_by(plate_id, Dose, time_end) %>%
+    mutate_(meanvalue = interp(~ mean(na.omit(y)), y = as.name(y))) %>% # Must use lazy evaluation in the pipe and some depracated form of mutate_
+    mutate(Dose = factor(
+      Dose,
+      levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"),
+      ordered = TRUE
+    )) %>%
+    summarise(meanvalue = unique(meanvalue)) %>%
+    ggplot(data = ., mapping = aes(x = time_end, y = meanvalue, group = Dose)) +
+    geom_point(size = 0.1) +
+    geom_smooth(se = FALSE, aes(color = as.factor(Dose))) +
+    scale_colour_viridis_d() +
+    geom_rect(data = dark, inherit.aes = FALSE, # Adding dark rectangles to represent the dark cycles
+              aes(xmin = start, xmax = end, ymin = -Inf, ymax = Inf),
+              fill = 'black', alpha = 0.2) +
+    geom_vline(xintercept = 20, linetype = "dashed") +
+    facet_wrap(~plate_id, ncol = 6, strip.position = "top", scales = "free") +
+    #theme_classic() +
+    theme(strip.background = element_blank(), panel.background = element_blank()) +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+    xlab("Time [min]") +
+    ylab(ylab) +
+    xlim(min_start, min_end) +
+    guides(color = guide_legend(title = "Dose Group"))
+}
+
+#And to get a better look at what is driving the observed effects, this next function will show a within-plates point of view... plotting individual fish in each dose group
+smooth_oneChem <- function (data, chemical, y, ylab, min_start = 0, min_end = 50) {
+  start <- c(20,30,40)
+  end <- c(25,35,45)
+  dark <- data.frame(start, end)
+  yintercept <- mean(na.omit(filter(.data = data, plate_id == chemical)[[y]], Dose == "Control"))
+  data %>%
+    filter(time_end >= min_start & time_end <= min_end) %>%
+    filter(plate_id == chemical) %>%
+    group_by(plate_id, Dose_mg_L, time_end) %>%
+    mutate_(meanvalue = interp(~ mean(na.omit(y)), y = as.name(y))) %>%
+    ungroup() %>%
+    group_by(Dose_mg_L, replicate) %>%
+    ggplot(aes(x = time_end, y = .[[y]], group = as.factor(replicate), color = as.factor(replicate))) +
+    geom_line() +
+    scale_colour_viridis_d() +
+    geom_smooth(aes(x = time_end, y = meanvalue), se = FALSE, color = "black") +
+    geom_rect(data = dark, inherit.aes = FALSE,
+              aes(xmin = start, xmax = end, ymin = -Inf, ymax = Inf),
+              fill = 'black', alpha = 0.2) +
+    facet_wrap(~Dose_mg_L, ncol = 3) +
+    geom_vline(xintercept = 20, linetype = "dashed") +
+    geom_hline(yintercept = yintercept, linetype = "dashed", color = "red") +
+    theme(strip.background = element_blank(), panel.background = element_blank()) +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+    xlab("Time [min]") +
+    ylab(ylab) +
+    labs(title = chemical) +
+    xlim(min_start, min_end) +
+    theme(legend.position = "none")
+}

@@ -52,7 +52,7 @@ combinedancova <- function(x){
 ####combineddunnett function####
 #perform dunnnett's test in list
 combineddunnett <- function(df){
-  DunnettTest(x = df$endpoint_value_norm, g = df$dose)
+  DunnettTest(x = df$endpoint_value_norm, g = df$dose, ... = )
 }
 
 

@@ -1,0 +1,791 @@
+---
+title: "Comparing Points of Departure"
+author: "Jory Curry"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  html_document:
+    code_folding: show
+    df_print: paged
+    toc: true
+    toc_depth: 5
+    toc_float: true
+    theme: readable
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r library, include=FALSE}
+library(readr)
+library(stringr)
+library(dplyr)
+library(ggplot2)
+library(scales)
+```
+
+
+```{r import, echo=FALSE, message=FALSE}
+files <- list.files(path = "BMDs", recursive = FALSE, pattern = "*.csv", full.names = TRUE)
+
+dat <- lapply(files, read_csv)
+names(dat) <- str_remove(files, pattern = "./BMDs/")
+names(dat) <- str_remove(names(dat), pattern = ".csv")
+all_dat <- plyr::ldply(dat)
+```
+
+```{r wrangling, echo=TRUE}
+dat <- all_dat %>%
+  mutate(chemical = if_else(
+    condition = chemical == "1decanol",
+    true = "1-Decanol",
+    false = chemical
+  )) %>%
+  mutate(chemical = if_else(
+    condition = chemical == "1octanol",
+    true = "1-Octanol",
+    false = chemical
+  )) %>%
+  mutate(chemical = if_else(
+    condition = chemical == "24DMP",
+    true = "24-DMP",
+    false = chemical
+  )) %>%
+  mutate(chemical = if_else(
+    condition = chemical == "24DNP",
+    true = "24-DNP",
+    false = chemical
+  )) %>%
+  mutate(chemical = if_else(
+    condition = chemical == "34DCA",
+    true = "34-DCA",
+    false = chemical
+  )) %>%
+  mutate(chemical = if_else(
+    condition = chemical == "4TPP",
+    true = "4-TPP",
+    false = chemical
+  )) %>%
+  mutate(
+    chemical = if_else(
+      condition = chemical == "ClofibricAcid",
+      true = "Clofibric-acid",
+      false = chemical
+    )
+  ) %>%
+  mutate(
+    chemical = if_else(
+      condition = chemical == "Dimethylformamide",
+      true = "NN-Dimethylformamide",
+      false = chemical
+    )
+  ) %>%
+  mutate(
+    chemical = if_else(condition = (chemical == "Fenitrothione"),
+      true = "Fenitrothion",
+      false = chemical
+    )
+  ) %>%
+  group_by(.id, chemical) %>%
+  summarise(
+    min = min(lowest_conc),
+    max = max(highest_conc),
+    median_POD = median_POD,
+    POD_med = POD_med,
+    mean_POD = mean_POD,
+    low_conf = cil_POD,
+    high_conf = ciu_POD,
+    hit_confidence = hit_confidence,
+    n_genes = n_genes
+  ) %>%
+  mutate(Assay = if_else(
+    condition = .id %in% c("affected_rate_pos_dir", "fitted_affected_rate_pos_dir"),
+    true = "Lethality & Deformity",
+    false = "NA"
+  )) %>%
+  mutate(Assay = if_else(
+    condition = .id %in% c(
+      "fitted_z_score_neg_dir",
+      "fitted_z_score_pos_dir",
+      "z_score_neg_dir",
+      "z_score_pos_dir"
+    ),
+    true = "Metabolic",
+    false = Assay
+  )) %>%
+  mutate(Assay = if_else(
+    condition = .id %in% c(
+      "pearson_fitted",
+      "pearson_rcurvep",
+      "spearman_fitted",
+      "spearman_rcurvep"
+    ),
+    true = "Swim Behaviour",
+    false = Assay
+  )) %>%
+  mutate(Assay = if_else(
+    condition = .id %in% c(
+      "20th gene",
+      "10th pct",
+      "1st Mode",
+      "GO Term",
+      "Reactome"
+    ),
+    true = "Transcriptomic",
+    false = Assay
+  )) %>%
+  mutate(Assay = factor(
+    Assay,
+    levels = c("Swim Behaviour", "Metabolic", "Lethality & Deformity", "Transcriptomic"),
+    ordered = TRUE
+  )) %>%
+  arrange(.id) %>%
+  mutate(confidence = hit_confidence,
+         hit_confidence = NULL)
+```
+
+```{r}
+#Points of departure from the literature
+# dat_lit <-
+#   data.frame(
+#     .id = c("Chronic LOEC", "Acute LOEC", "Chronic LOEC", "Chronic LOEC", "Acute LOEC", "Chronic LOEC"),
+#     chemical = c("4-TPP", "Fluoxetine", "Fluoxetine", "17betaestradiol", "BPAF", "BPAF"),
+#     min = c(0.0001, 0.00001, 0.00001, 0.00001, 0.0001, 0.0001),
+#     max = c(1, 0.1, 0.1, 0.1, 1, 1),
+#     median_POD = c(0.212, 0.25, 0.00054, 0.0000283, 0.01, 0.05),
+#     POD_med = c(NA, NA, NA, NA, NA, NA),
+#     mean_POD = c(NA, NA, NA, NA, NA, NA),
+#     low_conf = c(NA, NA, NA, NA, NA, NA),
+#     high_conf = c(NA, NA, NA, NA, NA, NA),
+#     n_genes = c(NA, NA, NA, NA, NA, NA),
+#     Assay = c(
+#       "Literature",
+#       "Literature",
+#       "Literature",
+#       "Literature",
+#       "Literature",
+#       "Literature"
+#     ),
+#     confidence = c(1, 1, 1, 1, 1, 1)
+#   )
+# 
+# write_csv(dat_lit, file = "BMDs/Literature_data_Rice_Lake.csv")
+
+dat_lit <- read_csv(file = "Temp/Literature_data_BPA_Replacemets.csv")
+```
+
+
+```{r}
+bind_z_score_curvep <- dat %>%
+  filter(.id %in% c("z_score_neg_dir", "z_score_pos_dir")) %>%
+  group_by(chemical) %>%
+  summarise(.id = paste("Z", "Score", "RCurvep"),
+            min = min,
+            max = max,
+            median_POD = min(median_POD),
+            POD_med = min(POD_med),
+            mean_POD = min(mean_POD),
+            low_conf = min(low_conf),
+            high_conf = min(high_conf),
+            n_genes = n_genes,
+            Assay = Assay,
+            confidence = max(confidence)) %>%
+  unique()
+
+bind_z_score_hill <- dat %>%
+  filter(.id %in% c("fitted_z_score_neg_dir", "fitted_z_score_pos_dir")) %>%
+  group_by(chemical) %>%
+  summarise(.id = paste("Z", "Score", "Hill"),
+            min = min,
+            max = max,
+            median_POD = min(median_POD),
+            POD_med = min(POD_med),
+            mean_POD = min(mean_POD),
+            low_conf = min(low_conf),
+            high_conf = min(high_conf),
+            n_genes = n_genes,
+            Assay = Assay,
+            confidence = max(confidence)) %>%
+  unique()
+
+bind_z_scores <- rbind(bind_z_score_curvep, bind_z_score_hill)
+
+#Renaming for nicer labels
+dat <- dat %>%
+  mutate(.id = as.character(.id)) %>%
+  mutate(.id = if_else(
+    condition = .id == "pearson_rcurvep",
+    true = "Pearson RCurvep",
+    false = if_else(
+      condition = .id == "pearson_fitted",
+      true = "Pearson Hill",
+      false = if_else(
+        condition = .id == "spearman_rcurvep",
+        true = "Spearman RCurvep",
+        false = if_else(
+          condition = .id == "spearman_fitted",
+          true = "Spearman Hill",
+          false = if_else(
+            condition = .id == "affected_rate_pos_dir",
+            true = "Affected Rate RCurvep",
+            false = if_else(
+              condition = .id == "fitted_affected_rate_pos_dir",
+              true = "Affected Rate Hill",
+              false = .id
+            )
+          )
+        )
+      )
+    )
+  )) %>%
+  rbind(bind_z_scores, dat_lit)
+
+dat <- dat %>%
+  filter(
+    .id %in% c(
+      "Pearson RCurvep",
+      "Pearson Hill",
+      "Spearman RCurvep",
+      "Spearman Hill",
+      "Z Score RCurvep",
+      "Z Score Hill",
+      "Affected Rate RCurvep",
+      "Affected Rate Hill",
+      "20th gene",
+      "10th pct",
+      "1st Mode",
+      "GO Term",
+      "Reactome",
+      "Acute LOEC",
+      "Chronic LOEC"
+    )
+  )
+
+dat$.id <- factor(dat$.id, levels = c(
+      "Affected Rate RCurvep",
+      "Affected Rate Hill",
+      "Pearson RCurvep",
+      "Pearson Hill",
+      "Spearman RCurvep",
+      "Spearman Hill",
+      "Z Score RCurvep",
+      "Z Score Hill",
+      "20th gene",
+      "10th pct",
+      "1st Mode",
+      "GO Term",
+      "Reactome",
+      "Acute LOEC",
+      "Chronic LOEC"
+    ),
+    ordered = TRUE
+  )
+
+#Filter for just those chemicals to plot in the summarry figure
+chems_to_plot <- c("BPA", "BPAF", "DES", "TGSH", "EE2")
+dat <- dat %>%
+  filter(chemical %in% chems_to_plot) %>%
+  filter(.id %in% c(
+    "1st Mode",
+    "Reactome",
+    "Z Score RCurvep",
+    "Pearson RCurvep",
+    "Affected Rate RCurvep",
+    "Acute LOEC",
+    "Chronic LOEC"
+  )) %>%
+  mutate(.id = as.character(.id)) %>%
+  mutate(.id = if_else(
+    condition = .id == "Z Score RCurvep",
+    true = "Metabolic Rate",
+    false = if_else(
+      condition = .id == "Pearson RCurvep",
+      true = "Behaviour",
+      false = if_else(
+        condition = .id == "Affected Rate RCurvep",
+        true = "Overt Toxicity",
+        false = if_else(
+          condition = .id == "1st Mode",
+          true = "tPOD",
+          false = if_else(.id == "Reactome", true = "Pathway tPOD", false = .id)
+        )
+      )
+    )
+  ))
+
+#Or be lazy and import the data iwthout wrangling
+#dat <- read_csv(file = "BMDs/BPA_and_replacements_data.csv")
+
+dat$chemical <-
+  factor(
+    dat$chemical,
+    levels = c("BPA", "BPAF", "TGSH", "DES", "EE2"),
+    ordered = TRUE
+  )
+
+chems <- unique(dat$chemical)
+
+condition <- dat %>%
+  filter(.id == "tPOD") %>%
+  group_by(chemical) %>%
+  summarise(chemical = unique(chemical),
+            cond = !is.na(median_POD),
+            n_genes = unique(n_genes))
+
+paste_n_genes <- function(x) {
+  if_else(
+    condition = x == condition$chemical &
+      condition$cond,
+    true = paste0(x, " n=", condition[which(condition$chemical == x),]$n_genes, " genes"),
+    false = x
+  )
+}
+
+dat$.id <- factor(dat$.id, levels = c(
+      "Acute LOEC",
+      "Chronic LOEC",
+      "Overt Toxicity",
+      "Behaviour",
+      "Metabolic Rate",
+      "tPOD",
+      "Pathway tPOD"
+    ),
+    ordered = TRUE
+  )
+
+dat$Assay <-
+  factor(
+    dat$Assay,
+    levels = c(
+      "Transcriptomic",
+      "Metabolic",
+      "Swim Behaviour",
+      "Lethality & Deformity",
+      "Literature"
+    ),
+    ordered = TRUE
+  )
+
+# Deleting PODs that are just the highest dose
+dat <- dat %>%
+  mutate(median_POD = if_else(condition = median_POD == max, true = as.double(NA), false = median_POD))
+
+#Only plot active PODs
+dat <- dat %>%
+  mutate(median_POD = if_else(condition = confidence < 0.5, true = as.double(NA), false = median_POD)) %>%
+  mutate(low_conf = if_else(condition = confidence < 0.5, true = max, false = low_conf)) %>%
+  mutate(high_conf = if_else(condition = confidence < 0.5, true = max, false = high_conf))
+
+  
+#plot for Rice Lake
+p <- ggplot() +
+  #y axis
+  scale_y_discrete(name = "Endpoint") +
+  #x axis
+  scale_x_log10(name = "Concentration (mg/L)",
+                breaks = c(1000, 100, 10, 1, 0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001, 0.0000001)) +
+  #layout
+  theme_classic() +
+  geom_vline(data = dat,
+             aes(xintercept = min),
+             linetype = "dashed",
+             color = "gray") +
+  geom_vline(data = dat,
+             aes(xintercept = max),
+             linetype = "dashed",
+             color = "gray") +
+  #Confidence intervals
+  geom_errorbarh(data = dat, 
+                 aes(xmin = low_conf,
+                     xmax = high_conf,
+                     y = .id)) +
+  #Median Points
+  geom_point(data = dat,
+             aes(x = median_POD,
+                 y = .id,
+                 colour = Assay),
+             size = 4) +
+  #Deleting legend
+  scale_color_discrete('POD') +
+  #RCurveP Median Points
+  # geom_point(data = dat,
+  #            aes(x = POD_med,
+  #                y = .id),
+  #            position = position_nudge(y = 0.4),
+  #            color = "red") +
+  #Dummy data for x-axis-limits
+  geom_blank(data = dat,
+             aes(x = min, y = .id)) +
+  geom_blank(data = dat,
+             aes(x = max, y = .id)) +
+  #Facet wrap plots by chemical
+  facet_wrap( ~ chemical, labeller = labeller(chemical = paste_n_genes)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.01),
+        strip.text = element_text(size = 15)) +
+  theme(text = element_text(size = 20))
+
+# p <- ggplot() +
+#   #y axis
+#   scale_y_discrete(name = "Endpoint") +
+#   #x axis
+#   scale_x_log10(name = "Concentration (mg/L)",
+#                 breaks = c(1000, 100, 10, 1, 0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001, 0.0000001)) +
+#   #layout
+#   theme_classic() +
+#   geom_vline(data = dat,
+#              aes(xintercept = min),
+#              linetype = "dashed",
+#              color = "gray") +
+#   geom_vline(data = dat,
+#              aes(xintercept = max),
+#              linetype = "dashed",
+#              color = "gray") +
+#   #Confidence intervals
+#   geom_errorbarh(data = dat, 
+#                  aes(xmin = low_conf,
+#                      xmax = high_conf,
+#                      y = .id)) +
+#   #Median Points
+#   geom_point(data = dat,
+#              aes(x = median_POD,
+#                  y = .id,
+#                  group = Assay,
+#                  shape = Assay,
+#                  color = Assay,
+#                  size = confidence,
+#                  alpha = confidence)) +
+#   #Changing point sizes
+#   scale_size_continuous("Confidence", range = c(1,4), limits = c(0.1, 1), breaks = pretty_breaks()) +
+#   scale_shape_manual(values=c(15, 19, 17, 18)) +
+#   scale_alpha(range = c(0.6, 0.65), limits = c(0, 0.5), guide = "none") +
+#   #RCurveP Median Points
+#   # geom_point(data = dat,
+#   #            aes(x = POD_med,
+#   #                y = .id),
+#   #            position = position_nudge(y = 0.4),
+#   #            color = "red") +
+#   #Dummy data for x-axis-limits
+#   geom_blank(data = dat,
+#              aes(x = min, y = .id)) +
+#   geom_blank(data = dat,
+#              aes(x = max, y = .id)) +
+#   #Facet wrap plots by chemical
+#   facet_wrap( ~ chemical, labeller = labeller(chemical = paste_n_genes)) +
+#   theme(legend.position = "bottom",
+#         legend.direction = "horizontal",
+#         legend.box = "vertical",
+#         axis.text.x = element_text(angle = 90, vjust = 0.01)) + 
+#   guides(colour = guide_legend(override.aes = list(size=4)))
+```
+
+```{r saveplot, echo=TRUE}
+ggsave(
+  p,
+  file = "POD_summary.svg",
+  width = 297,
+  height = 210,
+  units = "mm",
+  scale = 1,
+  device = "svg",
+  bg = "white"
+)
+```
+
+```{r saveplot2, echo=TRUE}
+ggsave(
+  p,
+  file = "POD_summary.png",
+  width = 297,
+  height = 210,
+  units = "mm",
+  scale = 1.5,
+  device = "png",
+  bg = "white"
+)
+```
+
+```{r plot_genome_Quebec_Samples}
+dat2 <- dat %>%
+  filter(chemical %in% c("1-Decanol", "EE2", "Fadrozole", "Aniline", "Fenitrothion", "Glyphosate", "Malathion", "Prochloraz", "TGSH", "Trenbolone"))
+
+condition <- dat2 %>%
+  filter(.id == "1st Mode") %>%
+  group_by(chemical) %>%
+  summarise(chemical = unique(chemical),
+            cond = !is.na(median_POD),
+            n_genes = unique(n_genes))
+
+paste_n_genes <- function(x) {
+  if_else(
+    condition = x == condition$chemical &
+      condition$cond,
+    true = paste0(x, " n=", condition[which(condition$chemical == x),]$n_genes, " genes"),
+    false = x
+  )
+}
+
+
+p <- ggplot() +
+  #y axis
+  scale_y_discrete(name = "Endpoint") +
+  #x axis
+  scale_x_log10(name = "Concentration (mg/L)",
+                breaks = c(1000, 100, 10, 1, 0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001, 0.0000001)) +
+  #layout
+  theme_classic() +
+  geom_vline(data = dat2,
+             aes(xintercept = min),
+             linetype = "dashed",
+             color = "gray") +
+  geom_vline(data = dat2,
+             aes(xintercept = max),
+             linetype = "dashed",
+             color = "gray") +
+  #Confidence intervals
+  geom_errorbarh(data = dat2, 
+                 aes(xmin = low_conf,
+                     xmax = high_conf,
+                     y = .id)) +
+  #Median Points
+  geom_point(data = dat2,
+             aes(x = median_POD,
+                 y = .id,
+                 group = Assay,
+                 shape = Assay,
+                 color = Assay,
+                 size = confidence,
+                 alpha = confidence)) +
+  #Changing point sizes
+  scale_size_continuous("Confidence", range = c(1,4), limits = c(0.1, 1), breaks = pretty_breaks()) +
+  scale_shape_manual(values=c(15, 19, 17, 18)) +
+  scale_alpha(range = c(0.6, 0.65), limits = c(0, 0.5), guide = "none") +
+  #RCurveP Median Points
+  # geom_point(data = dat,
+  #            aes(x = POD_med,
+  #                y = .id),
+  #            position = position_nudge(y = 0.4),
+  #            color = "red") +
+  #Dummy data for x-axis-limits
+  geom_blank(data = dat2,
+             aes(x = min, y = .id)) +
+  geom_blank(data = dat2,
+             aes(x = max, y = .id)) +
+  #Facet wrap plots by chemical
+  facet_wrap( ~ chemical, labeller = labeller(chemical = paste_n_genes)) +
+  theme(legend.position = "bottom",
+        legend.direction = "horizontal",
+        legend.box = "vertical",
+        axis.text.x = element_text(angle = 90, vjust = 0.01)) + 
+  guides(colour = guide_legend(override.aes = list(size=4)))
+```
+
+```{r saveplot_GQ, echo=TRUE}
+ggsave(
+  p,
+  file = "POD_summary_GQ_samples.svg",
+  width = 297,
+  height = 210,
+  units = "mm",
+  scale = 1.5,
+  device = "svg",
+  bg = "white"
+)
+```
+
+```{r saveplot2_GQ, echo=TRUE}
+ggsave(
+  p,
+  file = "POD_summary_GQ_samples.png",
+  width = 297,
+  height = 210,
+  units = "mm",
+  scale = 1.5,
+  device = "png",
+  bg = "white"
+)
+```
+
+```{r plot_BPA_Replacements_chemicals}
+dat3 <- dat %>%
+  filter(chemical %in% c("BPA", "BPAF", "DES", "EE2", "TGSH"))
+
+condition <- dat3 %>%
+  filter(.id == "1st Mode") %>%
+  group_by(chemical) %>%
+  summarise(chemical = unique(chemical),
+            cond = !is.na(median_POD),
+            n_genes = unique(n_genes))
+
+paste_n_genes <- function(x) {
+  if_else(
+    condition = x == condition$chemical &
+      condition$cond,
+    true = paste0(x, " n=", condition[which(condition$chemical == x),]$n_genes, " genes"),
+    false = x
+  )
+}
+
+
+p <- ggplot() +
+  #y axis
+  scale_y_discrete(name = "Endpoint") +
+  #x axis
+  scale_x_log10(name = "Concentration (mg/L)",
+                breaks = c(1000, 100, 10, 1, 0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001, 0.0000001)) +
+  #layout
+  theme_classic() +
+  geom_vline(data = dat3,
+             aes(xintercept = min),
+             linetype = "dashed",
+             color = "gray") +
+  geom_vline(data = dat3,
+             aes(xintercept = max),
+             linetype = "dashed",
+             color = "gray") +
+  #Confidence intervals
+  geom_errorbarh(data = dat3, 
+                 aes(xmin = low_conf,
+                     xmax = high_conf,
+                     y = .id)) +
+  #Median Points
+  geom_point(data = dat3,
+             aes(x = median_POD,
+                 y = .id,
+                 group = Assay,
+                 shape = Assay,
+                 color = Assay,
+                 size = confidence,
+                 alpha = confidence)) +
+  #Changing point sizes
+  scale_size_continuous("Confidence", range = c(1,4), limits = c(0.1, 1), breaks = pretty_breaks()) +
+  scale_shape_manual(values=c(15, 19, 17, 18)) +
+  scale_alpha(range = c(0.6, 0.65), limits = c(0, 0.5), guide = "none") +
+  #RCurveP Median Points
+  # geom_point(data = dat,
+  #            aes(x = POD_med,
+  #                y = .id),
+  #            position = position_nudge(y = 0.4),
+  #            color = "red") +
+  #Dummy data for x-axis-limits
+  geom_blank(data = dat3,
+             aes(x = min, y = .id)) +
+  geom_blank(data = dat3,
+             aes(x = max, y = .id)) +
+  #Facet wrap plots by chemical
+  facet_wrap( ~ chemical, labeller = labeller(chemical = paste_n_genes)) +
+  theme(legend.position = "bottom",
+        legend.direction = "horizontal",
+        legend.box = "vertical",
+        axis.text.x = element_text(angle = 90, vjust = 0.01)) + 
+  guides(colour = guide_legend(override.aes = list(size=4)))
+```
+
+```{r saveplot_BPA_Replacements, echo=TRUE}
+ggsave(
+  p,
+  file = "POD_summary_BPA_and_Replacements.svg",
+  width = 297,
+  height = 210,
+  units = "mm",
+  scale = 1.5,
+  device = "svg",
+  bg = "white"
+)
+```
+
+```{r saveplot2_BPA_Replacements, echo=TRUE}
+ggsave(
+  p,
+  file = "POD_summary_BPA_and_Replacements.png",
+  width = 297,
+  height = 210,
+  units = "mm",
+  scale = 1.5,
+  device = "png",
+  bg = "white"
+)
+```
+
+```{r plot_BPA_Replacements_chemicals}
+dat4 <- dat %>%
+  filter(Assay %in% c("Swim Behaviour", "Metabolic Activity", "Lethality & Deformity"))
+
+p <- ggplot() +
+  #y axis
+  scale_y_discrete(name = "Endpoint") +
+  #x axis
+  scale_x_log10(name = "Concentration (mg/L)",
+                breaks = c(1000, 100, 10, 1, 0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001, 0.0000001)) +
+  #layout
+  theme_classic() +
+  geom_vline(data = dat4,
+             aes(xintercept = min),
+             linetype = "dashed",
+             color = "gray") +
+  geom_vline(data = dat4,
+             aes(xintercept = max),
+             linetype = "dashed",
+             color = "gray") +
+  #Confidence intervals
+  geom_errorbarh(data = dat4, 
+                 aes(xmin = low_conf,
+                     xmax = high_conf,
+                     y = .id)) +
+  #Median Points
+  geom_point(data = dat4,
+             aes(x = median_POD,
+                 y = .id,
+                 group = Assay,
+                 shape = Assay,
+                 color = Assay,
+                 size = confidence,
+                 alpha = confidence)) +
+  #Changing point sizes
+  scale_size_continuous("Confidence", range = c(1,4), limits = c(0.1, 1), breaks = pretty_breaks()) +
+  scale_shape_manual(values=c(15, 19, 17, 18)) +
+  scale_alpha(range = c(0.6, 0.65), limits = c(0, 0.5), guide = "none") +
+  #RCurveP Median Points
+  # geom_point(data = dat,
+  #            aes(x = POD_med,
+  #                y = .id),
+  #            position = position_nudge(y = 0.4),
+  #            color = "red") +
+  #Dummy data for x-axis-limits
+  geom_blank(data = dat4,
+             aes(x = min, y = .id)) +
+  geom_blank(data = dat4,
+             aes(x = max, y = .id)) +
+  #Facet wrap plots by chemical
+  facet_wrap( ~ chemical) +
+  theme(legend.position = "bottom",
+        legend.direction = "horizontal",
+        legend.box = "vertical",
+        axis.text.x = element_text(angle = 90, vjust = 0.01)) + 
+  guides(colour = guide_legend(override.aes = list(size=4)))
+```
+
+```{r saveplot_all_apical_effects, echo=TRUE}
+ggsave(
+  p,
+  file = "aPOD_summary.svg",
+  width = 297,
+  height = 210,
+  units = "mm",
+  scale = 1.5,
+  device = "svg",
+  bg = "white"
+)
+```
+
+```{r saveplot2_all_apical_effects, echo=TRUE}
+ggsave(
+  p,
+  file = "aPOD_summary.png",
+  width = 297,
+  height = 210,
+  units = "mm",
+  scale = 1.5,
+  device = "png",
+  bg = "white"
+)
+```

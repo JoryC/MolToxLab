@@ -1,0 +1,59 @@
+#BPAF Attempt 1
+# 'Outliers' not removed
+#  Log2 Normalization
+#  Low variance filter of 30%
+# Low abundance filter of 10%
+# P-value cutoff of 0.05
+# Log2 fold change of 1.0 cutoff (compared to the control condition)
+# lack of fit p value of 0.1 (as NTP recommends)
+# BMR factor of 1 (1 SD from control mean)
+#BPAF Attempt 2
+# Remove Outliers (C11, C12, B10)
+# Log2 Normalization
+# Low variance filter of 25%
+# Low abundance filter of 10%
+# P-value cutoff of 0.05 (FDR still 0 genes pass)
+# Log2 fold change of 3
+# lack of fit p avlue of 0.1 (as NTP recommends)
+# BMR factor of 1 SD from control mean
+
+#BPA Attempt 1
+# Remove A11
+# 'Outliers' not removed
+#  Log2 Normalization
+#  Low variance filter of 30%
+# Low abundance filter of 10%
+# P-value cutoff of 0.05
+# Log2 fold change of 1.0 cutoff (compared to the control condition)
+# lack of fit p value of 0.1 (as NTP recommends)
+# BMR factor of 1 (1 SD from control mean)
+
+#DES Attempt 1
+# 'Outliers' not removed
+#  Log2 Normalization
+#  Low variance filter of 30%
+# Low abundance filter of 10%
+# P-value cutoff of 0.05
+# Log2 fold change of 1.0 cutoff (compared to the control condition)
+# lack of fit p value of 0.1 (as NTP recommends)
+# BMR factor of 1 (1 SD from control mean)
+
+#EE2 Attempt 1
+# 'Outliers' not removed
+#  Log2 Normalization
+#  Low variance filter of 30%
+# Low abundance filter of 10%
+# P-value cutoff of 0.05
+# Log2 fold change of 1.0 cutoff (compared to the control condition)
+# lack of fit p value of 0.1 (as NTP recommends)
+# BMR factor of 1 (1 SD from control mean)
+
+#TGSH Attempt 1
+# 'Outliers' not removed
+#  Log2 Normalization
+#  Low variance filter of 30%
+# Low abundance filter of 10%
+# P-value cutoff of 0.05
+# Log2 fold change of 1.0 cutoff (compared to the control condition)
+# lack of fit p value of 0.1 (as NTP recommends)
+# BMR factor of 1 (1 SD from control mean)
