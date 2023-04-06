@@ -54,7 +54,7 @@ lapply(X = apicaldata, FUN = function(x){mutate(x, Hatch.Rate = Hatched/Alive)})
 #Output Sheets
 all_apicaldata <- plyr::ldply(apicaldata) %>%
   rename(Chemical = .id)
-write_csv(all_apicaldata, file = "Data/master_apical_data.csv")
+#write_csv(all_apicaldata, file = "Data/master_apical_data.csv")
 ```
 
 ```{r normalize_afected_rate, include=FALSE}
@@ -129,12 +129,13 @@ apicaldata_ol_rm <- apicaldata_test %>%
   ))
 
 #Write outlier removed data
-write_csv(x = apicaldata_ol_rm, file = "Data/apicaldata_ol_rm.csv")
+#write_csv(x = apicaldata_ol_rm, file = "Data/apicaldata_ol_rm.csv")
 
 #Write outlier removed data and filter out the 7th dose group (group 6) for some of the chemicals where the dose was lethal (This is to make rcurvep function as expected with the same number of dose groups for every chemical)
 apicaldata_ol_rm %>%
   filter(Dose != "Dose_6") %>%
-  write_csv(x = ., file = "Data/apicaldata_ol_rm_and_Lethal_Dose-lowest_dose_removed.csv")
+write_csv(x = ., file = "Data/apicaldata_ol_rm_and_Lethal_Dose-lowest_dose_removed.csv")
+apicaldata_ol_rm <- read_csv(file = "Data/apicaldata_ol_rm_and_Lethal_Dose-lowest_dose_removed.csv")
 
 #nest/list data again
 apicaldata <- apicaldata_ol_rm %>%
@@ -180,53 +181,53 @@ write_csv(x = LeveneResults, file = "Output/Levene_Test_Results.csv")
 #Survival Rate
 ancova_output_SR <- list()
 for(i in 1:length(apicaldata)) {
-  temp2 <- aov(data = apicaldata[[i]], Survival.Rate ~ Dose..mg.L. + as.factor(Replicate))
+  temp2 <- aov(data = apicaldata[[i]], Survival.Rate ~ as.factor(Dose) + as.factor(Replicate))
   ancova_output_SR[i] <- summary(temp2)
   rm(temp2)
 }
 names(ancova_output_SR) <- chemnames
 #print(anova_output_SR)
-ancova_SR_summary <- plyr::ldply(ancova_output_SR, broom::tidy)
-  #mutate(adj.p.value = p.adjust(p.value, "fdr"))
+ancova_SR_summary <- plyr::ldply(ancova_output_SR, broom::tidy) %>%
+  mutate(adj.p.value = p.adjust(p.value, "fdr"))
 write_csv(ancova_SR_summary, file = "Output/ancova_SR_summary.csv")
 
 #Deformity Rate
 ancova_output_DR <- list()
 for(i in 1:length(apicaldata)) {
-  temp2 <- aov(data = apicaldata[[i]], Deformity.Rate ~ Dose..mg.L. + as.factor(Replicate))
+  temp2 <- aov(data = apicaldata[[i]], Deformity.Rate ~ as.factor(Dose) + as.factor(Replicate))
   ancova_output_DR[i] <- summary(temp2)
   rm(temp2)
 }
 names(ancova_output_DR) <- chemnames
 #print(anova_output_DR)
-ancova_DR_summary <- plyr::ldply(ancova_output_DR, broom::tidy)
-  #mutate(adj.p.value = p.adjust(p.value, "fdr"))
+ancova_DR_summary <- plyr::ldply(ancova_output_DR, broom::tidy) %>%
+  mutate(adj.p.value = p.adjust(p.value, "fdr"))
 write_csv(ancova_DR_summary, file = "Output/ancova_DR_summary.csv")
 
 #Hatch Rate
 ancova_output_HR <- list()
 for(i in 1:length(apicaldata)) {
-  temp2 <- aov(data = apicaldata[[i]], Hatch.Rate ~ Dose..mg.L. + as.factor(Replicate))
+  temp2 <- aov(data = apicaldata[[i]], Hatch.Rate ~ as.factor(Dose) + as.factor(Replicate))
   ancova_output_HR[i] <- summary(temp2)
   rm(temp2)
 }
 names(ancova_output_HR) <- chemnames
 #print(anova_output_HR)
-ancova_HR_summary <- plyr::ldply(ancova_output_HR, broom::tidy)
-  #mutate(adj.p.value = p.adjust(p.value, "fdr"))
+ancova_HR_summary <- plyr::ldply(ancova_output_HR, broom::tidy) %>%
+  mutate(adj.p.value = p.adjust(p.value, "fdr"))
 write_csv(ancova_HR_summary, file = "Output/ancova_HR_summary.csv")
 
 #Affected Rate
 ancova_output_AR <- list()
 for(i in 1:length(apicaldata)) {
-  temp2 <- aov(data = apicaldata[[i]], Affected.Rate ~ Dose..mg.L. + as.factor(Replicate))
+  temp2 <- aov(data = apicaldata[[i]], Affected.Rate ~ as.factor(Dose) + as.factor(Replicate))
   ancova_output_AR[i] <- summary(temp2)
   rm(temp2)
 }
 names(ancova_output_AR) <- chemnames
 #print(anova_output_AR)
-ancova_AR_summary <- plyr::ldply(ancova_output_AR, broom::tidy)
-  #mutate(adj.p.value = p.adjust(p.value, "fdr"))
+ancova_AR_summary <- plyr::ldply(ancova_output_AR, broom::tidy) %>%
+  mutate(adj.p.value = p.adjust(p.value, "fdr"))
 write_csv(ancova_AR_summary, file = "Output/ancova_AR_summary.csv")
 ```
 
@@ -282,10 +283,10 @@ option1 <- Tukey_results %>%
 #option 2
 option2 <- tukey_input %>%
   mutate(option2 = map(model, ~ emmeans::emmeans(object = .x, specs = "Replicate"))) %>%
-  mutate(option2 = map(option2, ~ pairs(x = .x,  adjust = "Tukey")))
+  mutate(option2 = map(option2, ~ pairs(x = .x,  adjust = "tukey")))
 #option 3
 option3 <- tukey_input %>%
-  mutate(option3 = map(model, ~ multcomp::cld(emmeans::emmeans(object = .x, specs = "Replicate"), adjust = "Tukey", details = TRUE, Letters = letters, alpha = 0.05)))
+  mutate(option3 = map(model, ~ multcomp::cld(emmeans::emmeans(object = .x, specs = "Replicate"), adjust = "tukey", details = TRUE, Letters = letters, alpha = 0.05)))
 
 #uniform format
 option1 <- option1 %>%
@@ -601,7 +602,7 @@ for(i in 1:length(apicaldatasummary)) {
 Dunnett_comb <- Dunnett_comb %>%
   rename(Dose_mg_L = Dose)
 
-apicaldatasummary_2 <- inner_join(apicaldatasummary_tibble, Dunnett_comb, by = c("Dose_mg_L", ".id")) %>%
+apicaldatasummary_2 <- full_join(apicaldatasummary_tibble, Dunnett_comb, by = c("Dose_mg_L", ".id")) %>%
   group_by(.id) %>%
   split(f = .$.id)
 
@@ -693,10 +694,10 @@ gg_Dunnett <- Dunnett_comb %>%
 
 gg_ANOVA <- ancova_AR_summary %>%
   na.omit() %>%
-  dplyr::filter(term %in% "Dose..mg.L.") %>%
+  dplyr::filter(term %in% "as.factor(Dose)") %>%
   dplyr::rename(Chemical = .id) %>%
-  dplyr::mutate(is.significant = if_else(condition = p.value < 0.05, true = TRUE, false = FALSE)) %>%
-  dplyr::select(Chemical, term, p.value, is.significant)
+  dplyr::mutate(is.significant = if_else(condition = adj.p.value < 0.05, true = TRUE, false = FALSE)) %>%
+  dplyr::select(Chemical, term, adj.p.value, is.significant)
 
 gg_data <- apicaldata_ol_rm %>%
   inner_join(gg_ANOVA) %>%
@@ -724,7 +725,7 @@ gg_data <- apicaldata_ol_rm %>%
     Affected.Rate_show,
     Affected.Rate_ol_rm,
     term,
-    p.value,
+    adj.p.value,
     is.significant
   )
 

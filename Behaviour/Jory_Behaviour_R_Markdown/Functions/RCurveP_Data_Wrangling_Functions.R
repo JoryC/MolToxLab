@@ -45,9 +45,9 @@ summarise_rcurvep_results <-
       inner_join(bmd_summary) %>%
       ungroup() %>%
       group_by(chemical) %>%
-      mutate(resp = if_else(correction == 1, true = corrected_resp, false = resp),
+      mutate(resp_correct = if_else(correction == 1, true = corrected_resp, false = resp),
              lowest_conc = highest_conc-(number_of_dose_groups_per_chem-1)) %>%
-      dplyr::select(-corrected_resp) %>%
+      #dplyr::select(-corrected_resp) %>%
       mutate(median_POD = if_else(
         condition = POD == lowest_conc,
         true = unique(highest_conc),

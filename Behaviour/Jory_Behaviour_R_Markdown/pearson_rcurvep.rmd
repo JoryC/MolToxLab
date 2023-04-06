@@ -148,7 +148,9 @@ curve_hits_pearson <- simulated_curves_pearson_summary %>%
 #confident_curves_pearson <- confident_hits(summary_dat = simulated_curves_pearson_summary, reject_hit_conf_under = 0.5)
 # If Error says "out of bounds", reduce conf filter
 
-p_pearson <- ggplot(NULL, aes(conc, resp)) +
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+
+p_pearson_simulated_no_processing <- ggplot(NULL, aes(conc, resp)) +
   geom_point(
     data = simulated_curves_pearson_summary,
     mapping = aes(x = conc, y  = resp, group = sample_id),
@@ -207,6 +209,65 @@ p_pearson <- ggplot(NULL, aes(conc, resp)) +
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 
+p_pearson <- ggplot(NULL, aes(conc, resp)) +
+  geom_point(
+    data = simulated_curves_pearson_summary,
+    mapping = aes(x = conc, y  = corrected_resp, group = sample_id),
+    color = "gray75",
+    alpha = 0.2
+  ) +
+  geom_point(
+    data = curve_hits_pearson,
+    mapping = aes(x = conc, y = corrected_resp, group = sample_id),
+    color = "#a9a9a9",
+    alpha = 0.7
+  ) +
+  geom_line(
+    data = simulated_curves_pearson_summary,
+    mapping = aes(x = conc, y = corrected_resp, group = sample_id),
+    color = "gray75",
+    alpha = 0.2
+  ) +
+  geom_line(
+    data = curve_hits_pearson,
+    mapping = aes(x = conc, y = corrected_resp, group = sample_id),
+    color = "#a9a9a9",
+    alpha = 0.7
+  ) +
+  # geom_line(data = confident_curves_pearson[["cil"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "purple") +
+  # geom_line(data = confident_curves_pearson[["ciu"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_curves_pearson[["mean"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "green") +
+  # geom_line(data = confident_curves_pearson[["median"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "blue") +
+  geom_hline(
+    yintercept = -bmr_thresh_pearson,
+    linetype = "dashed",
+    color = "red"
+  ) +
+  geom_vline(data = bmds_pearson,
+             aes(xintercept = median_POD),
+             color = "blue") +
+  geom_vline(data = bmds_pearson, aes(xintercept = ciu_POD), color = "yellow") +
+  # geom_vline(data = bmds_pearson, aes(xintercept = mean_POD), color = "green") +
+  geom_vline(data = bmds_pearson, aes(xintercept = cil_POD), color = "purple") +
+  geom_text(
+    data = bmds_pearson,
+    mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc +
+                    1),
+    y = -85,
+    inherit.aes = FALSE,
+    size = 4
+  ) +
+  facet_wrap( ~ chemical, scales = "free") +
+  ylim(-100, 50) +
+  theme_minimal() +
+  theme(
+    panel.border = element_rect(colour = "grey50", fill = NA),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+
 ```
 
 ```{r 61.2Print_results, echo=FALSE, fig.height=10.8, fig.width=19.2}
@@ -219,9 +280,24 @@ ggsave(
   filename = paste0(
     "Output/", params$endpoint, "_", params$method, "_processed_curves_",
     params$sample_size,
-    "_samples.svg"
+    "_samples.png"
   ),
-  device = "svg",
+  device = "png",
+  units = "px",
+  width = 1920,
+  height = 1080,
+  bg = "white",
+  scale = 2
+)
+
+ggsave(
+  plot = p_pearson_simulated_no_processing,
+  filename = paste0(
+    "Output/", params$endpoint, "_", params$method, "_simulated_curves_",
+    params$sample_size,
+    "_samples.png"
+  ),
+  device = "png",
   units = "px",
   width = 1920,
   height = 1080,

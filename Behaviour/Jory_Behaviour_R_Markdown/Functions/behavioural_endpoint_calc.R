@@ -5,6 +5,7 @@
 simi_normalize <- function(x){
   x %>%
     mutate(control_median = unname(tapply(x$endpoint_value, x$is_VC, median)["TRUE"])) %>%
+    mutate(endpoint_value = if_else(condition = endpoint_value < 0, true = 0, false = endpoint_value)) %>%
     mutate(endpoint_value_norm = (endpoint_value/control_median)*100-100) %>%
     select(-c(endpoint_value, control_median)) %>%
     mutate(dose = str_split(string = embryo_id, pattern = "_", simplify = TRUE)[,1]) %>%

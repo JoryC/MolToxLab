@@ -1,5 +1,5 @@
 ---
-title: "Report for ANCOVA and Dunnett's of Pearson SS"
+title: "Report for ANCOVA and Dunnett's of pearson SS"
 author: "Jory Curry"
 date: "`r format(Sys.time(), '%d %B %Y')`"
 output: 
@@ -57,6 +57,7 @@ source("Functions/RCurveP_Data_Wrangling_Functions.R")
 ```
 
 ```{r 4_importing_dat, include=FALSE}
+#They already have outliers removed
 fishBehavDat <- read_csv(file = "Data/fishBehavDat.csv")
 fishBehavDatBin5 <- read_csv(file = "Data/fishBehavDatBin5.csv")
 fishBehavDatBinLD <- read_csv(file = "Data/fishBehavDatBinLD.csv")
@@ -83,75 +84,200 @@ lowest_dose_treatment_group <- lowest_dose_treatment_group[1,][[1]]
 ```
 
 ```{r 1_remove_outlier_control_fish, include=FALSE}
-BoxPlotOutliers <- fishBehavDat %>%
+# BoxPlotOutliers <- fishBehavDat %>%
+#    filter(Dose == "Control") %>%
+#    dplyr::group_by(plate_id, embryo_id) %>%
+#    dplyr::summarise(cummulative_param = sum(get(params$value), na.rm = TRUE)) %>%
+#    dplyr::group_by(plate_id) %>%
+#    dplyr::summarise(Q1 = quantile(cummulative_param, 0.25),
+#           Q3 = quantile(cummulative_param, 0.75),
+#           IQR = IQR(cummulative_param),
+#           cummulative_param = cummulative_param,
+#           embryo_id = embryo_id) %>%
+#    mutate(lower_limit = (Q1 - 1.5*IQR),
+#           upper_limit = (Q3 + 1.5*IQR)) %>%
+#    group_by(plate_id) %>%
+#   mutate(z_score = (cummulative_param - mean(cummulative_param))/sd(cummulative_param)) %>%
+#    mutate(outlier_iqr = if_else(condition = cummulative_param > (Q1 - 1.5*IQR) & cummulative_param < (Q3 + 1.5*IQR), true = FALSE, false = TRUE)) %>%
+#    mutate(outlier_z = if_else(condition = z_score > 3, true = TRUE, false = FALSE))
+# 
+#  ggBoxPlotOutliers <- BoxPlotOutliers %>%
+#    ggplot(data = ., mapping = aes(y = cummulative_param)) +
+#    geom_boxplot() +
+#    geom_label(inherit.aes = FALSE, x = 0, aes(y = cummulative_param, color = embryo_id, label = embryo_id)) +
+#    geom_point(inherit.aes = FALSE, x = 0, aes(y = cummulative_param, color = embryo_id)) +
+#    facet_wrap(~plate_id, scales = "free") +
+#    theme_classic()
+
+# BoxPlotOutliersRemove <- BoxPlotOutliers %>%
+#   filter(outlier_iqr | outlier_z == TRUE) %>%
+#   dplyr::summarise(plate_id = plate_id, embryo_id = embryo_id)
+#
+# print(ggBoxPlotOutliers)
+#
+#
+# #Remove any outliers before data transmformation based off of the animal's cumulative paramater across the entire assay
+# #fishBehavDat
+# temp <- semi_join(fishBehavDat, BoxPlotOutliersRemove, by = c("plate_id", "embryo_id")) %>%
+#   mutate(across(
+#     .cols = c("inact","inadur",
+#               "smlct","smldur","smldist","activedur",
+#               "larct","lardur","lardist","totaldist"),
+#     .fns = ~ replace(x = ., values = NA)
+#   )) %>%
+#   mutate(outliers = TRUE)
+# temp2 <- anti_join(fishBehavDat, BoxPlotOutliersRemove, by = c("plate_id", "embryo_id"))
+# fishBehavDat <- bind_rows(temp, temp2)
+#
+# #fishBehavDatBin5
+# temp <- semi_join(fishBehavDatBin5, BoxPlotOutliersRemove, by = c("plate_id", "embryo_id")) %>%
+#   mutate(across(
+#     .cols = c("inact","inadur",
+#               "smlct","smldur","smldist","activedur",
+#               "larct","lardur","lardist","totaldist"),
+#     .fns = ~ replace(x = ., values = NA)
+#   )) %>%
+#   mutate(outliers = TRUE)
+# temp2 <- anti_join(fishBehavDatBin5, BoxPlotOutliersRemove, by = c("plate_id", "embryo_id"))
+# fishBehavDatBin5 <- bind_rows(temp, temp2)
+#
+# #fishBehavDatBinLD
+# temp <- semi_join(fishBehavDatBinLD, BoxPlotOutliersRemove, by = c("plate_id", "embryo_id")) %>%
+#   mutate(across(
+#     .cols = c("inact","inadur",
+#               "smlct","smldur","smldist","activedur",
+#               "larct","lardur","lardist","totaldist"),
+#     .fns = ~ replace(x = ., values = NA)
+#   )) %>%
+#   mutate(outliers = TRUE)
+# temp2 <- anti_join(fishBehavDatBinLD, BoxPlotOutliersRemove, by = c("plate_id", "embryo_id"))
+# fishBehavDatBinLD <- bind_rows(temp, temp2)
+```
+
+```{r remove_control_fish, include=FALSE}
+p <- fishBehavDat %>%
   filter(Dose == "Control") %>%
-  dplyr::group_by(plate_id, embryo_id) %>%
-  dplyr::summarise(cummulative_param = sum(get(params$value), na.rm = TRUE)) %>%
-  dplyr::group_by(plate_id) %>%
-  dplyr::summarise(Q1 = quantile(cummulative_param, 0.25),
-         Q3 = quantile(cummulative_param, 0.75),
-         IQR = IQR(cummulative_param),
-         cummulative_param = cummulative_param,
-         embryo_id = embryo_id) %>%
-  mutate(lower_limit = (Q1 - 1.5*IQR),
-         upper_limit = (Q3 + 1.5*IQR)) %>%
+  group_by(plate_id, embryo_id) %>%
+  summarise(mean_totaldist = mean(totaldist, na.rm=TRUE)) %>%
+  ungroup() %>%
   group_by(plate_id) %>%
-  mutate(z_score = (cummulative_param - mean(cummulative_param))/sd(cummulative_param)) %>%
-  mutate(outlier_iqr = if_else(condition = cummulative_param > (Q1 - 1.5*IQR) & cummulative_param < (Q3 + 1.5*IQR), true = FALSE, false = TRUE)) %>%
-  mutate(outlier_z = if_else(condition = z_score > 3, true = TRUE, false = FALSE))
+  ggplot(aes(sample = mean_totaldist)) +
+  geom_qq() +
+  geom_qq_line() +
+  facet_wrap(~ plate_id, scales = "free") +
+  ylab("Sample") +
+  xlab("Theoretical") +
+  theme_classic() +
+  ggtitle("QQ plots showing approximatey normal distributions for each Control fish for every experiment")
 
-ggBoxPlotOutliers <- BoxPlotOutliers %>%
-  ggplot(data = ., mapping = aes(y = cummulative_param)) +
-  geom_boxplot() +
-  geom_label(inherit.aes = FALSE, x = 0, aes(y = cummulative_param, color = embryo_id, label = embryo_id)) +
-  geom_point(inherit.aes = FALSE, x = 0, aes(y = cummulative_param, color = embryo_id)) +
-  facet_wrap(~plate_id, scales = "free") +
-  theme_classic()
+print(p)
 
-BoxPlotOutliersRemove <- BoxPlotOutliers %>%
-  filter(outlier_iqr | outlier_z == TRUE) %>%
-  dplyr::summarise(plate_id = plate_id, embryo_id = embryo_id)
+library(outliers)
 
-print(ggBoxPlotOutliers)
+####Outliers####
+grubbs.flag <- function(x) {
+  outliers <- NULL
+  test <- x
+  grubbs.result <- grubbs.test(test)
+  pv <- grubbs.result$p.value
+  while(pv < 0.05) {
+    outliers <- c(outliers,as.numeric(strsplit(grubbs.result$alternative," ")[[1]][3]))
+    test <- x[!x %in% outliers]
+    grubbs.result <- grubbs.test(test)
+    pv <- grubbs.result$p.value
+  }
+  return(data.frame(mean_totaldist=x,Outlier=(x %in% outliers))) #Note mean_totaldist is baked into function
+}
 
+#Testing for Outliers...
+embryo_id_join <- fishBehavDat %>%
+  filter(Dose == "Control") %>%
+  group_by(plate_id, embryo_id) %>%
+  summarise(mean_totaldist = mean(totaldist, na.rm=TRUE),
+            embryo_id = embryo_id) %>%
+  unique() %>%
+  ungroup() %>%
+  group_by(plate_id) %>%
+  mutate(mean_totaldist = round(mean_totaldist, digits = 3))
 
-#Remove any outliers before data transmformation based off of the animal's cumulative paramater across the entire assay
-#fishBehavDat
-temp <- semi_join(fishBehavDat, BoxPlotOutliersRemove, by = c("plate_id", "embryo_id")) %>%
+input_behavdata <- fishBehavDat %>%
+  filter(Dose == "Control") %>%
+  group_by(plate_id, embryo_id) %>%
+  summarise(mean_totaldist = mean(totaldist, na.rm=TRUE),
+            embryo_id = embryo_id) %>%
+  unique() %>%
+  ungroup() %>%
+  group_by(plate_id) %>%
+  mutate(mean_totaldist = round(mean_totaldist, digits = 3)) %>% #Bug with grubbs and large decimal places
+  #filter(plate_id %in% c("BPA", "BPAF")) %>% #Testing with smaller data set
+  nest()
+
+grubbs_results <- input_behavdata %>%
+  mutate(grubbs_results = map(data, ~grubbs.flag(x = .x[[2]])))
+
+behavdata_join <- grubbs_results %>%
+  dplyr::select(-data) %>%
+  unnest(cols = c(grubbs_results)) %>%
+  inner_join(embryo_id_join) %>%
+  dplyr::select(-mean_totaldist)
+
+#Outlier fish
+outlier_control_fish <- data.frame(plate_id = behavdata_join$plate_id[which(behavdata_join$Outlier == TRUE)], embryo_id = behavdata_join$embryo_id[which(behavdata_join$Outlier == TRUE)], Outlier_control_fish = c(TRUE))
+
+#Outliers removed (replacing the values with NA)
+# Change the .cols argument to what ever endpoint you are turning into NAs
+# #fishBehavDat
+fishBehavDat <- fishBehavDat %>%
+  dplyr::select(-Outlier, -outliers)
+fishBehavDatBin5 <- fishBehavDatBin5 %>%
+  dplyr::select(-Outlier, -outliers)
+fishBehavDatBinLD <- fishBehavDatBinLD %>%
+  dplyr::select(-Outlier, -outliers)
+
+temp <- inner_join(fishBehavDat, behavdata_join, by = c("plate_id", "embryo_id")) %>%
   mutate(across(
     .cols = c("inact","inadur",
               "smlct","smldur","smldist","activedur",
               "larct","lardur","lardist","totaldist"),
-    .fns = ~ replace(x = ., values = NA)
-  )) %>%
-  mutate(outliers = TRUE)
-temp2 <- anti_join(fishBehavDat, BoxPlotOutliersRemove, by = c("plate_id", "embryo_id"))
+    .fns = ~ replace(x = ., list = Outlier, values = NA)
+  ))
+temp2 <- anti_join(fishBehavDat, behavdata_join, by = c("plate_id", "embryo_id"))
 fishBehavDat <- bind_rows(temp, temp2)
 
-#fishBehavDatBin5
-temp <- semi_join(fishBehavDatBin5, BoxPlotOutliersRemove, by = c("plate_id", "embryo_id")) %>%
+#_____________________________________________________________________________#
+
+# #fishBehavDatBin5
+#Outliers removed (replacing the values with NA)
+# Change the .cols argument to what ever endpoint you are turning into NAs
+
+temp <- inner_join(fishBehavDatBin5, behavdata_join, by = c("plate_id", "embryo_id")) %>%
   mutate(across(
     .cols = c("inact","inadur",
               "smlct","smldur","smldist","activedur",
               "larct","lardur","lardist","totaldist"),
-    .fns = ~ replace(x = ., values = NA)
-  )) %>%
-  mutate(outliers = TRUE)
-temp2 <- anti_join(fishBehavDatBin5, BoxPlotOutliersRemove, by = c("plate_id", "embryo_id"))
+    .fns = ~ replace(x = ., list = Outlier, values = NA)
+  ))
+temp2 <- anti_join(fishBehavDatBin5, behavdata_join, by = c("plate_id", "embryo_id"))
 fishBehavDatBin5 <- bind_rows(temp, temp2)
 
-#fishBehavDatBinLD
-temp <- semi_join(fishBehavDatBinLD, BoxPlotOutliersRemove, by = c("plate_id", "embryo_id")) %>%
+#_____________________________________________________________________________#
+
+# #fishBehavDatBinLD
+#Outliers removed (replacing the values with NA)
+# Change the .cols argument to what ever endpoint you are turning into NAs
+
+temp <- inner_join(fishBehavDatBinLD, behavdata_join, by = c("plate_id", "embryo_id")) %>%
   mutate(across(
     .cols = c("inact","inadur",
               "smlct","smldur","smldist","activedur",
               "larct","lardur","lardist","totaldist"),
-    .fns = ~ replace(x = ., values = NA)
-  )) %>%
-  mutate(outliers = TRUE)
-temp2 <- anti_join(fishBehavDatBinLD, BoxPlotOutliersRemove, by = c("plate_id", "embryo_id"))
+    .fns = ~ replace(x = ., list = Outlier, values = NA)
+  ))
+temp2 <- anti_join(fishBehavDatBinLD, behavdata_join, by = c("plate_id", "embryo_id"))
 fishBehavDatBinLD <- bind_rows(temp, temp2)
+
 ```
+
 
 ## Analysis - Similarity Scores/Correlation coefficients
 
@@ -284,7 +410,7 @@ cor_dat_long %>%
 
 
 ```{r 47simi_endpoints_pearson, include = FALSE}
-simi_endps_pearson <- list(seq(1, 30, by = 1)) #One per minute
+simi_endps_pearson <- list(seq(1, 30, by = 1)) #Segments - One per minute
 names(simi_endps_pearson) <- "pearson"
 simi_endpoints_nobin_pearson <- list()
 for (i in chemicalNames) {
@@ -297,12 +423,10 @@ for (i in chemicalNames) {
 }
 ```
 
-Responses on each plate are normalized using the following equation: `Response = (Vchemical/Vvehicle_control)*100-100`, where Vchemical is the response of the chemical-treated embryo, Vvehicle_control is the median value of the response of the internal plate control embryos. Therefore, response less than 0 from chemical-treated embryos decrease the similarity of their movements when compared to the control embryos. Response greater than 0 increase their similarity to the vehicle control embryos.\
+Responses on each plate are normalized using the following equation: `Response = (Vchemical/Vvehicle_control)*100-100`, where Vchemical is the response of the chemical-treated embryo, Vvehicle_control is the median value of the response of the internal plate control embryos. Therefore, response approaching zero 0 from chemical-treated embryos decrease the similarity of their movements when compared to the control embryos. Response greater than 0 increase their similarity to the vehicle control embryos.\
+Similarity scores below zero (before normalization) are reset to 0.\
 For this reason, it makes the most sense to use a negative direction for the BMD calculation.\
 <!-- It may also make sense to filter only chemicals that induce dissimilar movement patterns when compared to the vehicle control for the benchmark concentration analysis. -->
-
-
-<!-- Calculation of both similarity scores will be done in parallel throughout report -->
 
 
 ```{r 48normalized_data_pearson, include=FALSE}
@@ -327,48 +451,96 @@ temp_pearson <-
   mutate(.id = NULL)
 
 #### Testing for Normal Distribution
-qqnorm(temp_pearson$endpoint_value_norm)
-qqline(temp_pearson$endpoint_value_norm)
-shapiro.test(temp_pearson$endpoint_value_norm)
-# Data are not normally distributed. Thus violating an assumption of ANCOVA
-
-
-temp_pearson <- temp_pearson %>%
-  group_by(plate_id, dose) %>%
-  mutate(Q1 = quantile(endpoint_value_norm, 0.25), Q3 = quantile(endpoint_value_norm, 0.75)) %>%
-  mutate(IQR = IQR(endpoint_value_norm)) %>%
-  mutate(outlier = if_else(condition = endpoint_value_norm > (Q1 - 1.5*IQR) & endpoint_value_norm < (Q3 + 1.5*IQR), true = FALSE, false = TRUE)) %>%
-  mutate(lower_limit = (Q1 - 1.5*IQR),
-         upper_limit = (Q3 + 1.5*IQR))
-
-outliers_pearson <- temp_pearson %>%
-  filter(outlier == TRUE) %>%
-  ungroup()
-
-temp_pearson <- temp_pearson %>%
-  anti_join(outliers_pearson)
-
-
-#### Testing for Normal Distribution after removing outliers
-qqnorm(temp_pearson$endpoint_value_norm)
-qqline(temp_pearson$endpoint_value_norm)
-shapiro.test(temp_pearson$endpoint_value_norm)
-# Data are not normally distributed. Thus violating an assumption of ANCOVA
-
-
-simi_norm_nobin_pearson <- temp_pearson %>%
+temp_pearson %>%
   group_by(plate_id) %>%
-  group_split(.keep = FALSE) %>%
-  setNames(chemicalNames)
+  ggplot(aes(sample = endpoint_value_norm)) +
+  geom_qq() +
+  geom_qq_line() +
+  facet_wrap(~ plate_id, scales = "free") +
+  ylab("Sample") +
+  xlab("Theoretical") +
+  theme_classic() +
+  ggtitle("QQ plots showing approximatey normal distributions for each experiment after outlier removal")
+# Data are approximately normally distributed. Thus violating an assumption of ANCOVA
+
+
+#### Testing for Homogeneity of Variance
+# Homogeneity of variance test -- of totaldistance
+LeveneResults <- temp_pearson %>%
+  group_by(plate_id) %>%
+  summarise(car::leveneTest(endpoint_value_norm, as.factor(dose)))
+#Adding an is.significant column to easily parse significant values in a spreadsheet
+LeveneResults <- LeveneResults %>%
+  na.omit() %>%
+  mutate(is.significant = if_else(
+    condition = `Pr(>F)` < 0.05,
+    true = TRUE,
+    false = FALSE
+  ))
+DT::datatable(LeveneResults)
+#Variance is homogeneous across groups
+#Therefore ANOVA nand Dunnett's test are appropriate
+
+
+# temp_pearson <- temp_pearson %>%
+#   group_by(plate_id, dose) %>%
+#   mutate(Q1 = quantile(endpoint_value_norm, 0.25), Q3 = quantile(endpoint_value_norm, 0.75)) %>%
+#   mutate(IQR = IQR(endpoint_value_norm)) %>%
+#   mutate(outlier = if_else(condition = endpoint_value_norm > (Q1 - 1.5*IQR) & endpoint_value_norm < (Q3 + 1.5*IQR), true = FALSE, false = TRUE)) %>%
+#   mutate(lower_limit = (Q1 - 1.5*IQR),
+#          upper_limit = (Q3 + 1.5*IQR))
+
+# outliers_pearson <- temp_pearson %>%
+#   filter(outlier == TRUE) %>%
+#   ungroup()
+# 
+# temp_pearson <- temp_pearson %>%
+#   anti_join(outliers_pearson)
+
+
+# #### Testing for Normal Distribution after removing outliers
+# qqnorm(temp_pearson$endpoint_value_norm)
+# qqline(temp_pearson$endpoint_value_norm)
+# shapiro.test(temp_pearson$endpoint_value_norm)
+# # Data are not normally distributed. Thus violating an assumption of ANCOVA
+
+
+# simi_norm_nobin_pearson <- temp_pearson %>%
+#   group_by(plate_id) %>%
+#   group_split(.keep = FALSE) %>%
+#   setNames(chemicalNames)
 ```
 
+```{r Checking_For_Group_Effects, include=FALSE, eval=FALSE}
+#One-way ANOVA to test for repliacte subgroup effect
+anova_group_eff_test <- temp_pearson %>%
+  group_by(plate_id, dose) %>%
+  nest() %>%
+  mutate(model = map(data, ~ aov(
+    endpoint_value_norm ~ as.factor(Group),
+    data = .
+  ))) %>%
+  mutate(tidy_aov = map(model, ~ broom::tidy(x = .x)))
+
+#Adjust P values
+anova_group_eff_adj_p <- anova_group_eff_test %>%
+  dplyr::select(plate_id, dose, tidy_aov) %>%
+  unnest(tidy_aov) %>%
+  filter(term == "as.factor(Group)") %>%
+  ungroup() %>%
+  mutate(adj.p.value = p.adjust(p = p.value, method = "BH")) %>%
+  group_by(plate_id, dose)
+
+#Further analysis is not necessary because there are no significant sub-group effects
+```
 
 ```{r 50ANCOVA_pearson, include=FALSE}
-ancova_list_nobin_pearson <- sapply(simi_norm_nobin_pearson, combinedancova)
+anova_list_nobin_pearson <- sapply(simi_norm_nobin_pearson, combinedanova)
 
-ancova_comb_nobin_pearson <- as_tibble(plyr::ldply(ancova_list_nobin_pearson))
-ancova_comb_nobin_pearson <- ancova_comb_nobin_pearson %>%
+anova_comb_nobin_pearson <- as_tibble(plyr::ldply(anova_list_nobin_pearson))
+anova_comb_nobin_pearson <- anova_comb_nobin_pearson %>%
   na.omit() %>%
+  mutate(`Pr(>F)` = p.adjust(`Pr(>F)`, method = "fdr")) %>%
   mutate(is.significant = if_else(
     condition = `Pr(>F)` < 0.05,
     true = TRUE,
@@ -377,13 +549,12 @@ ancova_comb_nobin_pearson <- ancova_comb_nobin_pearson %>%
 ```
 
 ```{r 50.2ANCOVA_Results_Summary, echo = FALSE}
-ancova_comb_nobin_pearson %>%
-  filter(is.significant == TRUE)  %>%
+anova_comb_nobin_pearson %>%
   select(.id, Df, `F value`, `Pr(>F)`, endpoint) %>%
   kable(
     col.names = c("Chemical", "Degrees of Freedom", "F-Value", "P-value", "Endpoint"),
     align = 'llrrr',
-    caption = "Table 6. Summary table of significant ANCOVA results (p < 0.05) from the `totaldist` variable after controling for within-group variability"
+    caption = "Table 6. Summary table of ANOVA results from the `totaldist` variable after pooling sub-groups"
   ) %>%
   kable_styling()
 ```
@@ -400,7 +571,7 @@ dunnett_list_nobin_pearson <- sapply(simi_norm_nobin_pearson, combineddunnett) %
 dunnett_temp <-
   list() #Take Dunnett's test results without any of the fancy summary information and shove it into a named list
 for (i in chemicalNames) {
-  dunnett_list_nobin_pearson[[i]][,"pval"] <- p.adjust(dunnett_list_nobin_pearson[[i]][,"pval"], method = "fdr")
+  # dunnett_list_nobin_pearson[[i]][,"pval"] <- p.adjust(dunnett_list_nobin_pearson[[i]][,"pval"], method = "fdr")
 
   dunnett_temp[[names(dunnett_list_nobin_pearson[i])]] <-
     dunnett_list_nobin_pearson[[i]] %>% as.data.frame() %>% rownames_to_column(var = "dose") #Coerce to a data frame temporarily so what we can take the row names of the reults and turn them into a variable with rownames_to_column
@@ -409,10 +580,11 @@ dunnett_comb_nobin_pearson <-
   plyr::ldply(dunnett_temp) #this function combines all of the lists together and gives them a variable name according to the chemical
 dunnett_comb_nobin_pearson$dose = substr(dunnett_comb_nobin_pearson$dose,
                            start = 1,
-                           stop = nchar(dunnett_comb_nobin_pearson$dose) - 6) #Here we are fixing the dose column... the dose column has the test dose related to the control... but we just want to see what the test dose is without it giving us redundant information about the comparison to the control for every observation...
+                           stop = nchar(dunnett_comb_nobin_pearson$dose) - 8) #Here we are fixing the dose column... the dose column has the test dose related to the control... but we just want to see what the test dose is without it giving us redundant information about the comparison to the control for every observation...
 dunnett_comb_nobin_pearson <- as_tibble(dunnett_comb_nobin_pearson)
 dunnett_comb_nobin_pearson <- dunnett_comb_nobin_pearson %>%
   na.omit() %>%
+  mutate(pval = p.adjust(pval, method = "fdr")) %>%
   mutate(is.significant = if_else(
     condition = pval < 0.05,
     true = TRUE,
@@ -422,12 +594,11 @@ dunnett_comb_nobin_pearson <- dunnett_comb_nobin_pearson %>%
 
 ```{r 52.2Dunnett_results_summary, echo=FALSE}
 dunnett_comb_nobin_pearson %>%
-  filter(is.significant == TRUE) %>%
   select(.id, dose, diff, pval, endpoint) %>%
   kable(
     col.names = c("Chemical", "Dose", "Difference in similarity score (+/- 100)", "P-value", "Endpoint"),
     align = 'llcr',
-    caption = "Table 7. Summary table of significant Dunnett's test results (p < 0.05) from the `totaldist` variable after controling for within-group variability"
+    caption = "Table 7. Summary table of Dunnett's test results from the `totaldist` variable"
   ) %>%
   kable_styling()
 ```
@@ -439,8 +610,8 @@ doseData <- doseData %>%
   mutate(dose = Dose) #Renaming dose variable to inner_join
 
 simi_norm_tib_pearson <-
-  plyr::ldply(simi_norm_nobin_pearson) %>% #Convert from list to tibble
-  rename(plate_id = .id)
+  plyr::ldply(simi_norm_nobin_pearson) #Convert from list to tibble
+  #rename(plate_id = .id)
 
 simi_norm_tib_pearson <- simi_norm_tib_pearson %>%
   inner_join(doseData, by = c("plate_id", "dose")) %>%
@@ -449,7 +620,6 @@ simi_norm_tib_pearson <- simi_norm_tib_pearson %>%
          dose,
          Dose_mg_L,
          is_VC,
-         Group,
          endpoint,
          endpoint_value_norm)
 ```
@@ -460,10 +630,10 @@ Dunnett_results <- dunnett_comb_nobin_pearson %>%
   rename(plate_id = .id) %>%
   mutate(dose = str_split(string = dose, pattern = "-", simplify = TRUE)[,1])
 
-ANCOVA_results <- ancova_comb_nobin_pearson %>%
+ANOVA_results <- anova_comb_nobin_pearson %>%
   rename(plate_id = .id) %>%
   filter(Df == 5) %>%
-  mutate(ANCOVA_is_sig = is.significant)
+  mutate(ANOVA_is_sig = is.significant)
   
 
 p_pearson <- simi_norm_tib_pearson %>%
@@ -472,9 +642,8 @@ p_pearson <- simi_norm_tib_pearson %>%
             endpoint = endpoint,
             dose = dose,
             endpoint_value_norm = endpoint_value_norm,
-            Group = Group,
             pval = pval) %>%
-  inner_join(ANCOVA_results, by = c("plate_id", "endpoint")) %>%
+  inner_join(ANOVA_results, by = c("plate_id", "endpoint")) %>%
   mutate(dose = factor(
     dose,
     levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"),
@@ -483,15 +652,14 @@ p_pearson <- simi_norm_tib_pearson %>%
   group_by(plate_id, dose) %>%
   dplyr::summarise(dose = dose,
             endpoint_value_norm = endpoint_value_norm,
-            Group = Group,
             pval = pval,
-            ANCOVA_is_sig = ANCOVA_is_sig,
+            ANOVA_is_sig = ANOVA_is_sig,
             `Pr(>F)` = `Pr(>F)`) %>%
   mutate(pval = if_else(condition = is.na(pval), true = 1, false = pval)) %>%
   na.omit() %>%
   ggplot(aes(x = dose, y = endpoint_value_norm, group = 1)) +
   geom_boxplot(
-    aes(x = dose, y = endpoint_value_norm, group = dose, color = ANCOVA_is_sig),
+    aes(x = dose, y = endpoint_value_norm, group = dose, color = ANOVA_is_sig),
     outlier.shape = NA,
     width = 0.5
   ) +
@@ -544,7 +712,7 @@ p_pearson <- simi_norm_tib_pearson %>%
   ylim(-100, 100)
 
 p_both_endpoints <- list(p_pearson)
-names(p_both_endpoints) <- c("Pearson")
+names(p_both_endpoints) <- c("pearson")
 ```
 
 #### Boxplots by endpoint {.tabset}
@@ -581,23 +749,23 @@ Since we do not know what the benchmark response is for each one of the chemical
 
 ```{r 55.1Clear_Memory, include=FALSE}
 rm(
-  p_spearman,
+  p_pearson,
   p_pearson,
   ANCOVA_results,
   Dunnett_results,
   Nobin_dunnet_results_both_endpoints,
   dunnett_comb_nobin_pearson,
   ancova_summary_both_endpoints,
-  ancova_comb_nobin_spearman,
+  ancova_comb_nobin_pearson,
   ancova_comb_nobin_pearson,
   temp_pearson,
-  temp_spearman,
+  temp_pearson,
   outliers_pearson,
   outliers,
-  spearman,
-  summarystats_list_nobin_spearman,
+  pearson,
   summarystats_list_nobin_pearson,
-  simi_endpoints_nobin_spearman,
+  summarystats_list_nobin_pearson,
+  simi_endpoints_nobin_pearson,
   simi_endpoints_nobin_pearson,
   cor_dat_long,
   p1,
@@ -606,20 +774,20 @@ rm(
   temp,
   temp2,
   simi_norm_nobin_pearson,
-  simi_endpoints_nobin_spearman,
+  simi_endpoints_nobin_pearson,
   p_both_endpoints,
   outliers_pearson,
-  outliers_spearman,
+  outliers_pearson,
   ggBoxPlotOutliers,
   filter_out,
   dunnett_temp,
   dunnett_list_nobin_pearson,
-  dunnett_comb_nobin_spearman,
-  dunnett_list_nobin_spearman,
+  dunnett_comb_nobin_pearson,
+  dunnett_list_nobin_pearson,
   BoxPlotOutliers,
   BoxPlotOutliersRemove,
   ancova_list_nobin_pearson,
-  ancova_list_nobin_spearman,
+  ancova_list_nobin_pearson,
   fishBehavDat,
   fishBehavDatBin5,
   fishBehavDatBinLD,

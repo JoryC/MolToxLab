@@ -15,7 +15,7 @@ i=endpoint
 j=method
 
 value <- c("totaldist") # Can add more endpoints to this like lardist, smldist, etc.
-sample_size <- 1000 #Change this to whatever sample size you want. Test with 10 or 100, get results with 1000 samples
+sample_size <- 100 #Change this to whatever sample size you want. Test with 10 or 100, get results with 1000 samples
 
 rmarkdown::render(
   input = paste0(i, "_", j, ".rmd"),

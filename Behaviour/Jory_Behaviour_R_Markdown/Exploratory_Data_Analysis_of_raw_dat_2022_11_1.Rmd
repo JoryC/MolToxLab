@@ -108,7 +108,7 @@ metaData <- read.csv(file = "Data/MetaData.csv") #Import the Meta Data that incl
 
 ```{r 10metadata_table, echo=FALSE}
 metaData %>%
-  select(NAME, plate_id, MOA, Dose1:Dose5) %>%
+  dplyr::select(NAME, plate_id, MOA, Dose1:Dose5) %>%
   kable(
     col.names = c(
       "Chemical Name",
@@ -174,20 +174,20 @@ nrow(raw_data)
 However, there are `r nrow(raw_data)` rows present in the raw data. This expectation was violated because each observation is duplicated
 ```{r 13duplicates, echo=FALSE}
 raw_data %>%
-  select(plate_id, Treatment, an, end, smldist, lardist, emptyct, emptydur)
+  dplyr::select(plate_id, Treatment, an, end, smldist, lardist, emptyct, emptydur)
 ```
 By looking at just the head of `raw_data`, it can be seen that the variable `an` has a `TRUE` and `FALSE` row for each individual observation. The only difference between these duplicate rows is that the `FALSE` rows retain information about `emptyct` and `emptydur`.\
 ```{r 14nrow_filtered_raw_data, echo=TRUE, collapse=TRUE}
 raw_data <- raw_data %>%
-  filter(an == FALSE) %>% # Removing duplicate rows
-  select(-c(an)) # This variable is not very useful anymore, so removing
+  dplyr::filter(an == FALSE) %>% # Removing duplicate rows
+  dplyr::select(-c(an)) # This variable is not very useful anymore, so removing
 nrow(raw_data)
 ```
 After filtering for just the false values, there are now `r nrow(raw_data)` rows.\ 
 There are `r nrow(raw_data) - (96*50*29)` extra observations in `raw_data` because there are some extra observations past 50 minutes.\ 
 ```{r 15nrow_raw_data_filtered_2, echo=TRUE, collapse=TRUE}
 raw_data <- raw_data %>%
-  filter(end <= 3000) # Deleting observations past 50 mins (3000 seconds)
+  dplyr::filter(end <= 3000) # Deleting observations past 50 mins (3000 seconds)
 nrow(raw_data)
 identical(as.numeric(nrow(raw_data)), (96 * 50 * 29)) # is the expected number of rows consistent with the observed number of rows after processing?
 ```
@@ -197,7 +197,7 @@ After ensuring there are no observations past the 50-minute mark, there are now 
 It is expected that wells 10:12, 22:24, 34:36, 46:48, 58:60, 70:96 will all be `NA` in the `Treatment` column because these are all empty wells (Figure 2). Each plate has  `r (3*6) + (12*2)` empty wells. This means that all `NA` treatments should be `r 42*50*29` observations long. After removing `NA`s there should be `r nrow(raw_data)-(42*50*29)` rows in `raw_data`.
 ```{r 16removeNAs, echo=TRUE, collapse=TRUE}
 raw_data <- raw_data %>%
-  filter(Treatment != is.na(Treatment))
+  dplyr::filter(Treatment != is.na(Treatment))
 nrow(raw_data)
 identical(as.numeric(nrow(raw_data)), (54 * 50 * 29)) # Does the expected number of rows match the observed number of rows after filtering?
 ```
@@ -244,7 +244,7 @@ The distributions of all count variables are slightly skewed, with few outliers,
 Next, the 'duration' variable distributions will be explored. Note: this variable should never exceed 60 seconds.
 ```{r 18qplots_duration, echo=FALSE, warning=FALSE, message=FALSE, fig.height=6 , fig.align='center', fig.cap="Figure 6. Quick plots of the 'duration' variables in the `raw_data` object", out.height= "150%", out.width= "150%", fig.height = 7.5, fig.width=7}
 raw_data <- raw_data %>%
-  mutate(activedur = smldur + lardur)
+  dplyr::mutate(activedur = smldur + lardur)
 grid.arrange(
   qplot(
     data = raw_data,
@@ -286,10 +286,10 @@ Again, it can also be seen that the distributions of observations for each varia
 There are a few outliers in the data but they are a bit difficult to see in figure 6. Notably, large swim activity duration (plot 5 in figure 6) has 27 outliers past ~40 seconds. Taking a closer look at those outliers...
 ```{r 19lardur_outliers, echo=FALSE, warning=FALSE, message=FALSE}
 raw_data %>%
-  filter(lardur >= 40) %>%
-  select(plate_id, animal, Treatment, lardur) %>%
+  dplyr::filter(lardur >= 40) %>%
+  dplyr::select(plate_id, animal, Treatment, lardur) %>%
   group_by(plate_id, Treatment, animal) %>%
-  summarise(distance = mean(lardur)) %>%
+  dplyr::summarise(distance = mean(lardur)) %>%
   kable(align = 'lllc', col.names = c("Chemical", "Dose", "Individual", "Large Activity Duration (seconds)"), caption = "Table 2. Summary of outliers in large swim activity duration variable (> 40s), showing only unique individuals") %>%
   kable_styling(full_width = TRUE) %>%
   scroll_box()
@@ -310,7 +310,7 @@ Behavioural perturbation (hyperactivity) suggests that it is possible that these
 Next, the distributions of the 'distance' variables will be investigated.
 ```{r 20distance_qplots, echo=FALSE, fig.align='center', fig.cap="Figure 7. Quick plots of the 'distance' variable in the `raw_data` object", warning=FALSE, message=FALSE, fig.height = 5, fig.width = 7.5, out.height= "150%", out.width= "150%"}
 raw_data <- raw_data %>%
-  mutate(totaldist = smldist + lardist)
+  dplyr::mutate(totaldist = smldist + lardist)
 grid.arrange(
   qplot(
     data = raw_data,
@@ -338,10 +338,10 @@ Figure 7 shows that the distributions of of the 'distance' variables are slightl
 However, there are outliers in `totaldist` and so the following steps will be taking a closer look at those outliers...
 ```{r 21totaldist_outliers, echo=FALSE, warning=FALSE, message=FALSE}
 raw_data %>%
-  filter(totaldist > 4000) %>%
-  select(plate_id, Treatment, animal, totaldist) %>%
+  dplyr::filter(totaldist > 4000) %>%
+  dplyr::select(plate_id, Treatment, animal, totaldist) %>%
   group_by(plate_id, Treatment, animal) %>%
-  summarise(distance = mean(totaldist)) %>%
+  dplyr::summarise(distance = mean(totaldist)) %>%
   kable(col.names = c("Chemical", "Dose", "Individual", "Distance travelled in 1 min"), align = 'lllc', caption = "Table 3. Summary of outliers in total distance travelled variable (>4000) showing only unique individuals") %>%
   kable_styling(full_width = TRUE) %>%
   scroll_box()
@@ -361,8 +361,8 @@ It is important to also consider determining outliers not just between plates in
 ```{r 22plate_distribution_visualizer, include=FALSE}
 distVis <- function (df, chem, var, time_start = 0) {
 df %>%
-  filter(plate_id == chem, start >= time_start*60) %>% #Subetting to chemical of choice
-  mutate(Treatment = rep(
+  dplyr::filter(plate_id == chem, start >= time_start*60) %>% #Subetting to chemical of choice
+  dplyr::mutate(Treatment = rep(
     c(
       "Dose1_A","Dose1_B","Dose1_C","Dose2_A","Dose2_B","Dose2_C",
       "Dose3_A","Dose3_B","Dose3_C","Dose4_A","Dose4_B","Dose4_C",
@@ -418,7 +418,7 @@ treatment_groups <- c("Dose1_A","Dose1_B","Dose1_C","Dose2_A","Dose2_B","Dose2_C
   "Dose5_A","Dose5_B","Dose5_C","Control_A","Control_B","Control_C")
 
 raw_data <- raw_data %>%
-  mutate(Treatment = rep(treatment_groups,
+  dplyr::mutate(Treatment = rep(treatment_groups,
     times = (nrow(.)/(18)/3), #repeat 2,700/18 = 150 times (number of observations divided by number of treatments = number of treatment observations) then divide that by 3 because each will be repeating 3 times
     each = 3
   )) %>% #Separating Dose from Group letter with an underscore
@@ -427,30 +427,30 @@ raw_data <- raw_data %>%
            convert = TRUE)
 
 out_1 <- raw_data %>%
-  filter(plate_id == "Vinclozolin") %>%
-  filter(totaldist >= 4000)
+  dplyr::filter(plate_id == "Vinclozolin") %>%
+  dplyr::filter(totaldist >= 4000)
 out_2 <- raw_data %>%
-  filter(plate_id == "Fadrozole") %>%
-  filter(totaldist >= 3500)
+  dplyr::filter(plate_id == "Fadrozole") %>%
+  dplyr::filter(totaldist >= 3500)
 out_3 <- raw_data %>%
-  filter(plate_id == "Trenbolone") %>%
-  filter(totaldist > 3000)
+  dplyr::filter(plate_id == "Trenbolone") %>%
+  dplyr::filter(totaldist > 3000)
 out_4 <- raw_data %>%
-  filter(plate_id %in% c("34DCA", "BPA")) %>%
-  filter(totaldist >= 2600)
+  dplyr::filter(plate_id %in% c("34DCA", "BPA")) %>%
+  dplyr::filter(totaldist >= 2600)
 out_5 <- raw_data %>%
-  filter(plate_id %in% c("Fluoxetine", "DMF", "DES", "24DNP", "4C3MP", "Malathion")) %>%
-  filter(totaldist >= 2500)
+  dplyr::filter(plate_id %in% c("Fluoxetine", "DMF", "DES", "24DNP", "4C3MP", "Malathion")) %>%
+  dplyr::filter(totaldist >= 2500)
 out_5.5 <- raw_data %>%
-  filter(plate_id %in% c("17betaestradiol")) %>%
-  filter(totaldist >= 2250)
+  dplyr::filter(plate_id %in% c("17betaestradiol")) %>%
+  dplyr::filter(totaldist >= 2250)
 out_6 <- raw_data %>%
-  filter(plate_id %in% c("TGSH", "Clofibric_Acid", "24DMP", "EE2")) %>%
-  filter(totaldist >= 2000)
+  dplyr::filter(plate_id %in% c("TGSH", "Clofibric_Acid", "24DMP", "EE2")) %>%
+  dplyr::filter(totaldist >= 2000)
 out_totaldist <- rbind(out_1, out_2, out_3, out_4, out_5, out_5.5, out_6)
 
 raw_data <- raw_data %>%
-  mutate(outliers = if_else(condition = (do.call(paste0, .) %in% do.call(paste0, out_totaldist)), true = TRUE, false = FALSE))
+  dplyr::mutate(outliers = if_else(condition = (do.call(paste0, .) %in% do.call(paste0, out_totaldist)), true = TRUE, false = FALSE))
 ```
 
 ```{r 25outlier_summary, echo=FALSE, warning=FALSE, message=FALSE}
@@ -489,8 +489,8 @@ Figure 6 showed that the `emptydur` variable can be used reliably to filter out 
 ```{r 28poor_quality_cutoff, echo=FALSE}
 qualityCutoff <- (round(60*0.33))
 raw_data <- raw_data %>%
-  mutate(poorQual = if_else(condition = emptydur >= qualityCutoff, true = TRUE, false = FALSE)) %>%
-  mutate(across(
+  dplyr::mutate(poorQual = if_else(condition = emptydur >= qualityCutoff, true = TRUE, false = FALSE)) %>%
+  dplyr::mutate(across(
     .cols = c("inact","inadur","inadist",
               "smlct","smldur","smldist",
               "larct","lardur","lardist"),
@@ -500,7 +500,7 @@ raw_data <- raw_data %>%
 
 ```{r 29n_NAs, echo=TRUE, collapse=TRUE}
 NAObservations <- raw_data %>%
-  filter(poorQual == TRUE) %>% # Filter only rows with poor quality that have behavioural endpoint observations turned to NAs
+  dplyr::filter(poorQual == TRUE) %>% # Filter only rows with poor quality that have behavioural endpoint observations turned to NAs
   nrow()
 NAObservations
 ```
@@ -513,12 +513,12 @@ Overall, the animal recording set-up had an approximate failure-rate of `r round
 ```{r 30pre_process_1, include=FALSE, class.source ='fold-hide', message=FALSE, warning=FALSE}
 # First defining an object that carries all dosing information (in mg/L) for each chemical, from the meta data
 doseData <- metaData %>%
-  select(plate_id, Dose1:Control) %>%
+  dplyr::select(plate_id, Dose1:Control) %>%
   gather(key = Dose, value = "Dose_mg_L", Dose1:Control)
 
 # Second, creating new variables, re-ordering columns, removing columns that won't be used, and joining dose information
 fishBehavDat <- raw_data %>%
-  mutate(
+  dplyr::mutate(
     time_end = end / 60, # time in minutes
      Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE), # factoring dose info into ordered levels
     is_VC = if_else(
@@ -533,8 +533,8 @@ fishBehavDat <- raw_data %>%
     totaldist = lardist + smldist # recalculating variable after poorQuality observations were removed
   ) %>%
   inner_join(doseData) %>% # join dose info
-  select(plate_id, embryo_id, replicate, Dose, Dose_mg_L, is_VC, Group, time_end, inact, smlct, larct, inadur, smldur, lardur, activedur, smldist, lardist, totaldist, outliers)
-  #filter(outliers == FALSE)
+  dplyr::select(plate_id, embryo_id, replicate, Dose, Dose_mg_L, is_VC, Group, time_end, inact, smlct, larct, inadur, smldur, lardur, activedur, smldist, lardist, totaldist, outliers)
+  #dplyr::filter(outliers == FALSE)
 #Uncomment the previous line if you want to filter outliers
 ```
 
@@ -551,10 +551,10 @@ fishBehavDat <- raw_data %>%
 <!-- } -->
 
 <!-- p_1_dat <- out_totaldist %>% -->
-<!--   mutate(Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>% -->
+<!--   dplyr::mutate(Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>% -->
 <!--   group_by(Dose) %>% -->
 <!--   tally() %>% -->
-<!--   mutate(x = Dose, y = n) -->
+<!--   dplyr::mutate(x = Dose, y = n) -->
 <!-- p_0.1 <- ggplot(data = p_1_dat, aes(x = x, y = y, group = 1)) + -->
 <!--   geom_point() + -->
 <!--   geom_smooth(method = "lm", se = FALSE, linetype = "dashed", color = "black") + -->
@@ -564,11 +564,11 @@ fishBehavDat <- raw_data %>%
 <!--   theme(axis.title.x = element_blank(), panel.border = element_rect(colour = "grey50", fill = NA)) -->
 
 <!-- p_2_dat <- fishBehavDat %>% -->
-<!--   mutate(Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>% -->
-<!--   filter(totaldist < 6000) %>% -->
-<!--   mutate(x = Dose, y = totaldist) %>% -->
+<!--   dplyr::mutate(Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>% -->
+<!--   dplyr::filter(totaldist < 6000) %>% -->
+<!--   dplyr::mutate(x = Dose, y = totaldist) %>% -->
 <!--    group_by(x) %>% -->
-<!--   select(x, y, plate_id) -->
+<!--   dplyr::select(x, y, plate_id) -->
 <!-- p_2 <- ggplot(data = p_2_dat, aes(x = x, y = y, group = 1)) + -->
 <!--   geom_smooth(method = "lm", se = FALSE, linetype = "dashed", color = "black") + -->
 <!--   ylab("Average Total Distance") + -->
@@ -579,14 +579,14 @@ fishBehavDat <- raw_data %>%
 <!-- p_2_dat_lm <- list() -->
 <!-- for (i in chemicalNames) { -->
 <!--   temp <- p_2_dat %>% -->
-<!--     filter(plate_id == i) %>% -->
-<!--     mutate(lm = as.character(lm_eqn(.))) -->
+<!--     dplyr::filter(plate_id == i) %>% -->
+<!--     dplyr::mutate(lm = as.character(lm_eqn(.))) -->
 <!--   p_2_dat_lm[[i]] <- temp -->
 <!-- } -->
 <!-- p_2_dat_lm <- ldply(p_2_dat_lm) -->
 <!-- p_2_dat_lm <- p_2_dat_lm %>% -->
 <!--   group_by(plate_id, lm) %>% -->
-<!--   summarise(mean_y = mean(y)) -->
+<!--   dplyr::summarise(mean_y = mean(y)) -->
 
 <!-- p_3 <- ggplot(data = p_2_dat, aes(x = x, y = y, group = 1)) + -->
 <!--   geom_smooth(method = "lm", se = FALSE, linetype = "dashed", color = "black") + -->
@@ -598,33 +598,33 @@ fishBehavDat <- raw_data %>%
 <!-- p_3 <- p_3 + geom_text(data = p_2_dat_lm, mapping = aes(label = lm, y = mean_y+100), x = 2.5, parse = TRUE, inherit.aes = FALSE, size = 2) -->
 
 <!-- simi_endpoints_nobin_spearman_tibble <- readRDS("./Data/simi_endpoints_nobin_spearman_tibble.RDS") %>% -->
-<!--   mutate(Dose = str_split(string = embryo_id, pattern = "_", simplify = TRUE)[,1]) %>% -->
+<!--   dplyr::mutate(Dose = str_split(string = embryo_id, pattern = "_", simplify = TRUE)[,1]) %>% -->
 <!--   inner_join(doseData) %>% -->
-<!--   mutate(x = Dose_mg_L, y = endpoint_value) -->
+<!--   dplyr::mutate(x = Dose_mg_L, y = endpoint_value) -->
 
 <!-- # p_4_dat_lm <- list() -->
 <!-- # for (i in chemicalNames) { -->
 <!-- #   temp <- simi_endpoints_nobin_spearman_tibble %>% -->
-<!-- #     filter(plate_id == i) %>% -->
-<!-- #     mutate(lm = as.character(lm_eqn(.))) -->
+<!-- #     dplyr::filter(plate_id == i) %>% -->
+<!-- #     dplyr::mutate(lm = as.character(lm_eqn(.))) -->
 <!-- #   p_4_dat_lm[[i]] <- temp -->
 <!-- # } -->
 <!-- # p_4_dat_lm <- ldply(p_4_dat_lm) -->
 <!-- # p_4_dat_lm <- p_4_dat_lm %>% -->
 <!-- #   group_by(plate_id, lm) %>% -->
-<!-- #   summarise(mean_y = mean(y)) -->
+<!-- #   dplyr::summarise(mean_y = mean(y)) -->
 
 <!-- p_4_dat_lm <- list() -->
 <!-- for (i in chemicalNames) { -->
 <!--   temp <- simi_endpoints_nobin_spearman_tibble %>% -->
-<!--     filter(plate_id == i) %>% -->
-<!--     mutate(lm = predict(lm(.$y ~ .$x))) -->
+<!--     dplyr::filter(plate_id == i) %>% -->
+<!--     dplyr::mutate(lm = predict(lm(.$y ~ .$x))) -->
 <!--   p_4_dat_lm[[i]] <- temp -->
 <!-- } -->
 <!-- p_4_dat_lm <- ldply(p_4_dat_lm) -->
 
 <!-- p_4 <- simi_endpoints_nobin_spearman_tibble %>% -->
-<!--   filter(x > 0, y > 0) %>% -->
+<!--   dplyr::filter(x > 0, y > 0) %>% -->
 <!--   ggplot(aes(x = x, y = y, group = 1)) + -->
 <!--   geom_smooth(method = lm, se = FALSE, linetype = "dashed", color = "black") + -->
 <!--   geom_smooth(data = p_4_dat_lm, inherit.aes = FALSE, aes(x = x, y = lm)) + -->
@@ -635,24 +635,24 @@ fishBehavDat <- raw_data %>%
 <!--   xlab("Dose") + -->
 <!--   theme_minimal() + -->
 <!--   theme(axis.text.x = element_blank(), panel.border = element_rect(colour = "grey50", fill = NA)) -->
-<!-- # p_4 <- p_4 + geom_text(data = p_2_dat_lm, mapping = aes(label = lm, x = log(min(filter(.data = simi_endpoints_nobin_spearman_tibble, x > 0, y > 0)$x))), y = 0.2, parse = TRUE, inherit.aes = FALSE, size = 2) -->
+<!-- # p_4 <- p_4 + geom_text(data = p_2_dat_lm, mapping = aes(label = lm, x = log(min(dplyr::filter(.data = simi_endpoints_nobin_spearman_tibble, x > 0, y > 0)$x))), y = 0.2, parse = TRUE, inherit.aes = FALSE, size = 2) -->
 
 <!-- simi_endpoints_nobin_pearson_tibble <- readRDS("./Data/simi_endpoints_nobin_pearson_tibble.RDS") %>% -->
-<!--   mutate(Dose = str_split(string = embryo_id, pattern = "_", simplify = TRUE)[,1]) %>% -->
+<!--   dplyr::mutate(Dose = str_split(string = embryo_id, pattern = "_", simplify = TRUE)[,1]) %>% -->
 <!--   inner_join(doseData) %>% -->
-<!--   mutate(x = Dose_mg_L, y = endpoint_value) -->
+<!--   dplyr::mutate(x = Dose_mg_L, y = endpoint_value) -->
 
 <!-- p_5_dat_lm <- list() -->
 <!-- for (i in chemicalNames) { -->
 <!--   temp <- simi_endpoints_nobin_pearson_tibble %>% -->
-<!--     filter(plate_id == i) %>% -->
-<!--     mutate(lm = predict(lm(.$y ~ .$x))) -->
+<!--     dplyr::filter(plate_id == i) %>% -->
+<!--     dplyr::mutate(lm = predict(lm(.$y ~ .$x))) -->
 <!--   p_5_dat_lm[[i]] <- temp -->
 <!-- } -->
 <!-- p_5_dat_lm <- ldply(p_5_dat_lm) -->
 
 <!-- p_5 <- simi_endpoints_nobin_pearson_tibble %>% -->
-<!--   filter(x > 0, y > 0) %>% -->
+<!--   dplyr::filter(x > 0, y > 0) %>% -->
 <!--   ggplot(aes(x = x, y = y, group = 1)) + -->
 <!--   geom_smooth(method = lm, se = FALSE, linetype = "dashed", color = "black") + -->
 <!--   geom_smooth(data = p_5_dat_lm, inherit.aes = FALSE, aes(x = x, y = lm)) + -->
@@ -663,7 +663,7 @@ fishBehavDat <- raw_data %>%
 <!--   xlab("Dose") + -->
 <!--   theme_minimal() + -->
 <!--   theme(axis.text.x = element_blank(), panel.border = element_rect(colour = "grey50", fill = NA)) -->
-<!-- # p_4 <- p_4 + geom_text(data = p_2_dat_lm, mapping = aes(label = lm, x = log(min(filter(.data = simi_endpoints_nobin_spearman_tibble, x > 0, y > 0)$x))), y = 0.2, parse = TRUE, inherit.aes = FALSE, size = 2) -->
+<!-- # p_4 <- p_4 + geom_text(data = p_2_dat_lm, mapping = aes(label = lm, x = log(min(dplyr::filter(.data = simi_endpoints_nobin_spearman_tibble, x > 0, y > 0)$x))), y = 0.2, parse = TRUE, inherit.aes = FALSE, size = 2) -->
 
 <!-- p_list <- list(p_1, p_2, p_3, p_4, p_5) -->
 <!-- names(p_list) <- c("Outliers", "All Untransformed Data (Linear)", "Faceted Untransformed Data (Linear)", "Faceted Transformed Data -- Spearman (Log-Log)", "Faceted Transformed Data -- Pearson (Log-Log)") -->
@@ -701,7 +701,7 @@ fishBehavDat <- raw_data %>%
 <!-- dev.off() -->
 
 <!-- fishBehavDat <- fishBehavDat %>% -->
-<!--   mutate(smlvelo = smldist/60, -->
+<!--   dplyr::mutate(smlvelo = smldist/60, -->
 <!--          larvelo = lardist/60, -->
 <!--          totalvelo = totaldist/60) -->
 
@@ -720,6 +720,7 @@ fishBehavDat <- raw_data %>%
 
 ```{r Normality_test, echo=FALSE, warning=FALSE}
 fishBehavDat %>%
+  dplyr::filter(time_end >= 20) %>%
   group_by(plate_id) %>%
   ggplot(aes(sample = totaldist)) +
   geom_qq() +
@@ -728,7 +729,8 @@ fishBehavDat %>%
   ylab("Sample") +
   xlab("Theoretical") +
   theme_classic() +
-  ggtitle("QQ plots showing approximatey normal distributions for each experiment")
+  ggtitle("QQ plots showing approximatey normal distributions for each experiment 
+          with few exceptions")
 ```
 
 #### Outliers
@@ -754,19 +756,19 @@ grubbs.flag <- function(x) {
 input_behavdata <- fishBehavDat %>%
   group_by(plate_id) %>%
   dplyr::select(totaldist) %>%
-  mutate(totaldist = round(totaldist, digits = 3)) %>% #Bug with grubbs and large decimal places
-  #filter(plate_id %in% c("BPA", "BPAF")) %>% #Testing with smaller data set
+  dplyr::mutate(totaldist = round(totaldist, digits = 3)) %>% #Bug with grubbs and large decimal places
+  #dplyr::filter(plate_id %in% c("BPA", "BPAF")) %>% #Testing with smaller data set
   nest()
 
 grubbs_results <- input_behavdata %>%
-  mutate(grubbs_results = map(data, ~grubbs.flag(x = .x[[1]])))
+  dplyr::mutate(grubbs_results = map(data, ~grubbs.flag(x = .x[[1]])))
 
 behavdata_join <- grubbs_results %>%
   dplyr::select(-data) %>%
   unnest(cols = c(grubbs_results))
 
 behavdata_test <- fishBehavDat %>%
-  mutate(totaldist = round(totaldist, digits = 3)) %>%
+  dplyr::mutate(totaldist = round(totaldist, digits = 3)) %>%
   inner_join(behavdata_join, by = c("plate_id", "totaldist"))
 behavdata_test <- behavdata_test[-which(duplicated(behavdata_test)),] #Delete duplicates introduced by join
 
@@ -777,10 +779,14 @@ test <- behavdata_test %>%
 #Outliers removed (replacing the values with NA)
 # Change the .cols argument to what ever endpoint you are turning into NAs
 behavdata_ol_rm <- behavdata_test %>%
-  mutate(across(
-    .cols = c("totaldist"),
-    .fns = ~ replace(x = ., list = Outlier, values = NA) 
+  dplyr::mutate(across(
+    .cols = c(params$value),
+    .fns = ~ replace(x = .x, list = Outlier, values = NA) 
   ))
+
+
+#_______________________________________________________________
+
 
 #Write outlier removed data
 write_csv(x = behavdata_ol_rm, file = "Data/behavdata_ol_rm.csv")
@@ -791,6 +797,7 @@ write_csv(x = behavdata_ol_rm, file = "Data/behavdata_ol_rm.csv")
 
 ```{r Normality_test, echo=FALSE, warning=FALSE}
 behavdata_ol_rm %>%
+  dplyr::filter(time_end >= 20) %>%
   group_by(plate_id) %>%
   ggplot(aes(sample = totaldist)) +
   geom_qq() +
@@ -807,13 +814,15 @@ behavdata_ol_rm %>%
 ```{r Levene_test, echo=TRUE}
 ####Levene Test####
 # Homogeneity of variance test -- of totaldistance
-LeveneResults <- behavdata_ol_rm %>%
+LeveneResults <- fishBehavDat %>%
+  dplyr::filter(time_end >= 20) %>%
   group_by(plate_id) %>%
-  summarise(car::leveneTest(totaldist, as.factor(Dose)))
+  dplyr::summarise(car::leveneTest(totaldist, as.factor(Dose)))
 #Adding an is.significant column to easily parse significant values in a spreadsheet
 LeveneResults <- LeveneResults %>%
   na.omit() %>%
-  mutate(is.significant = if_else(
+  dplyr::mutate(`Pr(>F)` = p.adjust(p = `Pr(>F)`, method = "fdr")) %>%
+  dplyr::mutate(is.significant = if_else(
     condition = `Pr(>F)` < 0.05,
     true = TRUE,
     false = FALSE
@@ -825,27 +834,28 @@ write_csv(x = LeveneResults, file = "Output/Levene_Test_Results.csv")
 ```
 
 ```{r Testing_variance_severity, include=FALSE}
-var_check <- behavdata_ol_rm %>%
+var_check <- fishBehavDat %>%
+  dplyr::filter(time_end >= 20) %>%
   group_by(plate_id, Dose) %>%
-  mutate(variance = var(totaldist, na.rm = TRUE)) %>%
-  summarise(variance) %>%
+  dplyr::mutate(variance = var(totaldist, na.rm = TRUE)) %>%
+  dplyr::summarise(variance) %>%
   unique()
 
 # General rule of thumb is that ANOVA/ANCOVA is robust enough to tolerate minor differences in variance across groups. The largest group variance can be up to 4 times the smallest without posing problems. 
 var_check_2 <- var_check %>%
   group_by(plate_id) %>%
-  summarise(max = max(variance), min = min(variance), check = if_else(condition = max <= min*4, true = "OK", false = "Not OK"))
+  dplyr::summarise(max = max(variance), min = min(variance), check = if_else(condition = max <= min*4, true = "OK", false = "Not OK"))
 ```
 
 
-We see that we have normally distributed data but unequal variance across dose groups This means we cannot do a one-way ancova with a Dunnett's test. Instead we must use the Dunnett's T3 posthoc test and one-way ancova. We can still use a one-way ancova becaause the data are normally distributed, have an equal sample size per group, and the method is robust enough considering the heterogeneity of variance is minor for this data set.
+We see that we have normally distributed data but unequal variance across dose groups This means we cannot do a one-way ancova with a Dunnett's test. Instead we must use the Dunnett's T3 posthoc test and one-way ancova. We can still use a one-way ancova because the data are normally distributed, have an equal sample size per group, and the method is robust enough considering the heterogeneity of variance is minor for this data set.
 
 #### Bar Graphs
 
 ```{r 32binning_fishBehavDat, include=FALSE}
-fishBehavDat <- behavdata_ol_rm
+fishBehavDat <- behavdata_ol_rm #Fish behaviour data with outliers removed for the rest of the analysis!
 fishBehavDatBin5 <- fishBehavDat %>%
-  mutate(Cycle = if_else(
+  dplyr::mutate(Cycle = if_else(
     condition = time_end >= 1 &
       time_end <= 20,
     true = "Acclimation",
@@ -878,6 +888,276 @@ fishBehavDatBin5 <- fishBehavDat %>%
   ))
 ```
 
+
+```{r Checking_For_Group_Effects, include=FALSE, eval=FALSE}
+#One-way ANOVA to test for repliacte subgroup effect in the acclimation phase
+anova_group_eff_test <- fishBehavDat %>%
+  group_by(plate_id, Dose) %>%
+  nest() %>%
+  dplyr::mutate(model = map(data, ~ aov(
+    totaldist ~ as.factor(Group),
+    data = .
+  ))) %>%
+  dplyr::mutate(tidy_aov = map(model, ~ broom::tidy(x = .x)))
+
+#Adjust P values
+anova_group_eff_adj_p <- anova_group_eff_test %>%
+  dplyr::select(plate_id, Dose, tidy_aov) %>%
+  unnest(tidy_aov) %>%
+  dplyr::filter(term == "as.factor(Group)") %>%
+  ungroup() %>%
+  dplyr::mutate(adj.p.value = p.adjust(p = p.value, method = "BH")) %>%
+  group_by(plate_id, Dose)
+
+#Tukey's Test
+Tukey_results <- anova_group_eff_test %>%
+  dplyr::mutate(model = map(model, ~ TukeyHSD(x = .x, which = "as.factor(Group)", conf.level = 0.95))) %>%
+  dplyr::select(model)
+
+#Following guide here https://schmidtpaul.github.io/DSFAIR/compactletterdisplay.html
+#contrasts
+#option 1
+# option1 <- Tukey_results %>%
+#   dplyr::mutate(data = map(model, ~ broom::tidy(x = .x)))
+# #option 2
+# option2 <- anova_group_eff_test %>%
+#   dplyr::mutate(option2 = map(model, ~ emmeans::emmeans(object = .x, specs = "Group"))) %>%
+#   dplyr::mutate(option2 = map(option2, ~ pairs(x = .x,  adjust = "tukey")))
+#option 3
+option3 <- anova_group_eff_test %>%
+  dplyr::mutate(option3 = map(model, ~ multcomp::cld(emmeans::emmeans(object = .x, specs = "Group", adjust = "tukey"), details = TRUE, Letters = letters, alpha = 0.05))) #Setting significant p value to be 0.005 instead of 0.05
+
+# #uniform format
+# option1 <- option1 %>%
+#   dplyr::select(data) %>%
+#   unnest(cols = c(data)) %>% #Tidying Output
+#   dplyr::filter(term == "as.factor(Group)") %>%
+#   ungroup() %>%
+#   dplyr::mutate(adj.p.value = p.adjust(adj.p.value, method = "fdr"))
+# 
+# option2 <- option2 %>%
+#   dplyr::select(option2) %>%
+#   dplyr::mutate(data = map(option2, ~ as_tibble(x = .x))) %>%
+#   dplyr::select(data) %>%
+#   unnest(cols = c(data)) %>%
+#   ungroup() %>%
+#   dplyr::mutate(adj.p.value = p.adjust(p.value, method = "fdr"))
+  
+option3_t <- option3 %>%
+  dplyr::select(option3) %>%
+  dplyr::mutate(data = map(option3, pluck(.x = "comparisons"))) %>%
+  dplyr::mutate(data2 = map(data, ~ as_tibble(x = .x))) %>%
+  dplyr::select(data2) %>%
+  unnest(cols = c(data2)) %>%
+  ungroup() %>%
+  dplyr::mutate(adj.p.value = p.adjust(p.value, method = "fdr"))
+option3 <- option3 %>%
+  dplyr::select(option3) %>%
+  dplyr::mutate(data = map(option3, pluck(.x = "emmeans"))) %>%
+  dplyr::mutate(data2 = map(data, ~ as_tibble(x = .x))) %>%
+  dplyr::select(data2) %>%
+  unnest(cols = c(data2))
+
+#Testing Magnitude of effect represented by the percent difference in mean response comparisons
+join_to_option_3 <- fishBehavDat %>%
+  group_by(plate_id, Dose) %>%
+  dplyr::summarise(
+    mean_totaldist = mean(totaldist, na.rm = TRUE),
+    percent15 = quantile(totaldist, 0.15, na.rm = TRUE),
+    sd = sd(totaldist, na.rm = TRUE)
+  )
+option3_test <- option3 %>%
+  group_by(plate_id, Dose) %>%
+  inner_join(join_to_option_3) %>%
+  dplyr::mutate(.group2 = if_else(condition = abs(emmean - mean_totaldist) < sd, true = "a", false = .group)) %>%
+  dplyr::mutate(legacy_group = .group,
+         .group = .group2) %>%
+  dplyr::select(-.group2)
+big_tib <- option3_t %>%
+  dplyr::mutate(Group = substr(x = contrast, start = 1, stop = 1)) %>%
+  dplyr::mutate(Group = substr(x = contrast, start = 1, stop = 1),
+         contrast = substr(x = contrast, start = 5, stop = 5),
+         Group_1 = Group,
+         contrast_1 = contrast) %>%
+  pivot_longer(cols = c(Group, contrast), values_to = "Group", names_to = "X") %>%
+  dplyr::mutate(contrast = if_else(condition = X == "contrast", true = Group_1, false = contrast_1)) %>%
+  dplyr::filter(X == "Group") %>%
+  dplyr::select(-X, -Group, -contrast) %>%
+  inner_join(option3_test, by = c("plate_id", "Dose")) %>%
+  group_by(plate_id, Dose, estimate) %>%
+  dplyr::mutate(keep = if_else(condition = Group %in% c(Group_1, contrast_1), true = TRUE, false = FALSE)) %>% #Deleting meaningless rows
+  dplyr::filter(keep == TRUE) %>%
+  dplyr::filter(adj.p.value < 0.05) %>% #Filter only significant comparisons
+  dplyr::filter(emmean == max(emmean)) %>% #denominator
+  dplyr::mutate(percent_difference = (estimate/emmean)*100) %>% #endpoint for pooled sub-groups justification
+  dplyr::mutate(percent_difference_mean_totaldist = (estimate/mean_totaldist)*100)
+  
+hist(big_tib$percent_difference)
+hist(big_tib$percent_difference_mean_totaldist)
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+#TukeyHSD's Test on Groups - testing for 'Group Effects' continued
+Tukey_results <- Tukey_results %>% 
+  dplyr::mutate(data = map(model, ~ broom::tidy(x = .x))) %>%
+  dplyr::select(-model) %>% 
+  unnest(cols = c(data)) %>% #Tidying Output
+  ungroup() %>%
+  dplyr::mutate(adj.p.value = p.adjust(adj.p.value, method = "fdr"))
+
+Tukey_Sig_results <- Tukey_results %>%
+  dplyr::filter(adj.p.value < 0.05)
+
+Tukey_join_to <- Tukey_results %>%
+  dplyr::filter(term == "as.factor(Group)") %>%
+  dplyr::mutate(Group = str_split(string = contrast, pattern = "-", simplify = TRUE)[,1],
+         contrast = str_split(string = contrast, pattern = "-", simplify = TRUE)[,2],
+         Group_1 = Group,
+         contrast_1 = contrast) %>%
+  pivot_longer(cols = c(Group, contrast), values_to = "Group", names_to = "X") %>%
+  dplyr::mutate(contrast = if_else(condition = X == "contrast", true = Group_1, false = contrast_1)) %>%
+  dplyr::select(plate_id, Dose, Group, contrast, term, null.value, estimate, conf.low, conf.high, adj.p.value)
+
+gg_Tukey <- Tukey_join_to %>%
+  dplyr::select(plate_id, Dose, Group, contrast, adj.p.value)
+
+
+#Write to a .csv
+write_csv(Tukey_results, file = "Output/Tukey_HSD_results.csv")
+
+perc_diff <- option3_t %>%
+  dplyr::mutate(Group = substr(x = contrast, start = 1, stop = 1)) %>%
+  dplyr::mutate(Group = substr(x = contrast, start = 1, stop = 1),
+         contrast = substr(x = contrast, start = 5, stop = 5),
+         Group_1 = Group,
+         contrast_1 = contrast) %>%
+  pivot_longer(cols = c(Group, contrast), values_to = "Group", names_to = "X") %>%
+  dplyr::mutate(contrast = if_else(condition = X == "contrast", true = Group_1, false = contrast_1)) %>%
+  dplyr::filter(X == "Group") %>%
+  dplyr::select(-X, -Group, -contrast) %>%
+  inner_join(option3_test, by = c("plate_id", "Dose")) %>%
+  group_by(plate_id, Dose, estimate) %>%
+  dplyr::mutate(keep = if_else(condition = Group %in% c(Group_1, contrast_1), true = TRUE, false = FALSE)) %>% #Deleting meaningless rows
+  dplyr::filter(keep == TRUE)
+write_csv(perc_diff, file = "Output/Compact_letter_display_Emmeans_with_comparison_percent_differences.csv")
+```
+
+```{r Tukey_Group_Eff_Plot, echo=TRUE, warning=FALSE, message=FALSE}
+#Group Variance v2
+y_values_4_geom_text <- fishBehavDat %>%
+  group_by(plate_id, Dose) %>%
+  dplyr::summarise(max_y = max(totaldist, na.rm = TRUE))
+gg_Tukey <- gg_Tukey %>%
+  inner_join(y_values_4_geom_text)
+
+gg_data <- fishBehavDat %>%
+  na.omit() %>%
+  group_by(plate_id, Dose) %>%
+  dplyr::mutate(totaldist_show = as.numeric(dplyr::between(
+    x = totaldist,
+    left = quantile(totaldist, na.rm = TRUE)[[2]] - (1.5 * IQR(totaldist, na.rm = TRUE)),
+    right = quantile(totaldist, na.rm = TRUE)[[4]] + (1.5 * IQR(totaldist, na.rm = TRUE))
+  ))) %>%
+  dplyr::mutate(totaldist_ol_rm = if_else(totaldist_show == 1, true = totaldist, false = NA)) %>%
+  dplyr::select(plate_id,
+                Group,
+                Dose_mg_L,
+                Dose,
+                totaldist,
+                totaldist_show,
+                totaldist_ol_rm)
+model <- anova_group_eff_test$model
+model_means_cld <- option3 %>%
+  group_by(plate_id) %>%
+  dplyr::mutate(Group = forcats::fct_reorder(Group, emmean)) %>%
+  dplyr::mutate(cont_group = .group)
+# gg_data <- gg_data %>%
+#   group_by(Chemical) %>%
+#   dplyr::mutate(Group = fct_relevel(Group, levels(model_means_cld$Group)))
+library(scales)
+
+for (i in chemicalNames) {
+  temp_dat <- gg_data %>%
+    dplyr::filter(plate_id == i)
+  temp_mdl <- model_means_cld %>%
+    dplyr::filter(plate_id == i)
+  
+  p <- ggplot() +
+  #y axis
+  scale_y_continuous(
+    name = "Total Distance Moved (mm)",
+    breaks = pretty_breaks(),
+    expand = expansion(mult = (c(0.2, 0.2)))
+  ) +
+  #x axis
+  scale_x_discrete(
+    name = "Groups (pseudo-replicates)"
+  ) +
+  #layout
+  theme_classic() +
+  #black data points
+  geom_point(
+    data = temp_dat,
+    aes(y = totaldist, x = Group),
+    position = position_nudge(x = -0.2)
+  ) +
+  #black boxplot
+  geom_boxplot(
+    data = temp_dat,
+    aes(y = totaldist, x = Group),
+    width = 0.05,
+    outlier.shape = NA,
+    position = position_nudge(x = -0.1)
+  ) +
+  #red mean value
+  geom_point(
+    data = temp_mdl,
+    aes(y = emmean, x = Group),
+    size = 2,
+    color = "red"
+  ) +
+  #red mean errorbar
+  geom_errorbar(
+    data = temp_mdl,
+    aes(ymin = lower.CL, ymax = upper.CL, x = Group),
+    width = 0.05,
+    color = "red"
+  ) +
+  #red letters
+  geom_text(
+    data = temp_mdl,
+    aes(
+      y = emmean,
+      x = Group,
+      label = str_trim(cont_group)
+    ),
+    position = position_nudge(x = 0.1),
+    hjust = 0,
+    color = "red"
+  ) +
+  facet_wrap( ~ Dose, scales = "free") +
+  # ylim(c(-0.1, 1)) +
+  labs(
+    caption = str_wrap("Black dots represent raw data. Red dots and error bars represent (estimated marginal) means ± 95% confidence interval per group. Means not sharing any letter are significantly different by the Tukey-test at the 5% level of significance.", width = 70)
+  ) +
+    ggtitle(i)
+  
+  ggsave(
+  width = 1920,
+  height = 1080,
+  units = "px",
+  scale = 3,
+  filename = paste0("Output/", i, "/totaldist_Group_Eff_Tukey.png"),
+  plot = p,
+  path = getwd(),
+  device = "png"
+)
+}
+
+```
+
+After adjusting the significance values for multiple comparisons using the false discovery rate adjustment, the percent difference was calculated for each comparison (for very dose, for every chemical, Group A to B, Group A to C, Group B to C). The subgroups A, B and C were pooled in each dose group because 169/522 exceeded a 10% difference in the mean total distance moved response and only 39/522 comparisons exceeded a 25% difference in the mean response.
+
 ```{r 33.1ANOVA_test_all_bins, include=FALSE} 
 cycle_filter <- c("Light_1",
       "Dark_1",
@@ -895,14 +1175,14 @@ aov_list_all_chems_4_dunnett <- list()
 for (j in 1:length(chemicalNames)){
   for (i in 1:6) {
     temp <- fishBehavDatBin5 %>%
-      filter(plate_id == chemicalNames[j]) %>%
-      filter(Cycle != "Acclimation") %>%
+      dplyr::filter(plate_id == chemicalNames[j]) %>%
+      dplyr::filter(Cycle != "Acclimation") %>%
       group_by(Cycle, Dose) %>%
-      mutate(Dose = as.factor(Dose)) %>%
+      dplyr::mutate(Dose = as.factor(Dose)) %>%
       na.omit() %>%
       as.data.frame() %>%
-      filter(Cycle == cycle_filter[i]) # 6 cycles in total - Light & Dark 1 through 3
-    temp_aov <- aov(get(params$value) ~ Dose + Group, data = temp)
+      dplyr::filter(Cycle == cycle_filter[i]) # 6 cycles in total - Light & Dark 1 through 3
+    temp_aov <- aov(get(params$value) ~ Dose, data = temp)
     aov_list[[i]] <- summary(temp_aov)
     aov_list_4_dunnett[[i]] <- temp_aov
     pval_list[[i]] <- na.omit(aov_list[[i]][[1]][[5]])[1]
@@ -920,9 +1200,9 @@ names(aov_list_all_chems_4_dunnett) <- chemicalNames
 names(pval_list_all_chems) <- chemicalNames
 # aov_p_results <- ldply(pval_list) %>%
 #   rename(Cycle = .id, p_value = V1) %>%
-#   mutate(p_value = p.adjust(p_value, method = "fdr")) %>%
-#   mutate(is_sig = if_else(condition = p_value <= 0.05, true = TRUE, false= FALSE)) %>%
-#   mutate(p_value = formatC(p_value, format = "e", digits = 2))
+#   dplyr::mutate(p_value = p.adjust(p_value, method = "fdr")) %>%
+#   dplyr::mutate(is_sig = if_else(condition = p_value <= 0.05, true = TRUE, false= FALSE)) %>%
+#   dplyr::mutate(p_value = formatC(p_value, format = "e", digits = 2))
 #   
 # kable(aov_p_results, align = "lr", caption = paste("Table 2 - ANOVA test p-values after FDR adjustment, comparing effects of different genotypes on", params$value, "for each light cycle")) %>%
 #     kable_styling(full_width = TRUE) %>%
@@ -942,7 +1222,7 @@ dun_list <- NULL
 dun_list_2 <- NULL
 for (j in 1:length(chemicalNames)) {
   for (i in 1:6) {
-    temp_dun <- dunnettT3Test(aov_list_all_chems_4_dunnett[[j]][[i]], p.adjust.method = "fdr")
+    temp_dun <- dunnettT3Test(aov_list_all_chems_4_dunnett[[j]][[i]])
 
     temp_dun_df <- as.data.frame(temp_dun$p.value[,1]) %>%
       rownames_to_column( var = "Dose") %>%
@@ -969,11 +1249,15 @@ for (j in 1:length(chemicalNames)) {
 }
 
 dunnett_binned <- ldply(dun_list_2, .id = "plate_id")
+
+dunnett_binned <- dunnett_binned %>%
+  ungroup() %>%
+  dplyr::mutate(pval = p.adjust(p = pval, method = "fdr"))
 ```
 
 ```{r 34summary_all_chems, include=FALSE}
 summary_fishBehavDatBin <- fishBehavDatBin5 %>%
-  mutate(Cycle = factor(
+  dplyr::mutate(Cycle = factor(
     Cycle,
     levels = c(
       "Acclimation",
@@ -986,10 +1270,10 @@ summary_fishBehavDatBin <- fishBehavDatBin5 %>%
     ),
     ordered = TRUE
   )) %>%
-  mutate(Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>%
-  filter(Cycle != "Acclimation") %>%
+  dplyr::mutate(Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>%
+  dplyr::filter(Cycle != "Acclimation") %>%
   group_by(plate_id, Cycle, Dose) %>%
-  summarise(se = sd(totaldist, na.rm = TRUE)/sqrt(length(totaldist)), value = mean(totaldist, na.rm = TRUE), sd = sd(totaldist, na.rm = TRUE))
+  dplyr::summarise(se = sd(totaldist, na.rm = TRUE)/sqrt(length(totaldist)), value = mean(totaldist, na.rm = TRUE), sd = sd(totaldist, na.rm = TRUE))
 ```
 
 ```{r 35dunnett_summary_all_chems, include=FALSE}
@@ -1015,6 +1299,7 @@ dunnett_summary_all_chems$Dose <- factor(dunnett_summary_all_chems$Dose, levels 
 ```{r 35.2AOV_summary_all_chems, include=FALSE}
 d <- data.frame()
 d_all_chem <- list()
+#Old code for the Dunnett's test (not Dunnett's T3 test)
 # for (j in 1:length(chemicalNames)) {
 #   for (i in 1:length(cycle_filter)) {
 #     temp <- data.frame(Df = aov_list_all_chems[[chemicalNames[j]]][[i]][[1]][[1]], 
@@ -1031,48 +1316,89 @@ for (j in 1:length(chemicalNames)) {
   for (i in 1:length(cycle_filter)) {
     temp <- aov_list_all_chems_4_dunnett[[j]][[i]] %>%
       broom::tidy() %>%
-      mutate(plate_id = chemicalNames[j],
+      dplyr::mutate(plate_id = chemicalNames[j],
              Cycle = cycle_filter[i])
     d <- rbind(d, temp)
   }
 }
 
 AOV_summary_all_chems_Bin5 <- d %>%
-  mutate(Chemical = plate_id)
+  ungroup() %>%
+  dplyr::mutate(p.value = p.adjust(p = p.value, method = "fdr")) %>%
+  dplyr::mutate(Chemical = plate_id)
 ```
 
 
 ```{r 36meantotaldist_BinnedDat, echo=FALSE}
 #Plotting with standard deviation
 p_list <- list()
+levels <- c("Dark_1", "Light_1", "Dark_2", "Light_2", "Dark_3", "Light_3")
 for (k in 1:length(chemicalNames)) {
+  labels <-
+    c(
+      dplyr::select(.data = dplyr::filter(metaData, plate_id == chemicalNames[k]), Control)[[1]],
+      dplyr::select(.data = dplyr::filter(metaData, plate_id == chemicalNames[k]), Dose5)[[1]],
+      dplyr::select(.data = dplyr::filter(metaData, plate_id == chemicalNames[k]), Dose4)[[1]],
+      dplyr::select(.data = dplyr::filter(metaData, plate_id == chemicalNames[k]), Dose3)[[1]],
+      dplyr::select(.data = dplyr::filter(metaData, plate_id == chemicalNames[k]), Dose2)[[1]],
+      dplyr::select(.data = dplyr::filter(metaData, plate_id == chemicalNames[k]), Dose1)[[1]]
+    )
   p <- dunnett_summary_all_chems %>%
-    filter(plate_id == chemicalNames[k]) %>%
+    dplyr::filter(plate_id == chemicalNames[k]) %>%
     ggplot(aes(
       x = factor(
-    Cycle,
-    levels = c(
-      "Light_1",
-      "Dark_1",
-      "Light_2",
-      "Dark_2",
-      "Light_3",
-      "Dark_3"
-    ),
-    ordered = TRUE
-  ),
+        Cycle,
+        levels = levels,
+        ordered = TRUE
+      ),
       y = value,
       fill = Dose,
     )) +
-    geom_tile(data = data.frame(Cycle = factor(c("Light_1","Dark_1","Light_2","Dark_2","Light_3","Dark_3"), levels = c("Light_1","Dark_1","Light_2","Dark_2","Light_3","Dark_3"), ordered = TRUE), alpha = c(0,1,0,1,0,1)), aes(x = Cycle, y = 0, height = Inf, width = 0.95, alpha = alpha),fill = "black") +
+    geom_tile(
+      data = data.frame(
+        Cycle = factor(
+          levels,
+          levels = levels,
+          ordered = TRUE
+        ),
+        alpha = c(1, 0, 1, 0, 1, 0)
+      ),
+      aes(
+        x = Cycle,
+        y = 0,
+        height = Inf,
+        width = 0.95,
+        alpha = alpha
+      ),
+      fill = "black"
+    ) +
     scale_alpha_continuous(range = c(0, 0.2), guide = "none") +
-    geom_col(aes(x = factor(Cycle, levels = c("Light_1","Dark_1","Light_2","Dark_2","Light_3","Dark_3"), ordered = TRUE)), position = "dodge", colour = "black") +
+    geom_col(aes(x = factor(
+      Cycle,
+      levels = levels,
+      ordered = TRUE
+    )), position = "dodge", colour = "black") +
     geom_errorbar(aes(ymin = value + sd, ymax = value + sd),
                   width = .5,
                   position = position_dodge(0.9)) +
-    geom_linerange(aes(ymin = value, ymax = value + sd, group = Dose), position = position_dodge(width = 0.9)) +
-    scale_fill_grey(start = 1, end = 0) +
-    scale_colour_grey(start = 0, end = 0) +
+    geom_linerange(aes(
+      ymin = value,
+      ymax = value + sd,
+      group = Dose
+    ),
+    position = position_dodge(width = 0.9)) +
+    scale_fill_grey(
+      start = 1,
+      end = 0,
+      name = "Dose (mg/L)",
+      labels = labels
+    ) +
+    scale_colour_grey(
+      start = 0,
+      end = 0,
+      name = "Dose (mg/L)",
+      labels = labels
+    ) +
     geom_text(
       aes(
         label = if_else(
@@ -1107,7 +1433,7 @@ for (k in 1:length(chemicalNames)) {
     xlab("") +
     labs(title = chemicalNames[k]) +
     theme_classic()
-
+  
   p_list[[chemicalNames[k]]] <- list(p, chemicalNames[k])
   #print(p)
 }
@@ -1128,27 +1454,27 @@ for (i in seq_along(p_list)){
 
 ```{r 36.6AOV_Results_Kable, echo=FALSE}
 AOV_summary_all_chems_Bin5 <- AOV_summary_all_chems_Bin5 %>%
-  mutate(P_value = p.adjust(p.value, method = "fdr")) %>%
-  mutate(P_value = formatC(P_value, format = "e", digits = 2)) %>%
-  select(Chemical, Cycle, term, df, sumsq, meansq, statistic, P_value)
+  dplyr::mutate(P_value = formatC(p.value, format = "e", digits = 2)) %>%
+  dplyr::select(Chemical, Cycle, term, df, sumsq, meansq, statistic, P_value)
 ```
 
 ```{r 36.7DataTable, echo=FALSE}
 datatable(data = AOV_summary_all_chems_Bin5, caption = paste("Table 2 - ANOVA test results after FDR adjustment, comparing effects of dose on", params$value, "for each light cycle"), rownames = FALSE)
 ```
+
 ```{r LOECs, include=FALSE}
 LOEC_Summary <- dunnett_summary_all_chems %>%
-  mutate(effect = if_else(condition = pval <= 0.05, true = TRUE, false = FALSE)) %>%
-  filter(effect == TRUE) %>%
-  mutate(Cycle2 = str_split(Cycle, pattern = "_", simplify = TRUE)[,1])
+  dplyr::mutate(effect = if_else(condition = pval <= 0.05, true = TRUE, false = FALSE)) %>%
+  dplyr::filter(effect == TRUE) %>%
+  dplyr::mutate(Cycle2 = str_split(Cycle, pattern = "_", simplify = TRUE)[,1])
 
 LOECs_Bin5 <- LOEC_Summary %>%
   group_by(plate_id, Dose, Cycle2) %>%
   tally() %>%
-  filter(n > 1) %>%
+  dplyr::filter(n > 0) %>%
   ungroup() %>%
   group_by(plate_id, Cycle2) %>%
-  summarise(LOEC = min(Dose))
+  dplyr::summarise(LOEC = min(Dose))
 ```
 
 
@@ -1169,7 +1495,7 @@ _______________________________________________________________________________
 
 ```{r 37binning_fishBehavDatLD, include=FALSE}
 fishBehavDatBinLD <- fishBehavDat %>%
-  mutate(Cycle = if_else(
+  dplyr::mutate(Cycle = if_else(
     condition = time_end >= 1 &
       time_end <= 20,
     true = "Acclimation",
@@ -1209,18 +1535,21 @@ aov_list <- list()
 aov_list_all_chems <- list()
 pval_list <- list()
 pval_list_all_chems <- list()
+aov_list_4_dunnett <- list()
+aov_list_all_chems_4_dunnett <- list()
 for (j in 1:length(chemicalNames)){
   for (i in 1:2) {
     temp <- fishBehavDatBinLD %>%
-      filter(plate_id == chemicalNames[j]) %>%
-      filter(Cycle != "Acclimation") %>%
+      dplyr::filter(plate_id == chemicalNames[j]) %>%
+      dplyr::filter(Cycle != "Acclimation") %>%
       group_by(Cycle, Dose) %>%
-      mutate(Dose = as.factor(Dose)) %>%
+      dplyr::mutate(Dose = as.factor(Dose)) %>%
       na.omit() %>%
       as.data.frame() %>%
-      filter(Cycle == cycle_filter[i]) # 6 cycles in total - Light & Dark 1 through 3
+      dplyr::filter(Cycle == cycle_filter[i]) # 6 cycles in total - Light & Dark 1 through 3
     temp_aov <- aov(get(params$value) ~ Dose, data = temp)
     aov_list[[i]] <- summary(temp_aov)
+    aov_list_4_dunnett[[i]] <- temp_aov
     pval_list[[i]] <- na.omit(aov_list[[i]][[1]][[5]])[1]
   }
 names(aov_list) <- paste0(chemicalNames[j], "_", cycle_filter)
@@ -1228,15 +1557,17 @@ names(pval_list) <- paste0(chemicalNames[j], "_", cycle_filter)
 
 aov_list_all_chems[[j]] <- aov_list
 pval_list_all_chems[[j]] <- pval_list
+aov_list_all_chems_4_dunnett[[j]] <- aov_list_4_dunnett
 
 }
 names(aov_list_all_chems) <- chemicalNames
+names(aov_list_all_chems_4_dunnett) <- chemicalNames
 names(pval_list_all_chems) <- chemicalNames
 # aov_p_results <- ldply(pval_list) %>%
 #   rename(Cycle = .id, p_value = V1) %>%
-#   mutate(p_value = p.adjust(p_value, method = "fdr")) %>%
-#   mutate(is_sig = if_else(condition = p_value <= 0.05, true = TRUE, false= FALSE)) %>%
-#   mutate(p_value = formatC(p_value, format = "e", digits = 2))
+#   dplyr::mutate(p_value = p.adjust(p_value, method = "fdr")) %>%
+#   dplyr::mutate(is_sig = if_else(condition = p_value <= 0.05, true = TRUE, false= FALSE)) %>%
+#   dplyr::mutate(p_value = formatC(p_value, format = "e", digits = 2))
 #   
 # kable(aov_p_results, align = "lr", caption = paste("Table 2 - ANOVA test p-values after FDR adjustment, comparing effects of different genotypes on", params$value, "for each light cycle")) %>%
 #     kable_styling(full_width = TRUE) %>%
@@ -1250,32 +1581,22 @@ dun_list <- NULL
 dun_list_2 <- NULL
 for (j in 1:length(chemicalNames)) {
   for (i in 1:2) {
-    temp <- fishBehavDatBinLD %>%
-      mutate(Dose = factor(
-        Dose,
-        levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"),
-        ordered = TRUE
-      )) %>%
-      filter(plate_id == chemicalNames[j]) %>%
-      filter(Cycle != "Acclimation") %>%
-      group_by(Cycle, Dose) %>%
-      as.data.frame() %>%
-      filter(Cycle == cycle_filter[i])
-    temp_dun <- DunnettTest(totaldist ~ Dose, data = temp)
+   temp_dun <- dunnettT3Test(aov_list_all_chems_4_dunnett[[j]][[i]])
 
-    dun_list[[cycle_filter[i]]] <- temp_dun[[1]] %>%
-      as.data.frame() %>%
-      # rbind(new_row) %>%
-      rownames_to_column(var = "Dose")
+    temp_dun_df <- as.data.frame(temp_dun$p.value[,1]) %>%
+      rownames_to_column( var = "Dose") %>%
+      rename(pval = "temp_dun$p.value[, 1]")
+      
+    dun_list[[cycle_filter[i]]] <- temp_dun_df
 
   }
   dun_list_2[[chemicalNames[j]]] <- ldply(dun_list, .id = "Cycle")
-   dun_list_2[[j]]$pval <- p.adjust(dun_list_2[[j]]$pval, method = "fdr") # p value adjustment https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6099145/ (for single test - same samples)
+  # dun_list_2[[j]]$pval <- p.adjust(dun_list_2[[j]]$pval, method = "fdr") # p value adjustment https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6099145/ (for single test - same samples)
 
-  new_row <- as.data.frame(matrix(data = c("Light", "Control-Control", NA, NA, NA, 1,
-                           "Dark", "Control-Control", NA, NA, NA, 1),
-                  nrow = 2, ncol = 6, byrow = TRUE))
-  colnames(new_row) <- c("Cycle", "Dose", "diff", "lwr.ci", "upr.ci", "pval")
+  new_row <- as.data.frame(matrix(data = c("Light", "Control", 1,
+                           "Dark", "Control", 1),
+                  nrow = 2, ncol = 3, byrow = TRUE))
+  colnames(new_row) <- c("Cycle", "Dose", "pval")
   new_row$pval <- as.numeric(new_row$pval)
 
   dun_list_2[[j]] <- dun_list_2[[j]] %>%
@@ -1284,14 +1605,14 @@ for (j in 1:length(chemicalNames)) {
 
 dunnett_binned <- ldply(dun_list_2, .id = "plate_id")
 
-dunnett_binned$Dose = substr(dunnett_binned$Dose,
-                           start = 1,
-                           stop = nchar(dunnett_binned$Dose) - 8) #Here we are fixing the dose column... the dose column has the test dose related to the control... but we just want to see what the test dose is without it giving us redundant information about the comparison to the control for every observation...
+dunnett_binned <- dunnett_binned %>%
+  ungroup() %>%
+  dplyr::mutate(pval = p.adjust(p = pval, method = "fdr"))
 ```
 
 ```{r 39summary_all_chems, include=FALSE}
 summary_fishBehavDatBinLD <- fishBehavDatBinLD %>%
-  mutate(Cycle = factor(
+  dplyr::mutate(Cycle = factor(
     Cycle,
     levels = c(
       "Acclimation",
@@ -1299,10 +1620,10 @@ summary_fishBehavDatBinLD <- fishBehavDatBinLD %>%
       "Dark"
     ),
   )) %>%
-  mutate(Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>%
-  filter(Cycle != "Acclimation") %>%
+  dplyr::mutate(Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>%
+  dplyr::filter(Cycle != "Acclimation") %>%
   group_by(plate_id, Cycle, Dose) %>%
-  summarise(se = sd(totaldist, na.rm = TRUE)/sqrt(length(totaldist)), value = mean(totaldist, na.rm = TRUE))
+  dplyr::summarise(se = sd(totaldist, na.rm = TRUE)/sqrt(length(totaldist)), value = mean(totaldist, na.rm = TRUE), sd = sd(totaldist, na.rm = TRUE))
 ```
 
 ```{r 40dunnett_summary_all_chems, include=FALSE}
@@ -1323,42 +1644,90 @@ dunnett_summary_all_chems_LD$Dose <- factor(dunnett_summary_all_chems_LD$Dose, l
 ```{r 40.2AOV_summary_all_chems, include=FALSE}
 d <- data.frame()
 d_all_chem <- list()
+#Old code for the Dunnett's test (not Dunnett's T3 test)
+# for (j in 1:length(chemicalNames)) {
+#   for (i in 1:length(cycle_filter)) {
+#     temp <- data.frame(Df = aov_list_all_chems[[chemicalNames[j]]][[i]][[1]][[1]], 
+#                    Sum_Sq = aov_list_all_chems[[chemicalNames[j]]][[i]][[1]][[2]],
+#                    Mean_Sq = aov_list_all_chems[[chemicalNames[j]]][[i]][[1]][[3]],
+#                    F_Value = aov_list_all_chems[[chemicalNames[j]]][[i]][[1]][[4]],
+#                    P_value = aov_list_all_chems[[chemicalNames[j]]][[i]][[1]][[5]],
+#                    row.names = c(paste0(names(aov_list_all_chems[[j]][i]), "_Dose"), paste0(names(aov_list_all_chems[[j]][i]), "_Residuals")))
+# temp$Measurement <- row.names(temp)
+# d <- rbind(d, temp)
+#   }
+# }
+# 
+# AOV_summary_all_chems_BinLD <- d %>%
+#   dplyr::mutate(Chemical = str_split(string = Measurement, pattern = "_", simplify=TRUE)[,1],
+#          Cycle = str_split(string = Measurement, pattern = "_", simplify=TRUE)[,2],
+#          Measurement = str_split(string = Measurement, pattern = "_", simplify=TRUE)[,3])
+
 for (j in 1:length(chemicalNames)) {
   for (i in 1:length(cycle_filter)) {
-    temp <- data.frame(Df = aov_list_all_chems[[chemicalNames[j]]][[i]][[1]][[1]], 
-                   Sum_Sq = aov_list_all_chems[[chemicalNames[j]]][[i]][[1]][[2]],
-                   Mean_Sq = aov_list_all_chems[[chemicalNames[j]]][[i]][[1]][[3]],
-                   F_Value = aov_list_all_chems[[chemicalNames[j]]][[i]][[1]][[4]],
-                   P_value = aov_list_all_chems[[chemicalNames[j]]][[i]][[1]][[5]],
-                   row.names = c(paste0(names(aov_list_all_chems[[j]][i]), "_Dose"), paste0(names(aov_list_all_chems[[j]][i]), "_Residuals")))
-temp$Measurement <- row.names(temp)
-d <- rbind(d, temp)
+    temp <- aov_list_all_chems_4_dunnett[[j]][[i]] %>%
+      broom::tidy() %>%
+      dplyr::mutate(plate_id = chemicalNames[j],
+             Cycle = cycle_filter[i])
+    d <- rbind(d, temp)
   }
 }
 
 AOV_summary_all_chems_BinLD <- d %>%
-  mutate(Chemical = str_split(string = Measurement, pattern = "_", simplify=TRUE)[,1],
-         Cycle = str_split(string = Measurement, pattern = "_", simplify=TRUE)[,2],
-         Measurement = str_split(string = Measurement, pattern = "_", simplify=TRUE)[,3])
+  dplyr::mutate(p.value = p.adjust(p = p.value, method = "fdr")) %>%
+  dplyr::mutate(Chemical = plate_id)
 ```
 
 ```{r 41meantotaldist_BinnedDatLD, echo=FALSE}
 p_list <- list()
 for (k in 1:length(chemicalNames)) {
+  labels <- c(dplyr::select(.data = dplyr::filter(metaData, plate_id == chemicalNames[k]), Control)[[1]],
+              dplyr::select(.data = dplyr::filter(metaData, plate_id == chemicalNames[k]), Dose5)[[1]],
+              dplyr::select(.data = dplyr::filter(metaData, plate_id == chemicalNames[k]), Dose4)[[1]],
+              dplyr::select(.data = dplyr::filter(metaData, plate_id == chemicalNames[k]), Dose3)[[1]],
+              dplyr::select(.data = dplyr::filter(metaData, plate_id == chemicalNames[k]), Dose2)[[1]],
+              dplyr::select(.data = dplyr::filter(metaData, plate_id == chemicalNames[k]), Dose1)[[1]])
   p <- dunnett_summary_all_chems_LD %>%
-    filter(plate_id == chemicalNames[k]) %>%
+    dplyr::filter(plate_id == chemicalNames[k]) %>%
     ggplot(aes(
-      x = Cycle,
+      x = factor(Cycle, levels = c("Light", "Dark"), ordered = TRUE),
       y = value,
       fill = Dose,
     )) +
-    geom_col(position = "dodge") +
-    geom_errorbar(aes(ymin = value + se, ymax = value + se),
+    geom_tile(
+      data = data.frame(
+        Cycle = factor(
+          c("Light", "Dark"),
+          levels = c("Light", "Dark"),
+          ordered = TRUE
+        ),
+        alpha = c(0, 1)
+      ),
+      aes(
+        x = Cycle,
+        y = 0,
+        height = Inf,
+        width = 0.95,
+        alpha = alpha
+      ),
+      fill = "black"
+    ) +
+    scale_alpha_continuous(range = c(0, 0.2), guide = "none") +
+    geom_col(aes(x = factor(
+      Cycle, levels = c("Light", "Dark"), ordered = TRUE
+    )), position = "dodge",
+    colour = "black") +
+    geom_errorbar(aes(ymin = value + sd, ymax = value + sd),
                   width = .5,
                   position = position_dodge(0.9)) +
-    geom_linerange(aes(ymin = value, ymax = value + se, group = Dose), position = position_dodge(width = 0.9)) +
-    scale_fill_viridis_d() +
-    scale_colour_viridis_d() +
+    geom_linerange(aes(
+      ymin = value,
+      ymax = value + sd,
+      group = Dose
+    ),
+    position = position_dodge(width = 0.9)) +
+    scale_fill_grey(start = 1, end = 0, labels = labels, name = "Dose (mg/L)") +
+    scale_colour_grey(start = 1, end = 0, labels = labels, name = "Dose (mg/L)") +
     geom_text(
       aes(
         label = if_else(
@@ -1383,19 +1752,19 @@ for (k in 1:length(chemicalNames)) {
           )
         ),
         group = Dose,
-        y = value + se + 50
+        y = value + sd + 50
       ),
       position = position_dodge(width = 0.9),
       color = "black",
       size = 3.75
     ) +
-    ylab("Mean Total Distance") +
+    ylab("Mean Total Distance Moved (mm)") +
     xlab("") +
     labs(title = chemicalNames[k]) +
     theme_classic()
-
+  
   p_list[[chemicalNames[k]]] <- list(p, chemicalNames[k])
-  # print(p)
+  #print(p)
 }
 ```
 
@@ -1413,312 +1782,36 @@ for (i in seq_along(p_list)){
 
 ```{r 41.6AOV_Results_Kable, echo=FALSE}
 AOV_datatable_binLD <- AOV_summary_all_chems_BinLD %>%
-  mutate(P_value = p.adjust(P_value, method = "fdr")) %>%
-  mutate(is_sig = if_else(condition = P_value <= 0.05, true = TRUE, false= FALSE),
-         P_value = formatC(P_value, format = "e", digits = 2)) %>%
-  select(Chemical, Cycle, Measurement, Df, Sum_Sq, Mean_Sq, F_Value, P_value, is_sig)
+  dplyr::mutate(P_value = formatC(p.value, format = "e", digits = 2)) %>%
+  dplyr::select(Chemical, Cycle, term, df, sumsq, meansq, statistic, P_value)
 ```
 
 ```{r 41.7Datatable, echo=FALSE}
 datatable(data = AOV_datatable_binLD, caption = paste("Table 3 - ANOVA test results after FDR adjustment, comparing effects of dose on", params$value, "for each light cycle"), rownames = FALSE)
 ```
 
-##### Not-binned
+```{r LOECs_For_Light_Dark_Bin, include = FALSE}
+LOEC_Summary <- dunnett_summary_all_chems_LD %>%
+  dplyr::mutate(effect = if_else(condition = pval <= 0.05, true = TRUE, false = FALSE)) %>%
+  dplyr::filter(effect == TRUE)
 
-```{r 42.1ANOVA_test_OverallDat, echo=FALSE}
-
-aov_list <- NULL
-pval_list <- NULL
-
- for (j in 1:length(chemicalNames)) {
-  temp <- fishBehavDat %>%
-    mutate(Cycle = if_else(
-      condition = time_end >= 1 &
-        time_end <= 20,
-      true = "Acclimation",
-      false = if_else(
-        condition = time_end >= 21 &
-          time_end <= 25,
-        true = "Dark",
-        false = if_else(
-          condition = time_end >= 26 &
-            time_end <= 30,
-          true = "Light",
-          false = if_else(
-            condition = time_end >= 31 &
-              time_end <= 35,
-            true = "Dark",
-            false = if_else(
-              condition = time_end >= 36 &
-                time_end <= 40,
-              true = "Light",
-              false = if_else(
-                condition = time_end >= 41 &
-                  time_end <= 45,
-                true = "Dark",
-                false = "Light"
-              )
-            )
-          )
-        )
-      )
-    )) %>%
-    filter(plate_id == chemicalNames[j]) %>%
-    filter(Cycle != "Acclimation") %>%
-    group_by(Dose) %>%
-    mutate(Dose = as.factor(Dose)) %>%
-    na.omit() %>%
-    as.data.frame()
-    
-    temp_aov <- aov(get(params$value) ~ Dose, data = temp)
-    aov_temp <- summary(temp_aov)
-    pval_list <- na.omit(aov_temp[[1]][[5]])[1]
-    
-    aov_list[[chemicalNames[j]]] <- aov_temp
- }    
-    
+LOECs_BinLD <- LOEC_Summary %>%
+  group_by(plate_id, Dose, Cycle) %>%
+  tally() %>%
+  dplyr::filter(n > 0) %>%
+  ungroup() %>%
+  group_by(plate_id, Cycle) %>%
+  dplyr::summarise(LOEC = min(Dose))
 ```
 
-
-
-```{r 42Dunnetts_test_OverallDat, echo=FALSE}
-
-
-dun_list <- NULL
-for (j in 1:length(chemicalNames)) {
-  temp <- fishBehavDat %>%
-    mutate(Dose = factor(
-      Dose,
-      levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"),
-      ordered = TRUE
-    )) %>%
-    mutate(Cycle = if_else(
-      condition = time_end >= 1 &
-        time_end <= 20,
-      true = "Acclimation",
-      false = if_else(
-        condition = time_end >= 21 &
-          time_end <= 25,
-        true = "Dark",
-        false = if_else(
-          condition = time_end >= 26 &
-            time_end <= 30,
-          true = "Light",
-          false = if_else(
-            condition = time_end >= 31 &
-              time_end <= 35,
-            true = "Dark",
-            false = if_else(
-              condition = time_end >= 36 &
-                time_end <= 40,
-              true = "Light",
-              false = if_else(
-                condition = time_end >= 41 &
-                  time_end <= 45,
-                true = "Dark",
-                false = "Light"
-              )
-            )
-          )
-        )
-      )
-    )) %>%
-    filter(Cycle != "Acclimation") %>%
-    filter(plate_id == chemicalNames[j]) %>%
-    group_by(Dose) %>%
-    as.data.frame()
-
-  temp_dun <- DunnettTest(totaldist ~ Dose, data = temp)
-
-  new_row <- matrix(data = c(NA, NA, NA, 1),
-                    nrow = 1,
-                    ncol = 4,
-  )
-  row.names(new_row) <- "Control-Control"
-  colnames(new_row) <- c("diff", "lwr.ci", "upr.ci", "pval")
-
-  dun_list[[chemicalNames[j]]] <- temp_dun[[1]] %>%
-    as.data.frame() %>%
-    rbind(new_row) %>%
-    rownames_to_column(var = "Dose")
-
-}
-
-dunnett <- ldply(dun_list, .id = "plate_id")
-
-dunnett$Dose = substr(dunnett$Dose,
-                      start = 1,
-                      stop = nchar(dunnett$Dose) - 8) #Here we are fixing the dose column... the dose column has the test dose related to the control... but we just want to see what the test dose is without it giving us redundant information about the comparison to the control for every observation...
-```
-
-```{r 43summary_all_chems_no_bin, include=FALSE}
-summary_fishBehavDat <- fishBehavDat %>%
-  mutate(Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>%
- mutate(Cycle = if_else(
-    condition = time_end >= 1 &
-      time_end <= 20,
-    true = "Acclimation",
-    false = if_else(
-      condition = time_end >= 21 &
-        time_end <= 25,
-      true = "Dark",
-      false = if_else(
-        condition = time_end >= 26 &
-          time_end <= 30,
-        true = "Light",
-        false = if_else(
-          condition = time_end >= 31 &
-            time_end <= 35,
-          true = "Dark",
-          false = if_else(
-            condition = time_end >= 36 &
-              time_end <= 40,
-            true = "Light",
-            false = if_else(
-              condition = time_end >= 41 &
-                time_end <= 45,
-              true = "Dark",
-              false = "Light"
-            )
-          )
-        )
-      )
-    )
-  )) %>%
-  filter(Cycle != "Acclimation") %>%
-  group_by(plate_id, Dose) %>%
-  summarise(se = sd(totaldist, na.rm = TRUE)/sqrt(length(totaldist)), value = mean(totaldist, na.rm = TRUE))
-```
-
-```{r 44joined_dunnet_summary_no_bin, include=FALSE}
-dunnett_summary_all_chems_no_bin <- right_join(dunnett, summary_fishBehavDat)
-dunnett_summary_all_chems_no_bin$Dose <- factor(dunnett_summary_all_chems_no_bin$Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)
-```
-
-```{r 44.2AOV_summary_all_chems, include=FALSE}
-d <- data.frame()
-d_all_chem <- list()
-for (j in 1:length(chemicalNames)) {
-    temp <- data.frame(Df = aov_list[[chemicalNames[j]]][[1]][[1]], 
-                   Sum_Sq = aov_list[[chemicalNames[j]]][[1]][[2]],
-                   Mean_Sq = aov_list[[chemicalNames[j]]][[1]][[3]],
-                   F_Value = aov_list[[chemicalNames[j]]][[1]][[4]],
-                   P_value = aov_list[[chemicalNames[j]]][[1]][[5]],
-                   row.names = c(paste0(names(aov_list_all_chems[j]), "_Dose"), paste0(names(aov_list_all_chems[j]), "_Residuals")))
-temp$Measurement <- row.names(temp)
-d <- rbind(d, temp)
-}
-
-AOV_summary_all_chems_NoBin <- d %>%
-  mutate(Chemical = str_split(string = Measurement, pattern = "_", simplify=TRUE)[,1],
-         Cycle = NA,
-         Measurement = str_split(string = Measurement, pattern = "_", simplify=TRUE)[,2])
-```
-
-```{r 45meantotaldist, echo=FALSE}
-p_list <- list()
-for (k in 1:length(chemicalNames)) {
-  p <- dunnett_summary_all_chems_no_bin %>%
-    filter(plate_id == chemicalNames[k]) %>%
-    ggplot(aes(
-      x = Dose,
-      y = value,
-      fill = Dose,
-    )) +
-    geom_col(position = "dodge") +
-    geom_errorbar(aes(ymin = value + se, ymax = value + se),
-                  width = .5,
-                  position = position_dodge(0.9)) +
-    geom_linerange(aes(ymin = value, ymax = value + se, group = Dose), position = position_dodge(width = 0.9)) +
-    scale_fill_viridis_d() +
-    scale_colour_viridis_d() +
-    geom_text(
-      aes(
-        label = if_else(
-          condition = pval > 0.1,
-          true = "",
-          false = if_else(
-            condition = pval <= 0.1 &
-              pval > 0.05,
-            true = "",
-            if_else(
-              condition = pval <= 0.05 &
-                pval > 0.01,
-              true = "*",
-              false = if_else(
-                condition = pval <= 0.01 &
-                  pval > 0.001,
-                true = "**",
-                false = if_else(pval <= 0.001 &
-                                  pval >= 0, true = "***", false = "")
-              )
-            )
-          )
-        ),
-        group = Dose,
-        y = value + se + 50
-      ),
-      position = position_dodge(width = 0.9),
-      color = "black",
-      size = 3.75
-    ) +
-    ylab("Mean Total Distance") +
-    xlab("") +
-    labs(title = chemicalNames[k]) +
-    theme_classic()
-
-  p_list[[chemicalNames[k]]] <- list(p, chemicalNames[k])
-  # print(p)
-}
-```
-
-##### Plots Not Binned by cycle {.tabset}
-```{r 45.1meantotaldist_BinnedDat, echo = FALSE, results = 'asis'}
+```{r write_the_results_of_LD_Bins, include=FALSE}
+write_csv(AOV_summary_all_chems_BinLD, file = "Output/ANCOVA_Results_Raw_Data_Bin_Light_Dark.csv")
+write_csv(dunnett_summary_all_chems_LD, file = "Output/DunnettT3Test_Results_Raw_Data_Bin_Light_Dark.csv")
 for (i in seq_along(p_list)){
   temp <- p_list[[i]]
-  cat("######", temp[[2]], " \n")
-  print(temp[[1]])
-  cat(' \n\n')
+  ggsave(plot = temp[[1]], filename = paste0(chemicalNames[i], "_Bin_Light_Dark_", params$value, "_results.png"), path = paste0("Output/", chemicalNames[i]), device = "png", scale = 1.5, units = "px", width = 1920, height = 1080)
 }
-```
-\
-\
-
-##### {-}
-
-```{r 47.1AOV_Results_Kable, echo=FALSE}
-AOV_datatable <- AOV_summary_all_chems_NoBin %>%
-  mutate(P_value = p.adjust(P_value, method = "fdr")) %>%
-  mutate(is_sig = if_else(condition = P_value <= 0.05, true = TRUE, false= FALSE),
-         P_value = formatC(P_value, format = "e", digits = 2)) %>%
-  select(Chemical, Cycle, Measurement, Df, Sum_Sq, Mean_Sq, F_Value, P_value, is_sig)
-```
-
-```{r 47.2Datatable, echo=FALSE}
-datatable(data = AOV_datatable, caption = paste("Table 4 - ANOVA test results, comparing effects of dose on", params$value, "for each light cycle"), rownames = FALSE)
-```
-
-```{r 47.3AOV_Results, echo=FALSE}
-AOV_datatable_Summary <- rbind(AOV_datatable_bin5, AOV_datatable_binLD, AOV_datatable)
-```
-
-<!-- # ```{r 47.4AOV_Results, echo=FALSE} -->
-<!-- # AOV_datatable_Summary %>% -->
-<!-- #   filter(is_sig == TRUE) %>% -->
-<!-- #   kable(caption = "Table 5 - Significant ANOVA Results") -->
-<!-- # ``` -->
-```{r 47.4AOV_results, echo = FALSE}
-write_csv(x = AOV_datatable_Summary, file = paste0("./", "Output" ,"/", params$value, "/", params$value, "_", "AOV_Results_Summary.csv"))
-```
-
-```{r 48.1Dunnet_resutls_export, echo=FALSE}
-dunnett_summary_all_chems_no_bin <- dunnett_summary_all_chems_no_bin %>%
-  mutate(Cycle = NA)
-Dunnett_output <- rbind(dunnett_summary_all_chems, dunnett_summary_all_chems_LD, dunnett_summary_all_chems_no_bin)
-```
-
-```{r 48.2Dunnet_resutls_export, echo=FALSE}
-write_csv(Dunnett_output, file = paste0("./", "Output" ,"/", params$value, "/", params$value, "_", "Dunnett_result_summarry.csv"))
+write_csv(LOECs_BinLD, file = "Output/LOEC_Results_Raw_Data_Bin_Light_Dark.csv")
 ```
 
 ```{r 49_Write_Datasets_to_csv, include=FALSE}
@@ -1726,4 +1819,291 @@ write_csv(x = fishBehavDat, file = "Data/fishBehavDat.csv")
 write_csv(x = fishBehavDatBin5, file = "Data/fishBehavDatBin5.csv")
 write_csv(x = fishBehavDatBinLD, file = "Data/fishBehavDatBinLD.csv")
 ```
+
+<!-- ##### Not-binned -->
+
+<!-- ```{r 42.1ANOVA_test_OverallDat, echo=FALSE} -->
+
+<!-- aov_list <- NULL -->
+<!-- pval_list <- NULL -->
+
+<!--  for (j in 1:length(chemicalNames)) { -->
+<!--   temp <- fishBehavDat %>% -->
+<!--     dplyr::mutate(Cycle = if_else( -->
+<!--       condition = time_end >= 1 & -->
+<!--         time_end <= 20, -->
+<!--       true = "Acclimation", -->
+<!--       false = if_else( -->
+<!--         condition = time_end >= 21 & -->
+<!--           time_end <= 25, -->
+<!--         true = "Dark", -->
+<!--         false = if_else( -->
+<!--           condition = time_end >= 26 & -->
+<!--             time_end <= 30, -->
+<!--           true = "Light", -->
+<!--           false = if_else( -->
+<!--             condition = time_end >= 31 & -->
+<!--               time_end <= 35, -->
+<!--             true = "Dark", -->
+<!--             false = if_else( -->
+<!--               condition = time_end >= 36 & -->
+<!--                 time_end <= 40, -->
+<!--               true = "Light", -->
+<!--               false = if_else( -->
+<!--                 condition = time_end >= 41 & -->
+<!--                   time_end <= 45, -->
+<!--                 true = "Dark", -->
+<!--                 false = "Light" -->
+<!--               ) -->
+<!--             ) -->
+<!--           ) -->
+<!--         ) -->
+<!--       ) -->
+<!--     )) %>% -->
+<!--     dplyr::filter(plate_id == chemicalNames[j]) %>% -->
+<!--     dplyr::filter(Cycle != "Acclimation") %>% -->
+<!--     group_by(Dose) %>% -->
+<!--     dplyr::mutate(Dose = as.factor(Dose)) %>% -->
+<!--     na.omit() %>% -->
+<!--     as.data.frame() -->
+
+<!--     temp_aov <- aov(get(params$value) ~ Dose, data = temp) -->
+<!--     aov_temp <- summary(temp_aov) -->
+<!--     pval_list <- na.omit(aov_temp[[1]][[5]])[1] -->
+
+<!--     aov_list[[chemicalNames[j]]] <- aov_temp -->
+<!--  }     -->
+
+<!-- ``` -->
+
+
+
+<!-- ```{r 42Dunnetts_test_OverallDat, echo=FALSE} -->
+
+
+<!-- dun_list <- NULL -->
+<!-- for (j in 1:length(chemicalNames)) { -->
+<!--   temp <- fishBehavDat %>% -->
+<!--     dplyr::mutate(Dose = factor( -->
+<!--       Dose, -->
+<!--       levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), -->
+<!--       ordered = TRUE -->
+<!--     )) %>% -->
+<!--     dplyr::mutate(Cycle = if_else( -->
+<!--       condition = time_end >= 1 & -->
+<!--         time_end <= 20, -->
+<!--       true = "Acclimation", -->
+<!--       false = if_else( -->
+<!--         condition = time_end >= 21 & -->
+<!--           time_end <= 25, -->
+<!--         true = "Dark", -->
+<!--         false = if_else( -->
+<!--           condition = time_end >= 26 & -->
+<!--             time_end <= 30, -->
+<!--           true = "Light", -->
+<!--           false = if_else( -->
+<!--             condition = time_end >= 31 & -->
+<!--               time_end <= 35, -->
+<!--             true = "Dark", -->
+<!--             false = if_else( -->
+<!--               condition = time_end >= 36 & -->
+<!--                 time_end <= 40, -->
+<!--               true = "Light", -->
+<!--               false = if_else( -->
+<!--                 condition = time_end >= 41 & -->
+<!--                   time_end <= 45, -->
+<!--                 true = "Dark", -->
+<!--                 false = "Light" -->
+<!--               ) -->
+<!--             ) -->
+<!--           ) -->
+<!--         ) -->
+<!--       ) -->
+<!--     )) %>% -->
+<!--     dplyr::filter(Cycle != "Acclimation") %>% -->
+<!--     dplyr::filter(plate_id == chemicalNames[j]) %>% -->
+<!--     group_by(Dose) %>% -->
+<!--     as.data.frame() -->
+
+<!--   temp_dun <- DunnettTest(totaldist ~ Dose, data = temp) -->
+
+<!--   new_row <- matrix(data = c(NA, NA, NA, 1), -->
+<!--                     nrow = 1, -->
+<!--                     ncol = 4, -->
+<!--   ) -->
+<!--   row.names(new_row) <- "Control-Control" -->
+<!--   colnames(new_row) <- c("diff", "lwr.ci", "upr.ci", "pval") -->
+
+<!--   dun_list[[chemicalNames[j]]] <- temp_dun[[1]] %>% -->
+<!--     as.data.frame() %>% -->
+<!--     rbind(new_row) %>% -->
+<!--     rownames_to_column(var = "Dose") -->
+
+<!-- } -->
+
+<!-- dunnett <- ldply(dun_list, .id = "plate_id") -->
+
+<!-- dunnett$Dose = substr(dunnett$Dose, -->
+<!--                       start = 1, -->
+<!--                       stop = nchar(dunnett$Dose) - 8) #Here we are fixing the dose column... the dose column has the test dose related to the control... but we just want to see what the test dose is without it giving us redundant information about the comparison to the control for every observation... -->
+<!-- ``` -->
+
+<!-- ```{r 43summary_all_chems_no_bin, include=FALSE} -->
+<!-- summary_fishBehavDat <- fishBehavDat %>% -->
+<!--   dplyr::mutate(Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>% -->
+<!--  dplyr::mutate(Cycle = if_else( -->
+<!--     condition = time_end >= 1 & -->
+<!--       time_end <= 20, -->
+<!--     true = "Acclimation", -->
+<!--     false = if_else( -->
+<!--       condition = time_end >= 21 & -->
+<!--         time_end <= 25, -->
+<!--       true = "Dark", -->
+<!--       false = if_else( -->
+<!--         condition = time_end >= 26 & -->
+<!--           time_end <= 30, -->
+<!--         true = "Light", -->
+<!--         false = if_else( -->
+<!--           condition = time_end >= 31 & -->
+<!--             time_end <= 35, -->
+<!--           true = "Dark", -->
+<!--           false = if_else( -->
+<!--             condition = time_end >= 36 & -->
+<!--               time_end <= 40, -->
+<!--             true = "Light", -->
+<!--             false = if_else( -->
+<!--               condition = time_end >= 41 & -->
+<!--                 time_end <= 45, -->
+<!--               true = "Dark", -->
+<!--               false = "Light" -->
+<!--             ) -->
+<!--           ) -->
+<!--         ) -->
+<!--       ) -->
+<!--     ) -->
+<!--   )) %>% -->
+<!--   dplyr::filter(Cycle != "Acclimation") %>% -->
+<!--   group_by(plate_id, Dose) %>% -->
+<!--   dplyr::summarise(se = sd(totaldist, na.rm = TRUE)/sqrt(length(totaldist)), value = mean(totaldist, na.rm = TRUE)) -->
+<!-- ``` -->
+
+<!-- ```{r 44joined_dunnet_summary_no_bin, include=FALSE} -->
+<!-- dunnett_summary_all_chems_no_bin <- right_join(dunnett, summary_fishBehavDat) -->
+<!-- dunnett_summary_all_chems_no_bin$Dose <- factor(dunnett_summary_all_chems_no_bin$Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE) -->
+<!-- ``` -->
+
+<!-- ```{r 44.2AOV_summary_all_chems, include=FALSE} -->
+<!-- d <- data.frame() -->
+<!-- d_all_chem <- list() -->
+<!-- for (j in 1:length(chemicalNames)) { -->
+<!--     temp <- data.frame(Df = aov_list[[chemicalNames[j]]][[1]][[1]],  -->
+<!--                    Sum_Sq = aov_list[[chemicalNames[j]]][[1]][[2]], -->
+<!--                    Mean_Sq = aov_list[[chemicalNames[j]]][[1]][[3]], -->
+<!--                    F_Value = aov_list[[chemicalNames[j]]][[1]][[4]], -->
+<!--                    P_value = aov_list[[chemicalNames[j]]][[1]][[5]], -->
+<!--                    row.names = c(paste0(names(aov_list_all_chems[j]), "_Dose"), paste0(names(aov_list_all_chems[j]), "_Residuals"))) -->
+<!-- temp$Measurement <- row.names(temp) -->
+<!-- d <- rbind(d, temp) -->
+<!-- } -->
+
+<!-- AOV_summary_all_chems_NoBin <- d %>% -->
+<!--   dplyr::mutate(Chemical = str_split(string = Measurement, pattern = "_", simplify=TRUE)[,1], -->
+<!--          Cycle = NA, -->
+<!--          Measurement = str_split(string = Measurement, pattern = "_", simplify=TRUE)[,2]) -->
+<!-- ``` -->
+
+<!-- ```{r 45meantotaldist, echo=FALSE} -->
+<!-- p_list <- list() -->
+<!-- for (k in 1:length(chemicalNames)) { -->
+<!--   p <- dunnett_summary_all_chems_no_bin %>% -->
+<!--     dplyr::filter(plate_id == chemicalNames[k]) %>% -->
+<!--     ggplot(aes( -->
+<!--       x = Dose, -->
+<!--       y = value, -->
+<!--       fill = Dose, -->
+<!--     )) + -->
+<!--     geom_col(position = "dodge") + -->
+<!--     geom_errorbar(aes(ymin = value + se, ymax = value + se), -->
+<!--                   width = .5, -->
+<!--                   position = position_dodge(0.9)) + -->
+<!--     geom_linerange(aes(ymin = value, ymax = value + se, group = Dose), position = position_dodge(width = 0.9)) + -->
+<!--     scale_fill_viridis_d() + -->
+<!--     scale_colour_viridis_d() + -->
+<!--     geom_text( -->
+<!--       aes( -->
+<!--         label = if_else( -->
+<!--           condition = pval > 0.1, -->
+<!--           true = "", -->
+<!--           false = if_else( -->
+<!--             condition = pval <= 0.1 & -->
+<!--               pval > 0.05, -->
+<!--             true = "", -->
+<!--             if_else( -->
+<!--               condition = pval <= 0.05 & -->
+<!--                 pval > 0.01, -->
+<!--               true = "*", -->
+<!--               false = if_else( -->
+<!--                 condition = pval <= 0.01 & -->
+<!--                   pval > 0.001, -->
+<!--                 true = "**", -->
+<!--                 false = if_else(pval <= 0.001 & -->
+<!--                                   pval >= 0, true = "***", false = "") -->
+<!--               ) -->
+<!--             ) -->
+<!--           ) -->
+<!--         ), -->
+<!--         group = Dose, -->
+<!--         y = value + se + 50 -->
+<!--       ), -->
+<!--       position = position_dodge(width = 0.9), -->
+<!--       color = "black", -->
+<!--       size = 3.75 -->
+<!--     ) + -->
+<!--     ylab("Mean Total Distance") + -->
+<!--     xlab("") + -->
+<!--     labs(title = chemicalNames[k]) + -->
+<!--     theme_classic() -->
+
+<!--   p_list[[chemicalNames[k]]] <- list(p, chemicalNames[k]) -->
+<!--   # print(p) -->
+<!-- } -->
+<!-- ``` -->
+
+<!-- ##### Plots Not Binned by cycle {.tabset} -->
+<!-- ```{r 45.1meantotaldist_BinnedDat, echo = FALSE, results = 'asis'} -->
+<!-- for (i in seq_along(p_list)){ -->
+<!--   temp <- p_list[[i]] -->
+<!--   cat("######", temp[[2]], " \n") -->
+<!--   print(temp[[1]]) -->
+<!--   cat(' \n\n') -->
+<!-- } -->
+<!-- ``` -->
+<!-- \ -->
+<!-- \ -->
+
+<!-- ##### {-} -->
+
+<!-- ```{r 47.1AOV_Results_Kable, echo=FALSE} -->
+<!-- AOV_datatable <- AOV_summary_all_chems_NoBin %>% -->
+<!--   dplyr::mutate(P_value = p.adjust(P_value, method = "fdr")) %>% -->
+<!--   dplyr::mutate(is_sig = if_else(condition = P_value <= 0.05, true = TRUE, false= FALSE), -->
+<!--          P_value = formatC(P_value, format = "e", digits = 2)) %>% -->
+<!--   dplyr::select(Chemical, Cycle, Measurement, Df, Sum_Sq, Mean_Sq, F_Value, P_value, is_sig) -->
+<!-- ``` -->
+
+<!-- ```{r 47.2Datatable, echo=FALSE} -->
+<!-- datatable(data = AOV_datatable, caption = paste("Table 4 - ANOVA test results, comparing effects of dose on", params$value, "for each light cycle"), rownames = FALSE) -->
+<!-- ``` -->
+
+<!-- ```{r 47.3AOV_Results, echo=FALSE} -->
+<!-- AOV_datatable_Summary <- rbind(AOV_datatable_bin5, AOV_datatable_binLD, AOV_datatable) -->
+<!-- ``` -->
+
+<!-- # ```{r 47.4AOV_Results, echo=FALSE} -->
+<!-- # AOV_datatable_Summary %>% -->
+<!-- #   dplyr::filter(is_sig == TRUE) %>% -->
+<!-- #   kable(caption = "Table 5 - Significant ANOVA Results") -->
+<!-- # ``` -->
+
+
 

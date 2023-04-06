@@ -20,14 +20,14 @@ output:
 library(plyr)
 library(data.table)
 library(abind)
-#library(dplyr)
-#library(tidyr)
-#library(readr)
+library(dplyr)
+library(tidyr)
+library(readr)
 library(car)
-#library(purrr)
+library(purrr)
 library(broom)
 library(naniar)
-#library(ggplot2)
+library(ggplot2)
 library(DescTools)
 library(tidyverse)
 library(outliers)
@@ -165,7 +165,7 @@ Baseline_avg <-
     ),
     times = length(folderNames) * 2
   )) %>%
-  pivot_longer(cols = V3:V11, values_to = "Fluorescence") %>%
+  pivot_longer(cols = V3:V11, values_to = "Fluorescence", names_to = "name") %>%
   mutate(is_empty = if_else(
     condition = (name %in% c("V7", "V8", "V9", "V10", "V11")) &
       Dose == "Blank",
@@ -173,10 +173,10 @@ Baseline_avg <-
     false = FALSE
   )) %>%
   filter(is_empty != TRUE) %>%
-  select(Chemical, Dose, name, Fluorescence, Measurement) %>%
+  dplyr::select(Chemical, Dose, name, Fluorescence, Measurement) %>%
   pivot_wider(names_from = Measurement, values_from = Fluorescence) %>%
   mutate(Baseline_Fluorescence = (Baseline_1 + Baseline_2) / 2) %>% #Change
-  select(-name)
+  dplyr::select(-name)
 
 h24_avg <-
   rbind(h24_1_dfl, h24_2_dfl) %>% #Change
@@ -221,10 +221,10 @@ h24_avg <-
     false = FALSE
   )) %>%
   filter(is_empty != TRUE) %>%
-  select(Chemical, Dose, name, Fluorescence, Measurement) %>%
+  dplyr::select(Chemical, Dose, name, Fluorescence, Measurement) %>%
   pivot_wider(names_from = Measurement, values_from = Fluorescence) %>%
   mutate(h24_Fluorescence = (`24h_1` + `24h_2`) / 2) %>% #Change
-  select(-name)
+  dplyr::select(-name)
 
 
 Baseline_avg #Combined data frame for every chemical (including blank wells)
@@ -263,9 +263,14 @@ h24_control <- h24_avg %>%
   summarise(h24_Fluorescence = mean(h24_Fluorescence))
 
 #Creating the normalization factor to be applied to the Delta data frame in the next step
-Blank_Delta <- full_join(x = Base_control, y = h24_control) %>%
-  mutate(Fluorescence = h24_Fluorescence-Base_Fluorescence)
-Blank_Delta
+Blank_Data <- full_join(x = Base_control, y = h24_control) %>%
+  rename(Baseline_Blank = Base_Fluorescence,
+         h24_Blank = h24_Fluorescence) %>%
+  group_by(Chemical) %>%
+  dplyr::select(-Dose)
+# Blank_Delta <- full_join(x = Base_control, y = h24_control) %>%
+#   mutate(Fluorescence = h24_Fluorescence-Base_Fluorescence)
+# Blank_Delta
 
 
 
@@ -290,110 +295,194 @@ Tidy_Data <- Delta %>%
   #mutate(Date = NULL, Dose = NULL) %>% #Getting rid of date variable
   mutate(Group = rep(c("A", "B", "C"), each = 3, length.out = length(folderNames)*9*6)) %>%
   mutate(Animal = rep(1:54, times = length(folderNames))) %>%
-  select(Chemical, `Dose(mg/L)`, Dose, Animal, Group, everything())
+  dplyr::select(Chemical, `Dose(mg/L)`, Dose, Animal, Group, everything())
 #Ignore warning message... it shous up because separate finds 3 different chunks (because year, month, date are also separated by an undercore... We are discarding the variable anyway)
 
 
 
-#Normalize
-Blank_Delta <- Blank_Delta %>%
-  select(Chemical, Fluorescence) %>%
-  rename(Norm_factor = Fluorescence)
+# #Normalize
+# Blank_Delta <- Blank_Delta %>%
+#   dplyr::select(Chemical, Fluorescence) %>%
+#   rename(Norm_factor = Fluorescence)
+# 
+# Tidy_Data <- Tidy_Data %>%
+#   group_by(Chemical) %>%
+#   inner_join(Blank_Delta) %>%
+#   mutate(Norm_Fluorescence = Delta_Fluorescence - Norm_factor) #Creating the new normalized column and giving it a more informative column name
+#   #mutate(Fluorescence = NULL, Norm_factor = NULL) #Getting rid of the now useless variables
+# 
 
+
+#Normalize v2 (Normalizing baseline and 24h separately then calculating delta fluorescence instead of normalizing the delta fluorescence value by the change in the blank over 24hours)
 Tidy_Data <- Tidy_Data %>%
   group_by(Chemical) %>%
-  inner_join(Blank_Delta) %>%
-  mutate(Norm_Fluorescence = Delta_Fluorescence - Norm_factor) #Creating the new normalized column and giving it a more informative column name
-  #mutate(Fluorescence = NULL, Norm_factor = NULL) #Getting rid of the now useless variables
+  inner_join(Blank_Data, by = join_by(Chemical)) %>%
+  mutate(Norm_Baseline_Fluorescence = Baseline_Fluorescence - Baseline_Blank,
+         Norm_h24_Fluorescence = h24_Fluorescence - h24_Blank,
+         Delta_Fluorescence = Norm_h24_Fluorescence-Norm_Baseline_Fluorescence,
+         Relative_Delta_Fluorescence = Norm_h24_Fluorescence/Norm_Baseline_Fluorescence)
 
 #Where delta fluorescence is NA
 Tidy_Data %>%
-  mutate(is_NA = is.na(Delta_Fluorescence)) %>%
+  mutate(is_NA = is.na(Relative_Delta_Fluorescence)) %>%
   filter(is_NA == TRUE)
+  #None
+```
 
+```{r 2.testing_assumptions_ofnormality_and_homogeneity_of_variance_with_outliers, echo=FALSE}
+#Test of normalization
+#knitr::include_graphics("./Output/Images/qqplot_ol_rm.svg")
+#ggsave(plot = gg_qqplot, filename = "Output/Images/qqplot.png", device = "png", bg = "white")
 
-#Testing for Outliers...
-input_Tidy_Data <- Tidy_Data %>%
+#Test of normal distribution faceted by chemical
+Tidy_Data %>%
   group_by(Chemical) %>%
-  select(Norm_Fluorescence) %>%
-  mutate(Norm_Fluorescence = round(Norm_Fluorescence, digits = 3)) %>% #Bug with grubbs and large decimal places
-  # filter(Chemical %in% c("BPA", "BPAF")) %>% #Testing with smaller data set
-  nest()
+  ggplot(aes(sample = Relative_Delta_Fluorescence)) +
+  geom_qq() +
+  geom_qq_line() +
+  facet_wrap(~ Chemical, scales = "free") +
+  ylab("Sample") +
+  xlab("Theoretical") +
+  theme_classic() +
+  ggtitle("QQ plots showing approximattely non-normal distributions for each experiment
+          without outliers removed")
+```
 
-grubbs.flag <- function(x) {
-  outliers <- NULL
-  test <- x
-  grubbs.result <- grubbs.test(test)
-  pv <- grubbs.result$p.value
-  while(pv < 0.05) {
-    outliers <- c(outliers,as.numeric(strsplit(grubbs.result$alternative," ")[[1]][3]))
-    test <- x[!x %in% outliers]
-    grubbs.result <- grubbs.test(test)
-    pv <- grubbs.result$p.value
-  }
-  return(data.frame(Norm_Fluorescence=x,Outlier=(x %in% outliers)))
-}
+```{r Legacy_Outlier_removal_code_chunks_using Grubb's_Test, include=FALSE}
 
-grubbs_results <- input_Tidy_Data %>%
-  mutate(grubbs_results = map(data, ~grubbs.flag(x = .x[[1]])))
 
-Tidy_Data_join <- grubbs_results %>%
-  select(-data) %>%
-  unnest(cols = c(grubbs_results))
+#This code was previously used to remove outliers using the Grubb's test. However, Grubb's test only works if the data are normally distributed./ However, it is not so Grubb;s test will not be applied
 
-Tidy_Data_test <- Tidy_Data %>%
-  mutate(Norm_Fluorescence = round(Norm_Fluorescence, digits = 3)) %>%
-  inner_join(Tidy_Data_join, by = c("Chemical", "Norm_Fluorescence"))
-Tidy_Data_test <- Tidy_Data_test[-which(duplicated(Tidy_Data_test)),] #Delete duplicates introduced by join
 
-test <- Tidy_Data_test %>%
-  group_by(Chemical, Dose) %>%
-  tally()
-
-#Outliers flagged
-Tidy_Data <- Tidy_Data_test %>%
-  mutate(Outlier = Outlier.x)
-
-#Outliers removed
-Tidy_Data_ol_rm <- Tidy_Data %>%
-  mutate(across(
-    .cols = c("Norm_Fluorescence"),
-    .fns = ~ replace(x = ., list = Outlier, values = NA) 
-  ))
-
+# #Testing for Outliers... Norm_Fluorescence Column
+# input_Tidy_Data <- Tidy_Data %>%
+#   group_by(Chemical) %>%
+#   dplyr::select(Norm_Fluorescence) %>%
+#   mutate(Norm_Fluorescence = round(Norm_Fluorescence, digits = 3)) %>% #Bug with grubbs and large decimal places
+#   # filter(Chemical %in% c("BPA", "BPAF")) %>% #Testing with smaller data set
+#   nest()
+# 
+# grubbs.flag <- function(x) {
+#   outliers <- NULL
+#   test <- x
+#   grubbs.result <- grubbs.test(test)
+#   pv <- grubbs.result$p.value
+#   while(pv < 0.05) {
+#     outliers <- c(outliers,as.numeric(strsplit(grubbs.result$alternative," ")[[1]][3]))
+#     test <- x[!x %in% outliers]
+#     grubbs.result <- grubbs.test(test)
+#     pv <- grubbs.result$p.value
+#   }
+#   return(data.frame(Norm_Fluorescence=x,Outlier=(x %in% outliers)))
+# }
+# 
+# grubbs_results <- input_Tidy_Data %>%
+#   mutate(grubbs_results = map(data, ~grubbs.flag(x = .x[[1]])))
+# 
+# Tidy_Data_join <- grubbs_results %>%
+#   dplyr::select(-data) %>%
+#   unnest(cols = c(grubbs_results))
+# 
+# Tidy_Data_test <- Tidy_Data %>%
+#   mutate(Norm_Fluorescence = round(Norm_Fluorescence, digits = 3)) %>%
+#   inner_join(Tidy_Data_join, by = c("Chemical", "Norm_Fluorescence"))
+# Tidy_Data_test <- Tidy_Data_test[-which(duplicated(Tidy_Data_test)),] #Delete duplicates introduced by join
+# 
+# test <- Tidy_Data_test %>%
+#   group_by(Chemical, Dose) %>%
+#   tally()
+# 
+# #Outliers flagged
+# Tidy_Data <- Tidy_Data_test %>%
+#   mutate(Outlier = Outlier.x)
+# 
+# #Outliers removed
+# Tidy_Data_ol_rm <- Tidy_Data %>%
+#   mutate(across(
+#     .cols = c("Norm_Fluorescence"),
+#     .fns = ~ replace(x = ., list = Outlier, values = NA) 
+#   ))
+# 
+# #-----------------------------------------------------------------------------#
+# #Testing for Outliers... Relative Change in Fluorescene column (Relative_Delta_Fluorescence)
+# input_Tidy_Data <- Tidy_Data %>%
+#   group_by(Chemical) %>%
+#   dplyr::select(Relative_Delta_Fluorescence) %>%
+#   mutate(Relative_Delta_Fluorescence = round(Relative_Delta_Fluorescence, digits = 3)) %>% #Bug with grubbs and large decimal places
+#   # filter(Chemical %in% c("BPA", "BPAF")) %>% #Testing with smaller data set
+#   nest()
+# 
+# grubbs.flag <- function(x) {
+#   outliers <- NULL
+#   test <- x
+#   grubbs.result <- grubbs.test(test)
+#   pv <- grubbs.result$p.value
+#   while(pv < 0.05) {
+#     outliers <- c(outliers,as.numeric(strsplit(grubbs.result$alternative," ")[[1]][3]))
+#     test <- x[!x %in% outliers]
+#     grubbs.result <- grubbs.test(test)
+#     pv <- grubbs.result$p.value
+#   }
+#   return(data.frame(Relative_Delta_Fluorescence=x,Outlier=(x %in% outliers)))
+# }
+# 
+# grubbs_results <- input_Tidy_Data %>%
+#   mutate(grubbs_results = map(data, ~grubbs.flag(x = .x[[1]])))
+# 
+# Tidy_Data_join <- grubbs_results %>%
+#   dplyr::select(-data) %>%
+#   unnest(cols = c(grubbs_results))
+# 
+# Tidy_Data_test <- Tidy_Data %>%
+#   mutate(Relative_Delta_Fluorescence = round(Relative_Delta_Fluorescence, digits = 3)) %>%
+#   inner_join(Tidy_Data_join, by = c("Chemical", "Relative_Delta_Fluorescence"))
+# Tidy_Data_test <- Tidy_Data_test[-which(duplicated(Tidy_Data_test)),] #Delete duplicates introduced by join
+# 
+# test <- Tidy_Data_test %>%
+#   group_by(Chemical, Dose) %>%
+#   tally()
+# 
+# #Outliers flagged
+# Tidy_Data <- Tidy_Data_test %>%
+#   mutate(Outlier = Outlier)
+# 
+# #Outliers removed
+# Tidy_Data_ol_rm <- Tidy_Data %>%
+#   mutate(across(
+#     .cols = c("Relative_Delta_Fluorescence"),
+#     .fns = ~ replace(x = ., list = Outlier, values = NA) 
+#   ))
+# 
+# #-----------------------------------------------------------------------------#
+# 
 #Subsetting Tyler's Data
 Tylers_Data <- Tidy_Data %>%
   filter(Chemical %in% c("BPA", "BPAF", "DES", "EE2", "TGSH"))
 
 #Writing the Data to the 'getwd()/Data/' Directory
 write_csv(x = Tidy_Data, file = "Data/Alamar_Blue_Tidy_Data_29chems.csv")
-write_csv(x = Tidy_Data_ol_rm, file = "Data/Alamar_Blue_Tidy_Data_29chems_outliers_rm.csv")
+#write_csv(x = Tidy_Data_ol_rm, file = "Data/Alamar_Blue_Tidy_Data_29chems_outliers_rm.csv")
 write_csv(x = Tylers_Data, file = "Data/Alamar_Blue_Tylers_Data.csv")
+
 ```
 
 ```{r 1.testing_assumptions_ofnormality_and_homogeneity_of_variance, echo=FALSE}
 #Mean and StDev of Delta of each Dose
-DoseSummary <- Tidy_Data_ol_rm %>%
+DoseSummary <- Tidy_Data %>%
   group_by(Chemical, `Dose(mg/L)`) %>%
   summarise(
-    StDev = sd(Norm_Fluorescence, na.rm = TRUE),
-    Mean = mean(Norm_Fluorescence, na.rm = TRUE),
+    StDev = sd(Relative_Delta_Fluorescence, na.rm = TRUE),
+    Mean = mean(Relative_Delta_Fluorescence, na.rm = TRUE),
     .groups = "keep"
   )
 DT::datatable(DoseSummary)
 ```
 
-```{r 2.testing_assumptions_ofnormality_and_homogeneity_of_variance, echo=FALSE}
-#Test of normalization
-knitr::include_graphics("./Output/Images/qqplot_ol_rm.svg")
-#ggsave(plot = gg_qqplot, filename = "Output/Images/qqplot.png", device = "png", bg = "white")
-```
-
-```{r 3.testing_assumptions_ofnormality_and_homogeneity_of_variance, echo=TRUE}
+```{r 3.testing_assumptions_ofnormality_and_homogeneity_of_variance_without_outliers_removed, echo=TRUE}
 #Homogeneity of Variance
-LeveneResults <- Tidy_Data_ol_rm %>%
+LeveneResults <- Tidy_Data %>%
   group_by(Chemical) %>%
-  summarise(leveneTest(Delta_Fluorescence, as.factor(`Dose(mg/L)`)))
+  summarise(leveneTest(Relative_Delta_Fluorescence, as.factor(`Dose(mg/L)`)))
 #Adding an is.significant column to easily parse significant values in a spreadsheet
 LeveneResults <- LeveneResults %>%
   na.omit() %>%
@@ -405,9 +494,15 @@ LeveneResults <- LeveneResults %>%
 
 DT::datatable(LeveneResults)
 
+#Table shows mostly homogeneous variance except for vinclozilin, 4TOP and Aniline
+
 write_csv(x = LeveneResults, file = "Output/Levene_Test_Results.csv")
 #rm(VarianceCheck)
 ```
+
+
+
+
 
 ```{r 1.ANCOVA_results, echo=TRUE}
 #ANCOVA
@@ -441,62 +536,10 @@ DT::datatable(ANCOVA_Sig_Results) #Just the significant results of the ANCOVA
 #Saving the ANCOVA Results
 write_csv(x = ANCOVACheck, file = "Output/ANCOVA_Results.csv") #ANCOVA
 ```
-
-```{r 1.PostHoc_Dunnett, echo=TRUE}
-#PostHoc tests
-set.seed(2345)
-
-#Dunnett's Test
-Dunnett_results <- Tidy_Data_ol_rm %>%
-  group_by(Chemical) %>%
-  nest() %>%
-  mutate(model = map(data, ~ DunnettTest(
-    x = .$Norm_Fluorescence, g = .$`Dose(mg/L)`
-  ), data = .)) #Performing the Dunnett's test and saving it is a variable
-
-#Creating list of summaries
-#Since the PostHocTest object cannot be coerced to a tidy tibble using tidy()... we got creative
-Dunnett_list <-
-  list() #What we are trying to do is index the results and see what the significant results were... so we are using a list which can be later coerced into a tibble to easily index...
-for (i in 1:length(unique(Tidy_Data$Chemical))) {
-  Dunnett_list[[Dunnett_results$Chemical[i]]] <-
-    Dunnett_results$model[[i]][["0"]] %>% #Take Dunnett's test results without any of the fancy summary information and shove it into a named list
-    as.data.frame() %>% #Coerce to a data frame temporarily so what we can take the row names of the reults and turn them into a variable with rownames_to_column
-    rownames_to_column(var = "dose")
-}
-Dunnett_comb <-
-  plyr::ldply(Dunnett_list) #this function combines all of the lists together and gives them a variable name according to the chemical
-Dunnett_comb$dose = substr(Dunnett_comb$dose,
-                           start = 1,
-                           stop = nchar(Dunnett_comb$dose) - 2) %>%
-  as.numeric() #Here we are fixing the dose column... the dose column has the test dose related to the control... but we just want to see what the test dose is without it giving us redundant information about the comparison to the control for every observation...
-Dunnett_comb <- as_tibble(Dunnett_comb) #Coerce to a tidy tibble
-#Great, a nice tibble that we can export
-
-#Now just to add one more column
-Dunnett_comb <- Dunnett_comb %>%
-  mutate(adj_p.value = p.adjust(pval, method = "fdr")) %>%
-  mutate(is.significant = if_else(
-    condition = pval < 0.05,
-    true = TRUE,
-    false = FALSE
-  ))
-DT::datatable(Dunnett_comb)
-
-#Write to a .csv
-write_csv(Dunnett_comb, file = "Output/Dunnett_test_results.csv")
-
-# #indexing what the significant results were...
-# Dunnett_Sig_Results <-
-#   Dunnett_comb[which(Dunnett_comb$pval <= 0.05), ]
-# Dunnett_Sig_Results
-# #Cool!
-```
-
 ```{r 2.PostHoc_TukeysHSD, echo=TRUE, warning=FALSE, message=FALSE}
 #TukeyHSD's Test on Groups - testing for 'Group Effects'
 Tukey_results <- ANCOVA %>%
-  mutate(model = map(model, ~ TukeyHSD(x = .x))) #Performing the Dunnett's test and saving it is a variable
+  mutate(model = map(model, ~ TukeyHSD(x = .x))) #Performing the Tukey's test and saving it is a variable
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #Following guide here https://schmidtpaul.github.io/DSFAIR/compactletterdisplay.html
@@ -575,6 +618,59 @@ write_csv(Tukey_results, file = "Output/Tukey_HSD_results.csv")
 
 DT::datatable(Tukey_results)
 ```
+
+```{r 1.PostHoc_Dunnett, echo=TRUE}
+#PostHoc tests
+set.seed(2345)
+
+#Dunnett's Test
+Dunnett_results <- Tidy_Data_ol_rm %>%
+  group_by(Chemical) %>%
+  nest() %>%
+  mutate(model = map(data, ~ DunnettTest(
+    x = .$Norm_Fluorescence, g = .$`Dose(mg/L)`
+  ), data = .)) #Performing the Dunnett's test and saving it is a variable
+
+#Creating list of summaries
+#Since the PostHocTest object cannot be coerced to a tidy tibble using tidy()... we got creative
+Dunnett_list <-
+  list() #What we are trying to do is index the results and see what the significant results were... so we are using a list which can be later coerced into a tibble to easily index...
+for (i in 1:length(unique(Tidy_Data$Chemical))) {
+  Dunnett_list[[Dunnett_results$Chemical[i]]] <-
+    Dunnett_results$model[[i]][["0"]] %>% #Take Dunnett's test results without any of the fancy summary information and shove it into a named list
+    as.data.frame() %>% #Coerce to a data frame temporarily so what we can take the row names of the reults and turn them into a variable with rownames_to_column
+    rownames_to_column(var = "dose")
+}
+Dunnett_comb <-
+  plyr::ldply(Dunnett_list) #this function combines all of the lists together and gives them a variable name according to the chemical
+Dunnett_comb$dose = substr(Dunnett_comb$dose,
+                           start = 1,
+                           stop = nchar(Dunnett_comb$dose) - 2) %>%
+  as.numeric() #Here we are fixing the dose column... the dose column has the test dose related to the control... but we just want to see what the test dose is without it giving us redundant information about the comparison to the control for every observation...
+Dunnett_comb <- as_tibble(Dunnett_comb) #Coerce to a tidy tibble
+#Great, a nice tibble that we can export
+
+#Now just to add one more column
+Dunnett_comb <- Dunnett_comb %>%
+  mutate(adj_p.value = p.adjust(pval, method = "fdr")) %>%
+  mutate(is.significant = if_else(
+    condition = pval < 0.05,
+    true = TRUE,
+    false = FALSE
+  ))
+DT::datatable(Dunnett_comb)
+
+#Write to a .csv
+write_csv(Dunnett_comb, file = "Output/Dunnett_test_results.csv")
+
+# #indexing what the significant results were...
+# Dunnett_Sig_Results <-
+#   Dunnett_comb[which(Dunnett_comb$pval <= 0.05), ]
+# Dunnett_Sig_Results
+# #Cool!
+```
+
+
 
 ```{r 1.plot_Group_variance_check, echo=FALSE}
 #Group Variance v2
