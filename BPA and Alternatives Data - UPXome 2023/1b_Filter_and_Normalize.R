@@ -34,7 +34,16 @@ for(i in dataFolders){
                              header = TRUE,
                              stringsAsFactors = FALSE) %>%
       select(Ensembl.ID,
-             Total.exon.reads)
+             Total.exon.reads) %>%
+      filter(!Ensembl.ID %in% c("ENSDARG00000089382", #18S "protein_coding"
+                                "ENSDARG00000080337", #Mt_rRNA
+                                "ENSDARG00000081218", #rRNA
+                                "ENSDARG00000111902", #rRNA
+                                "ENSDARG00000110135", #rRNA
+                                "ENSDARG00000082753", #Mt_rRNA
+                                "ENSDARG00000114355", #rRNA
+                                "ENSDARG00000115847"  #rRNA
+                                )) 
     colnames(loadRaw[[j]])<-c("gene", j)
   }
 }
