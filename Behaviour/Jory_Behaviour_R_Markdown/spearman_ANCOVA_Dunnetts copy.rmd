@@ -1,5 +1,5 @@
 ---
-title: "Report for ANCOVA and Dunnett's of pearson SS"
+title: "Report for ANCOVA and Dunnett's of spearman SS"
 author: "Jory Curry"
 date: "`r format(Sys.time(), '%d %B %Y')`"
 output: 
@@ -12,7 +12,7 @@ output:
     theme: readable
 params:
   value: "totaldist"
-  endpoint: "pearson"
+  endpoint: "spearman"
 ---
 
 ```{r 1setup, include=FALSE}
@@ -156,7 +156,7 @@ lowest_dose_treatment_group <- lowest_dose_treatment_group[1,][[1]]
 
 ```{r remove_control_fish, include=FALSE, eval=false}
 p <- fishBehavDat %>%
-  filter(Dose == "Control") %>%
+  #filter(Dose == "Control") %>%
   group_by(plate_id, embryo_id) %>%
   summarise(mean_totaldist = mean(totaldist, na.rm=TRUE)) %>%
   ungroup() %>%
@@ -368,7 +368,7 @@ cor_dat <- fishBehavDat %>%
   dplyr::arrange(embryo_id) %>%
   tidyr::pivot_wider(., names_from = "embryo_id", values_from = "totaldist") %>%
   dplyr::select(-time_end) %>%
-  dplyr::summarize(cor = cor(x = as.matrix(.), method = "pearson", use = "pairwise.complete.obs"))
+  dplyr::summarize(cor = cor(x = as.matrix(.), method = "spearman", use = "pairwise.complete.obs"))
 cor_dat <- as.data.frame(cor_dat[10,]) %>%
   round(., digits = 2)
 cor_dat <- as_tibble(cor_dat[,1])
@@ -380,7 +380,7 @@ p1 <- fishBehavDat %>%
   geom_line() +
   geom_point() +
   scale_color_manual(values=c("#444444", "#F8766D")) +
-  geom_text(label = paste("Pearson's r = ", as.character(cor_dat$Control_1)), mapping = aes(x = 10, y = 100), inherit.aes = FALSE)
+  geom_text(label = paste("spearman's r = ", as.character(cor_dat$Control_1)), mapping = aes(x = 10, y = 100), inherit.aes = FALSE)
 
 p2 <- fishBehavDat %>%
   filter(plate_id == "BPA", time_end > 20, Dose %in% c("Dose2", "Control"), embryo_id %in% c("Dose2_1", "Control_9")) %>%
@@ -389,7 +389,7 @@ p2 <- fishBehavDat %>%
   geom_line() +
   geom_point() +
   scale_color_manual(values=c("#c9c9c9", "#F8766D")) +
-  geom_text(label = paste("Pearson's r = ", as.character(cor_dat$Control_9)), mapping = aes(x = 10, y = 100), inherit.aes = FALSE)
+  geom_text(label = paste("spearman's r = ", as.character(cor_dat$Control_9)), mapping = aes(x = 10, y = 100), inherit.aes = FALSE)
 
 grid.arrange(p1, p2)
 ```
@@ -405,20 +405,20 @@ cor_dat_long %>%
   geom_point() +
   geom_point(aes(y = mean_cor_dat), color = "blue", size = 3) +
   xlab("embryo_id") +
-  ylab("Pearson's r")
+  ylab("spearman's r")
 ```
 
 
-```{r 47simi_endpoints_pearson, include = FALSE}
-simi_endps_pearson <- list(seq(1, 30, by = 1)) #Segments - One per minute
-names(simi_endps_pearson) <- "pearson"
-simi_endpoints_nobin_pearson <- list()
+```{r 47simi_endpoints_spearman, include = FALSE}
+simi_endps_spearman <- list(seq(1, 30, by = 1)) #Segments - One per minute
+names(simi_endps_spearman) <- "spearman"
+simi_endpoints_nobin_spearman <- list()
 for (i in chemicalNames) {
   temp <-
     create_simi_endpoints(lfishBehavDat[[i]],
-                          segments = simi_endps_pearson,
-                          metric = "pearson")
-  simi_endpoints_nobin_pearson[[i]] <- temp[[1]]
+                          segments = simi_endps_spearman,
+                          metric = "spearman")
+  simi_endpoints_nobin_spearman[[i]] <- temp[[1]]
   rm(temp)
 }
 ```
@@ -429,29 +429,29 @@ For this reason, it makes the most sense to use a negative direction for the BMD
 <!-- It may also make sense to filter only chemicals that induce dissimilar movement patterns when compared to the vehicle control for the benchmark concentration analysis. -->
 
 
-```{r 48normalized_data_pearson, include=FALSE}
-simi_norm_nobin_pearson <- lapply(simi_endpoints_nobin_pearson, simi_normalize)
+```{r 48normalized_data_spearman, include=FALSE}
+simi_norm_nobin_spearman <- lapply(simi_endpoints_nobin_spearman, simi_normalize)
 ```
 
-```{r 49summary_statistics_pearson, include=FALSE}
+```{r 49summary_statistics_spearman, include=FALSE}
 for(i in chemicalNames) {
-  simi_norm_nobin_pearson[[i]]$dose <- as.factor(simi_norm_nobin_pearson[[i]]$dose)
-  simi_norm_nobin_pearson[[i]][, "Group"] = factor(rep(c("A", "B", "C"), length.out = nrow(simi_norm_nobin_pearson[[i]])))
+  simi_norm_nobin_spearman[[i]]$dose <- as.factor(simi_norm_nobin_spearman[[i]]$dose)
+  simi_norm_nobin_spearman[[i]][, "Group"] = factor(rep(c("A", "B", "C"), length.out = nrow(simi_norm_nobin_spearman[[i]])))
 } # Adding Group column and factoring dose variable
 #Obtaining Summary Statistics
-summarystats_list_nobin_pearson <- lapply(simi_norm_nobin_pearson, summarystats)
+summarystats_list_nobin_spearman <- lapply(simi_norm_nobin_spearman, summarystats)
 ```
 
 
 #### ANCOVA
 
 ```{r 49.2_Removing_Outliers, include=FALSE}
-temp_pearson <-
-  plyr::ldply(simi_norm_nobin_pearson) %>% #Convert from list to tibble
+temp_spearman <-
+  plyr::ldply(simi_norm_nobin_spearman) %>% #Convert from list to tibble
   mutate(.id = NULL)
 
 #### Testing for Normal Distribution
-temp_pearson %>%
+temp_spearman %>%
   group_by(plate_id) %>%
   ggplot(aes(sample = endpoint_value_norm)) +
   geom_qq() +
@@ -466,7 +466,7 @@ temp_pearson %>%
 
 #### Testing for Homogeneity of Variance
 # Homogeneity of variance test -- of totaldistance
-LeveneResults <- temp_pearson %>%
+LeveneResults <- temp_spearman %>%
   group_by(plate_id) %>%
   summarise(car::leveneTest(endpoint_value_norm, as.factor(dose)))
 #Adding an is.significant column to easily parse significant values in a spreadsheet
@@ -482,7 +482,7 @@ DT::datatable(LeveneResults)
 #Therefore ANOVA nand Dunnett's test are appropriate
 
 
-# temp_pearson <- temp_pearson %>%
+# temp_spearman <- temp_spearman %>%
 #   group_by(plate_id, dose) %>%
 #   mutate(Q1 = quantile(endpoint_value_norm, 0.25), Q3 = quantile(endpoint_value_norm, 0.75)) %>%
 #   mutate(IQR = IQR(endpoint_value_norm)) %>%
@@ -490,22 +490,22 @@ DT::datatable(LeveneResults)
 #   mutate(lower_limit = (Q1 - 1.5*IQR),
 #          upper_limit = (Q3 + 1.5*IQR))
 
-# outliers_pearson <- temp_pearson %>%
+# outliers_spearman <- temp_spearman %>%
 #   filter(outlier == TRUE) %>%
 #   ungroup()
 # 
-# temp_pearson <- temp_pearson %>%
-#   anti_join(outliers_pearson)
+# temp_spearman <- temp_spearman %>%
+#   anti_join(outliers_spearman)
 
 
 # #### Testing for Normal Distribution after removing outliers
-# qqnorm(temp_pearson$endpoint_value_norm)
-# qqline(temp_pearson$endpoint_value_norm)
-# shapiro.test(temp_pearson$endpoint_value_norm)
+# qqnorm(temp_spearman$endpoint_value_norm)
+# qqline(temp_spearman$endpoint_value_norm)
+# shapiro.test(temp_spearman$endpoint_value_norm)
 # # Data are not normally distributed. Thus violating an assumption of ANCOVA
 
 
-# simi_norm_nobin_pearson <- temp_pearson %>%
+# simi_norm_nobin_spearman <- temp_spearman %>%
 #   group_by(plate_id) %>%
 #   group_split(.keep = FALSE) %>%
 #   setNames(chemicalNames)
@@ -513,7 +513,7 @@ DT::datatable(LeveneResults)
 
 ```{r Checking_For_Group_Effects, include=FALSE, eval=FALSE}
 #One-way ANOVA to test for repliacte subgroup effect
-anova_group_eff_test <- temp_pearson %>%
+anova_group_eff_test <- temp_spearman %>%
   group_by(plate_id, dose) %>%
   nest() %>%
   mutate(model = map(data, ~ aov(
@@ -534,27 +534,27 @@ anova_group_eff_adj_p <- anova_group_eff_test %>%
 #Further analysis is not necessary because there are no significant sub-group effects
 ```
 
-```{r 50ANCOVA_pearson, include=FALSE}
-anova_list_nobin_pearson <- sapply(simi_norm_nobin_pearson, combinedanova)
+```{r 50ANCOVA_spearman, include=FALSE}
+anova_list_nobin_spearman <- sapply(simi_norm_nobin_spearman, combinedanova)
 
-anova_comb_nobin_pearson <- as_tibble(plyr::ldply(anova_list_nobin_pearson))
-anova_comb_nobin_pearson <- anova_comb_nobin_pearson %>%
+anova_comb_nobin_spearman <- as_tibble(plyr::ldply(anova_list_nobin_spearman))
+anova_comb_nobin_spearman <- anova_comb_nobin_spearman %>%
   na.omit() %>%
   mutate(`Pr(>F)` = p.adjust(`Pr(>F)`, method = "fdr")) %>%
   mutate(is.significant = if_else(
     condition = `Pr(>F)` < 0.05,
     true = TRUE,
     false = FALSE
-  ), endpoint = "pearson")
+  ), endpoint = "spearman")
 ```
 
 ```{r 50.2ANCOVA_Results_Summary, echo = FALSE}
-anova_comb_nobin_pearson %>%
+anova_comb_nobin_spearman %>%
   select(.id, Df, `F value`, `Pr(>F)`, endpoint) %>%
   kable(
     col.names = c("Chemical", "Degrees of Freedom", "F-Value", "P-value", "Endpoint"),
     align = 'llrrr',
-    caption = "Table 6. Summary table of ANOVA results from the `pearson` endpoint after pooling sub-groups"
+    caption = "Table 6. Summary table of ANOVA results from the `spearman` endpoint after pooling sub-groups"
   ) %>%
   kable_styling()
 ```
@@ -562,38 +562,38 @@ anova_comb_nobin_pearson %>%
 
 #### Dunnett's Test
 
-```{r 51Dunnett_pearson, include=FALSE}
+```{r 51Dunnett_spearman, include=FALSE}
 set.seed(024)
-dunnett_list_nobin_pearson <- sapply(simi_norm_nobin_pearson, combineddunnett) %>%
+dunnett_list_nobin_spearman <- sapply(simi_norm_nobin_spearman, combineddunnett) %>%
   setNames(., chemicalNames) %>%
   as.array()
 #Dunnett's Test requires a bunch of wrangling
 dunnett_temp <-
   list() #Take Dunnett's test results without any of the fancy summary information and shove it into a named list
 for (i in chemicalNames) {
-  # dunnett_list_nobin_pearson[[i]][,"pval"] <- p.adjust(dunnett_list_nobin_pearson[[i]][,"pval"], method = "fdr")
+  # dunnett_list_nobin_spearman[[i]][,"pval"] <- p.adjust(dunnett_list_nobin_spearman[[i]][,"pval"], method = "fdr")
 
-  dunnett_temp[[names(dunnett_list_nobin_pearson[i])]] <-
-    dunnett_list_nobin_pearson[[i]] %>% as.data.frame() %>% rownames_to_column(var = "dose") #Coerce to a data frame temporarily so what we can take the row names of the reults and turn them into a variable with rownames_to_column
+  dunnett_temp[[names(dunnett_list_nobin_spearman[i])]] <-
+    dunnett_list_nobin_spearman[[i]] %>% as.data.frame() %>% rownames_to_column(var = "dose") #Coerce to a data frame temporarily so what we can take the row names of the reults and turn them into a variable with rownames_to_column
 }
-dunnett_comb_nobin_pearson <-
+dunnett_comb_nobin_spearman <-
   plyr::ldply(dunnett_temp) #this function combines all of the lists together and gives them a variable name according to the chemical
-dunnett_comb_nobin_pearson$dose = substr(dunnett_comb_nobin_pearson$dose,
+dunnett_comb_nobin_spearman$dose = substr(dunnett_comb_nobin_spearman$dose,
                            start = 1,
-                           stop = nchar(dunnett_comb_nobin_pearson$dose) - 8) #Here we are fixing the dose column... the dose column has the test dose related to the control... but we just want to see what the test dose is without it giving us redundant information about the comparison to the control for every observation...
-dunnett_comb_nobin_pearson <- as_tibble(dunnett_comb_nobin_pearson)
-dunnett_comb_nobin_pearson <- dunnett_comb_nobin_pearson %>%
+                           stop = nchar(dunnett_comb_nobin_spearman$dose) - 8) #Here we are fixing the dose column... the dose column has the test dose related to the control... but we just want to see what the test dose is without it giving us redundant information about the comparison to the control for every observation...
+dunnett_comb_nobin_spearman <- as_tibble(dunnett_comb_nobin_spearman)
+dunnett_comb_nobin_spearman <- dunnett_comb_nobin_spearman %>%
   na.omit() %>%
   mutate(pval = p.adjust(pval, method = "fdr")) %>%
   mutate(is.significant = if_else(
     condition = pval < 0.05,
     true = TRUE,
     false = FALSE
-  ), endpoint = "pearson")
+  ), endpoint = "spearman")
 ```
 
 ```{r 52.2Dunnett_results_summary, echo=FALSE}
-dunnett_comb_nobin_pearson %>%
+dunnett_comb_nobin_spearman %>%
   select(.id, dose, diff, pval, endpoint) %>%
   kable(
     col.names = c("Chemical", "Dose", "Difference in similarity score (+/- 100)", "P-value", "Endpoint"),
@@ -605,15 +605,15 @@ dunnett_comb_nobin_pearson %>%
 
 \
 
-```{r 53normalized_data_to_tibble_pearson, include=FALSE}
+```{r 53normalized_data_to_tibble_spearman, include=FALSE}
 doseData <- doseData %>%
   mutate(dose = Dose) #Renaming dose variable to inner_join
 
-simi_norm_tib_pearson <-
-  plyr::ldply(simi_norm_nobin_pearson) #Convert from list to tibble
+simi_norm_tib_spearman <-
+  plyr::ldply(simi_norm_nobin_spearman) #Convert from list to tibble
   #rename(plate_id = .id)
 
-simi_norm_tib_pearson <- simi_norm_tib_pearson %>%
+simi_norm_tib_spearman <- simi_norm_tib_spearman %>%
   inner_join(doseData, by = c("plate_id", "dose")) %>%
   mutate(is_VC = as.integer(is_VC)) %>%
   select(plate_id,
@@ -625,18 +625,18 @@ simi_norm_tib_pearson <- simi_norm_tib_pearson %>%
 ```
 
 
-```{r 54normalized_data_ggplot, include=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap="Figure 16. Dose response relationship of normalized pearson's similarity scores from 26 different chemicals -- `totaldsit` variable", fig.width=10, fig.height=7.5, out.height="100%", out.width="125%"}
-Dunnett_results <- dunnett_comb_nobin_pearson %>%
+```{r 54normalized_data_ggplot, include=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap="Figure 16. Dose response relationship of normalized spearman's similarity scores from 26 different chemicals -- `totaldsit` variable", fig.width=10, fig.height=7.5, out.height="100%", out.width="125%"}
+Dunnett_results <- dunnett_comb_nobin_spearman %>%
   rename(plate_id = .id) %>%
   mutate(dose = str_split(string = dose, pattern = "-", simplify = TRUE)[,1])
 
-ANOVA_results <- anova_comb_nobin_pearson %>%
+ANOVA_results <- anova_comb_nobin_spearman %>%
   rename(plate_id = .id) %>%
   filter(Df == 5) %>%
   mutate(ANOVA_is_sig = is.significant)
   
 
-p_pearson <- simi_norm_tib_pearson %>%
+p_spearman <- simi_norm_tib_spearman %>%
   full_join(Dunnett_results, by = c("plate_id", "dose", "endpoint")) %>%
   dplyr::summarise(plate_id = plate_id, 
             endpoint = endpoint,
@@ -711,8 +711,8 @@ p_pearson <- simi_norm_tib_pearson %>%
         panel.background = element_blank()) +
   ylim(-100, 100)
 
-p_both_endpoints <- list(p_pearson)
-names(p_both_endpoints) <- c("pearson")
+p_both_endpoints <- list(p_spearman)
+names(p_both_endpoints) <- c("spearman")
 ```
 
 #### Boxplots by endpoint {.tabset}
@@ -733,7 +733,7 @@ for (i in seq_along(p_both_endpoints)){
 
 ```{r 55.1prep_4_rcurvep, include=FALSE}
 
-simi_norm_tib_4rcurvep_pearson <- simi_norm_tib_pearson %>%
+simi_norm_tib_4rcurvep_spearman <- simi_norm_tib_spearman %>%
   rename(resp = endpoint_value_norm,
          chemical = plate_id) %>%
   #filter(is_VC == 0) %>%
@@ -749,54 +749,54 @@ Since we do not know what the benchmark response is for each one of the chemical
 
 ```{r 55.1Clear_Memory, include=FALSE}
 rm(
-  p_pearson,
-  p_pearson,
+  p_spearman,
+  p_spearman,
   ANCOVA_results,
   Dunnett_results,
   Nobin_dunnet_results_both_endpoints,
-  dunnett_comb_nobin_pearson,
+  dunnett_comb_nobin_spearman,
   ancova_summary_both_endpoints,
-  ancova_comb_nobin_pearson,
-  ancova_comb_nobin_pearson,
-  temp_pearson,
-  temp_pearson,
-  outliers_pearson,
+  ancova_comb_nobin_spearman,
+  ancova_comb_nobin_spearman,
+  temp_spearman,
+  temp_spearman,
+  outliers_spearman,
   outliers,
-  pearson,
-  summarystats_list_nobin_pearson,
-  summarystats_list_nobin_pearson,
-  simi_endpoints_nobin_pearson,
-  simi_endpoints_nobin_pearson,
+  spearman,
+  summarystats_list_nobin_spearman,
+  summarystats_list_nobin_spearman,
+  simi_endpoints_nobin_spearman,
+  simi_endpoints_nobin_spearman,
   cor_dat_long,
   p1,
   p2,
   cor_dat,
   temp,
   temp2,
-  simi_norm_nobin_pearson,
-  simi_endpoints_nobin_pearson,
+  simi_norm_nobin_spearman,
+  simi_endpoints_nobin_spearman,
   p_both_endpoints,
-  outliers_pearson,
-  outliers_pearson,
+  outliers_spearman,
+  outliers_spearman,
   ggBoxPlotOutliers,
   filter_out,
   dunnett_temp,
-  dunnett_list_nobin_pearson,
-  dunnett_comb_nobin_pearson,
-  dunnett_list_nobin_pearson,
+  dunnett_list_nobin_spearman,
+  dunnett_comb_nobin_spearman,
+  dunnett_list_nobin_spearman,
   BoxPlotOutliers,
   BoxPlotOutliersRemove,
-  ancova_list_nobin_pearson,
-  ancova_list_nobin_pearson,
+  ancova_list_nobin_spearman,
+  ancova_list_nobin_spearman,
   fishBehavDat,
   fishBehavDatBin5,
   fishBehavDatBinLD,
   lfishBehavDat,
-  simi_norm_tib_pearson
+  simi_norm_tib_spearman
 )
 gc(reset=TRUE, full = TRUE)
 ```
 
 ```{r saveObjects, include=FALSE}
-saveRDS(object = simi_norm_tib_4rcurvep_pearson, file = paste0("Data/", "simi_norm_tib_4rcurvep_pearson.rds"))
+saveRDS(object = simi_norm_tib_4rcurvep_spearman, file = paste0("Data/", "simi_norm_tib_4rcurvep_spearman.rds"))
 ```

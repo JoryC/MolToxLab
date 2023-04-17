@@ -344,14 +344,13 @@ Tidy_Data %>%
   ylab("Sample") +
   xlab("Theoretical") +
   theme_classic() +
-  ggtitle("QQ plots showing approximattely non-normal distributions for each experiment
+  ggtitle("QQ plots showing approximately normal distributions for each experiment
           without outliers removed")
 ```
 
 ```{r Legacy_Outlier_removal_code_chunks_using Grubb's_Test, include=FALSE}
 
 
-#This code was previously used to remove outliers using the Grubb's test. However, Grubb's test only works if the data are normally distributed./ However, it is not so Grubb;s test will not be applied
 
 
 # #Testing for Outliers... Norm_Fluorescence Column
@@ -405,63 +404,63 @@ Tidy_Data %>%
 # 
 # #-----------------------------------------------------------------------------#
 # #Testing for Outliers... Relative Change in Fluorescene column (Relative_Delta_Fluorescence)
-# input_Tidy_Data <- Tidy_Data %>%
-#   group_by(Chemical) %>%
-#   dplyr::select(Relative_Delta_Fluorescence) %>%
-#   mutate(Relative_Delta_Fluorescence = round(Relative_Delta_Fluorescence, digits = 3)) %>% #Bug with grubbs and large decimal places
-#   # filter(Chemical %in% c("BPA", "BPAF")) %>% #Testing with smaller data set
-#   nest()
-# 
-# grubbs.flag <- function(x) {
-#   outliers <- NULL
-#   test <- x
-#   grubbs.result <- grubbs.test(test)
-#   pv <- grubbs.result$p.value
-#   while(pv < 0.05) {
-#     outliers <- c(outliers,as.numeric(strsplit(grubbs.result$alternative," ")[[1]][3]))
-#     test <- x[!x %in% outliers]
-#     grubbs.result <- grubbs.test(test)
-#     pv <- grubbs.result$p.value
-#   }
-#   return(data.frame(Relative_Delta_Fluorescence=x,Outlier=(x %in% outliers)))
-# }
-# 
-# grubbs_results <- input_Tidy_Data %>%
-#   mutate(grubbs_results = map(data, ~grubbs.flag(x = .x[[1]])))
-# 
-# Tidy_Data_join <- grubbs_results %>%
-#   dplyr::select(-data) %>%
-#   unnest(cols = c(grubbs_results))
-# 
-# Tidy_Data_test <- Tidy_Data %>%
-#   mutate(Relative_Delta_Fluorescence = round(Relative_Delta_Fluorescence, digits = 3)) %>%
-#   inner_join(Tidy_Data_join, by = c("Chemical", "Relative_Delta_Fluorescence"))
-# Tidy_Data_test <- Tidy_Data_test[-which(duplicated(Tidy_Data_test)),] #Delete duplicates introduced by join
-# 
-# test <- Tidy_Data_test %>%
-#   group_by(Chemical, Dose) %>%
-#   tally()
-# 
-# #Outliers flagged
-# Tidy_Data <- Tidy_Data_test %>%
-#   mutate(Outlier = Outlier)
-# 
-# #Outliers removed
-# Tidy_Data_ol_rm <- Tidy_Data %>%
-#   mutate(across(
-#     .cols = c("Relative_Delta_Fluorescence"),
-#     .fns = ~ replace(x = ., list = Outlier, values = NA) 
-#   ))
-# 
-# #-----------------------------------------------------------------------------#
-# 
+input_Tidy_Data <- Tidy_Data %>%
+  group_by(Chemical) %>%
+  dplyr::select(Relative_Delta_Fluorescence) %>%
+  mutate(Relative_Delta_Fluorescence = round(Relative_Delta_Fluorescence, digits = 3)) %>% #Bug with grubbs and large decimal places
+  # filter(Chemical %in% c("BPA", "BPAF")) %>% #Testing with smaller data set
+  nest()
+
+grubbs.flag <- function(x) {
+  outliers <- NULL
+  test <- x
+  grubbs.result <- grubbs.test(test)
+  pv <- grubbs.result$p.value
+  while(pv < 0.05) {
+    outliers <- c(outliers,as.numeric(strsplit(grubbs.result$alternative," ")[[1]][3]))
+    test <- x[!x %in% outliers]
+    grubbs.result <- grubbs.test(test)
+    pv <- grubbs.result$p.value
+  }
+  return(data.frame(Relative_Delta_Fluorescence=x,Outlier=(x %in% outliers)))
+}
+
+grubbs_results <- input_Tidy_Data %>%
+  mutate(grubbs_results = map(data, ~grubbs.flag(x = .x[[1]])))
+
+Tidy_Data_join <- grubbs_results %>%
+  dplyr::select(-data) %>%
+  unnest(cols = c(grubbs_results))
+
+Tidy_Data_test <- Tidy_Data %>%
+  mutate(Relative_Delta_Fluorescence = round(Relative_Delta_Fluorescence, digits = 3)) %>%
+  inner_join(Tidy_Data_join, by = c("Chemical", "Relative_Delta_Fluorescence"))
+Tidy_Data_test <- Tidy_Data_test[-which(duplicated(Tidy_Data_test)),] #Delete duplicates introduced by join
+
+test <- Tidy_Data_test %>%
+  group_by(Chemical, Dose) %>%
+  tally()
+
+#Outliers flagged
+Tidy_Data <- Tidy_Data_test %>%
+  mutate(Outlier = Outlier.y)
+
+#Outliers removed
+Tidy_Data_ol_rm <- Tidy_Data %>%
+  mutate(across(
+    .cols = c("Relative_Delta_Fluorescence"),
+    .fns = ~ replace(x = ., list = Outlier, values = NA)
+  ))
+
+#-----------------------------------------------------------------------------#
+
 #Subsetting Tyler's Data
 Tylers_Data <- Tidy_Data %>%
   filter(Chemical %in% c("BPA", "BPAF", "DES", "EE2", "TGSH"))
 
 #Writing the Data to the 'getwd()/Data/' Directory
 write_csv(x = Tidy_Data, file = "Data/Alamar_Blue_Tidy_Data_29chems.csv")
-#write_csv(x = Tidy_Data_ol_rm, file = "Data/Alamar_Blue_Tidy_Data_29chems_outliers_rm.csv")
+write_csv(x = Tidy_Data_ol_rm, file = "Data/Alamar_Blue_Tidy_Data_29chems_outliers_rm.csv")
 write_csv(x = Tylers_Data, file = "Data/Alamar_Blue_Tylers_Data.csv")
 
 ```
@@ -480,7 +479,7 @@ DT::datatable(DoseSummary)
 
 ```{r 3.testing_assumptions_ofnormality_and_homogeneity_of_variance_without_outliers_removed, echo=TRUE}
 #Homogeneity of Variance
-LeveneResults <- Tidy_Data %>%
+LeveneResults <- Tidy_Data_ol_rm %>%
   group_by(Chemical) %>%
   summarise(leveneTest(Relative_Delta_Fluorescence, as.factor(`Dose(mg/L)`)))
 #Adding an is.significant column to easily parse significant values in a spreadsheet
@@ -494,7 +493,19 @@ LeveneResults <- LeveneResults %>%
 
 DT::datatable(LeveneResults)
 
-#Table shows mostly homogeneous variance except for vinclozilin, 4TOP and Aniline
+#Var Check
+var_check <- Tidy_Data_ol_rm %>%
+  group_by(Chemical, Dose) %>%
+  dplyr::mutate(variance = var(Relative_Delta_Fluorescence, na.rm = TRUE)) %>%
+  dplyr::summarise(variance) %>%
+  unique()
+
+# General rule of thumb is that ANOVA/ANCOVA is robust enough to tolerate minor differences in variance across groups. The largest group variance can be up to 4 times the smallest without posing problems. 
+var_check_2 <- var_check %>%
+  group_by(Chemical) %>%
+  dplyr::summarise(max = max(variance), min = min(variance), check = if_else(condition = max <= min*4, true = "OK", false = "Not OK"))
+
+#Table shows mostly homogeneous variance except for flutamide
 
 write_csv(x = LeveneResults, file = "Output/Levene_Test_Results.csv")
 #rm(VarianceCheck)
@@ -510,7 +521,7 @@ ANCOVA <- Tidy_Data_ol_rm %>%
   group_by(Chemical) %>%
   nest() %>%
   mutate(model = map(data, ~ aov(
-    Norm_Fluorescence ~ as.factor(`Dose(mg/L)`) + as.factor(Group),
+    Relative_Delta_Fluorescence ~ as.factor(`Dose(mg/L)`) + as.factor(Group),
     data = .
   ))) %>% #Where 'Group' is the dose group replicate... group A B or C for one of 3 petri dishes in the dose group... This tells us if there were human error in making sure each replicate got the same dose
   dplyr::select(model)
@@ -536,6 +547,7 @@ DT::datatable(ANCOVA_Sig_Results) #Just the significant results of the ANCOVA
 #Saving the ANCOVA Results
 write_csv(x = ANCOVACheck, file = "Output/ANCOVA_Results.csv") #ANCOVA
 ```
+
 ```{r 2.PostHoc_TukeysHSD, echo=TRUE, warning=FALSE, message=FALSE}
 #TukeyHSD's Test on Groups - testing for 'Group Effects'
 Tukey_results <- ANCOVA %>%
