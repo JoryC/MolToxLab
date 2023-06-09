@@ -12,7 +12,7 @@ output:
     theme: readable
 params:
   direction: "pos"
-  sample_size: 50
+  sample_size: 1000
   n_dose_groups: 6
   endpoint: "Affected.Rate"
 ---
@@ -28,6 +28,9 @@ library(future)
 library(future.apply)
 library(furrr)
 library(kableExtra)
+library(tcpl)
+library(grid)
+library(gridExtra)
 source("Functions/RCurveP_Data_Wrangling_Functions.R")
 ```
 
@@ -75,11 +78,12 @@ ar_dat <- ar_dat %>%
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 fitted_expr <- expression(value(future({
   run_fit(
-    create_dataset(d = ar_dat),
+    create_dataset(input_tib$data[[1]]),
     modls = c("hill", "cnst"),
     keep_sets = c("fit_set", "resp_set"),
     n_samples = ss,
-    hill_pdir = 1,
+    #hill_pdir = 1,
+    #Note: Hill dir introduced NAs so changing
     seed = 42069
   )
 }, seed = 42069)))
@@ -93,23 +97,47 @@ fitted <- eval(fitted_expr)
 #calculate the BMD step 2
 #Wrangling
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+# Rcurvep has a problem where if the hill model can't be fitted using a specific direction for any of the simulated responses, it just sets them all to NA. This is an issue because it makes plotting the failed models impossible. SO going to resample the responses for those chemicals that get flagged as NA so i can re-model them myself for images even though they go in the incorrect direction.
+#Index what chemicals are NAs only
+test <- fitted$result$resp_set %>%
+  group_by(chemical) %>%
+  summarise(is_NaN = mean(resp, na.rm=TRUE))
+  
+NaNs <- as.vector(test[is.nan(test$is_NaN),][,1])
+
+filter_1 <- fitted$result$resp_set %>%
+  group_by(chemical) %>%
+  filter(!chemical %in% NaNs[[1]])
+
+filter_2 <- create_dataset(input_tib$data[[1]], n_samples = params$sample_size) %>%
+  group_by(chemical) %>%
+  filter(chemical %in% NaNs[[1]]) %>%
+  mutate(direction = NA,
+         fitted_resp = NA,
+         sample_id = as.character(sample_id)) %>%
+  mutate(resp = if_else(condition = resp < (-bmr_thresh), true = 0, false = resp))
+
+replaced_NAs <- rbind(filter_1, filter_2)
+
+fitted$result$resp_set <- replaced_NAs
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 fitted_output <-
-  summarize_fit_output(d = fitted, thr_resp = bmr_thresh)
+  summarize_fit_output(d = fitted, thr_resp = bmr_thresh, ci_level = 0.95)
 
 fitted_output_summary <-
   summarise_fitted_results(
     resp_set = fitted_output$result$resp_set,
     act_set = fitted_output$result$act_set,
+    fit_set = fitted_output$result$fit_set,
     act_summary = fitted_output$act_summary,
-    reject_hit_conf_under = 0.1
+    reject_hit_conf_under = 0.01
   )
 # Weird bug in the RCurveP_Data_Wrangling_Functions.R source 'summarise_fitted_results' function where the hit_confidence vriable needs to be divided by an addional 100 ??? - 2022/10/27
 
 fitted_hits <- fitted_output_summary %>%
   filter(hit == 1)
 
-confident_fitted_hits <- confident_hits(summary_dat = fitted_hits, reject_hit_conf_under = 0.1)
+confident_fitted_hits <- confident_hits(summary_dat = fitted_hits, reject_hit_conf_under = 0.01)
 #If error message says 'out of bounds', there are likely no confident hits at all
 
 bmds_fitted <- fitted_output_summary %>%
@@ -127,234 +155,17 @@ bmds_fitted <- fitted_output_summary %>%
 
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
-```
 
-```{r plot_results, echo=FALSE}
-#Plotting
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
-p_fitted <- ggplot(NULL, aes(conc, resp)) +
-  geom_point(data = fitted_output_summary, 
-             mapping = aes(x = conc, y = fitted_resp, group = sample_id),
-             color = "gray75",
-             alpha = 0.4) +
-  geom_smooth(
-    data = fitted_output_summary,
-    mapping = aes(x = conc, y = fitted_resp, group = sample_id),
-    color = "gray75",
-    alpha = 0.4,
-    se = FALSE
-  ) +
-  # geom_point(data = pearson_fitted_output_summary, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9", alpha = 0.7) +
-  geom_smooth(
-    data = fitted_hits,
-    mapping = aes(x = conc, y = fitted_resp, group = sample_id),
-    color = "#a9a9a9",
-    alpha = 0.7,
-    se = FALSE
-  ) +
-  # geom_line(data = confident_fitted_hits_pearson[["cil"]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "purple") +
-  # geom_line(data = confident_fitted_hits_pearson[["ciu"]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "yellow") +
-  # geom_line(data = confident_fitted_hits_pearson[["median"]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "blue") +
-  geom_hline(
-    yintercept = bmr_thresh,
-    linetype = "dashed",
-    color = "red"
-  ) +
-  # geom_vline(data = bmds_fitted,
-  #            aes(xintercept = median_POD),
-  #            color = "blue") +
-  geom_vline(data = bmds_fitted,
-             aes(xintercept = POD_med),
-             color = "blue") +
-  geom_vline(data = bmds_fitted, aes(xintercept = ciu_POD), color = "yellow") +
-  geom_vline(data = bmds_fitted, aes(xintercept = cil_POD), color = "purple") +
-  # geom_vline(data = bmds_fitted, aes(xintercept = POD_cil), color = "purple") +
-  geom_text(
-    data = fitted_output_summary,
-    mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc +
-                    1),
-    y = -85,
-    inherit.aes = FALSE,
-    size = 4
-  ) +
-  facet_wrap( ~ chemical, scales = "free_x") +
-  ylim(0, 1) +
-  theme_minimal() +
-  theme(
-    panel.border = element_rect(colour = "grey50", fill = NA),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank()
-  )
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
-```
+#Data Wrangling for nice labels
+fitted_output_summary <- fitted_output_summary %>%
+  group_by(chemical) %>%
+  mutate(x_label_num = if_else(condition = conc == lowest_conc, true = 0, false = (10^conc)*lowest_dose_treatment_group)) %>%
+  mutate(x_label = factor(x_label_num, levels = c(0, lowest_dose_treatment_group, lowest_dose_treatment_group*10, lowest_dose_treatment_group*100, lowest_dose_treatment_group*1000, lowest_dose_treatment_group*10000, lowest_dose_treatment_group*100000, lowest_dose_treatment_group*1000000, lowest_dose_treatment_group*10000000, lowest_dose_treatment_group*100000000, lowest_dose_treatment_group*1000000000, lowest_dose_treatment_group*10000000000), ordered = TRUE))
 
-```{r save_the_resutls, include=FALSE}
-#save the image
-ggsave(
-  plot = p_fitted,
-  filename = paste0(
-    "Output/Images/", "affected_rate_", dir, "_", "_fitted_curves_",
-    ss,
-    "_samples.svg"
-  ),
-  device = "svg",
-  units = "px",
-  width = 1920,
-  height = 1080,
-  bg = "white",
-  scale = 3
-)
-```
-
-```{r print_image, echo=FALSE}
-knitr::include_graphics(
-  paste0(
-    "Output/Images/",
-    "affected_rate_",
-    dir,
-    "_",
-    "_fitted_curves_",
-    ss,
-    "_samples.svg"
-  )
-)
-```
-
-```{r alternative_plot_results, echo=FALSE}
-#Plotting
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
-p_fitted <- ggplot(NULL, aes(conc, resp)) +
-  geom_point(data = fitted_output_summary, 
-             mapping = aes(x = conc, y = fitted_resp, group = sample_id),
-             color = "gray75",
-             alpha = 0.4) +
-  geom_smooth(
-    data = fitted_output_summary,
-    mapping = aes(x = conc, y = fitted_resp, group = sample_id),
-    color = "gray75",
-    alpha = 0.4,
-    se = FALSE
-  ) +
-  # geom_point(data = pearson_fitted_output_summary, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9", alpha = 0.7) +
-  geom_smooth(
-    data = fitted_hits,
-    mapping = aes(x = conc, y = fitted_resp, group = sample_id),
-    color = "#a9a9a9",
-    alpha = 0.7,
-    se = FALSE
-  ) +
-  # geom_line(data = confident_fitted_hits_pearson[["cil"]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "purple") +
-  # geom_line(data = confident_fitted_hits_pearson[["ciu"]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "yellow") +
-  # geom_line(data = confident_fitted_hits_pearson[["median"]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "blue") +
-  geom_hline(
-    yintercept = bmr_thresh,
-    linetype = "dashed",
-    color = "red"
-  ) +
-  geom_vline(data = bmds_fitted,
-             aes(xintercept = median_POD),
-             color = "blue") +
-  geom_vline(data = bmds_fitted,
-             aes(xintercept = POD_med),
-             color = "green") +
-  geom_vline(data = bmds_fitted, aes(xintercept = ciu_POD), color = "yellow") +
-  geom_vline(data = bmds_fitted, aes(xintercept = cil_POD), color = "purple") +
-  # geom_vline(data = bmds_fitted, aes(xintercept = POD_cil), color = "purple") +
-  geom_text(
-    data = fitted_output_summary,
-    mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc +
-                    1),
-    y = -85,
-    inherit.aes = FALSE,
-    size = 4
-  ) +
-  facet_wrap( ~ chemical, scales = "free_x") +
-  ylim(0, 1) +
-  theme_minimal() +
-  theme(
-    panel.border = element_rect(colour = "grey50", fill = NA),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank()
-  )
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
-```
-
-```{r alternative_save_the_resutls, include=FALSE}
-#save the image
-ggsave(
-  plot = p_fitted,
-  filename = paste0(
-    "Output/Images/", "affected_rate_", dir, "_", "_fitted_curves_",
-    ss,
-    "_samples_alternative.svg"
-  ),
-  device = "svg",
-  units = "px",
-  width = 1920,
-  height = 1080,
-  bg = "white",
-  scale = 3
-)
-```
-
-```{r alternative_print_image, echo=FALSE}
-knitr::include_graphics(
-  paste0(
-    "Output/Images/",
-    "affected_rate_",
-    dir,
-    "_",
-    "_fitted_curves_",
-    ss,
-    "_samples_alternative.svg"
-  )
-)
-```
-
-```{r alternative_vis, include=FALSE}
-#Distribution of BMDs
-# p_distribution_bmds <- curve_hits %>%
-#   group_by(chemical) %>%
-#   ggplot(data = ., aes(x = POD)) +
-#   geom_histogram() +
-#   facet_wrap( ~ chemical, scales = "free_x") +
-#   geom_vline(aes(xintercept = median_POD), color = "blue") +
-#   geom_vline(aes(xintercept = cil_POD), color = "purple") +
-#   geom_vline(aes(xintercept = ciu_POD), color = "yellow") +
-#   geom_vline(aes(xintercept = lowest_conc),
-#              color = "black",
-#              linetype = "dashed") +
-#   geom_vline(aes(xintercept = highest_conc),
-#              color = "black",
-#              linetype = "solid") +
-#   theme_classic() +
-#   scale_x_continuous(expand = expansion(add = 1)) +
-#   xlab("BMD") +
-#   geom_text(
-#     mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc +
-#                     2),
-#     y = 1000,
-#     inherit.aes = FALSE,
-#     size = 4
-#   )
-# 
-# #save the image
-# ggsave(
-#   plot = p_distribution_bmds,
-#   filename = paste0(
-#     "Output/Images/", "z_score_", dir, "_", "_distribution_bmds_",
-#     ss,
-#     "_samples.svg"
-#   ),
-#   device = "svg",
-#   units = "px",
-#   width = 1920,
-#   height = 1080,
-#   bg = "white",
-#   scale = 2
-# )
+fitted_hits <- fitted_hits %>%
+  group_by(chemical) %>%
+  mutate(x_label_num = if_else(condition = conc == lowest_conc, true = 0, false = (10^conc)*lowest_dose_treatment_group)) %>%
+  mutate(x_label = factor(x_label_num, levels = c(0, lowest_dose_treatment_group, lowest_dose_treatment_group*10, lowest_dose_treatment_group*100, lowest_dose_treatment_group*1000, lowest_dose_treatment_group*10000, lowest_dose_treatment_group*100000, lowest_dose_treatment_group*1000000, lowest_dose_treatment_group*10000000, lowest_dose_treatment_group*100000000, lowest_dose_treatment_group*1000000000, lowest_dose_treatment_group*10000000000), ordered = TRUE))
 ```
 
 ```{r table_the_results, echo=TRUE}
@@ -363,7 +174,7 @@ temp <- list(bmds_fitted)
 names(temp) <- c(paste0("fitted_affected_rate_", dir, "_dir"))
 all_summarized_bmd_dat <- plyr::ldply(temp)
 all_summarized_bmd_dat <- all_summarized_bmd_dat %>%
-  arrange(chemical)
+  dplyr::arrange(chemical)
 
 all_summarized_bmd_dat %>%
   mutate(lowest_conc = lowest_conc + 1) %>%
@@ -427,4 +238,6 @@ data <- all_summarized_bmd_dat %>%
   mutate(POD_med = if_else(is.na(POD_med), true = median_POD, false = POD_med))
 
 write_csv(x = data, file = paste0("Output/", "BMDs/", "fitted_", "affected_rate_", dir, "_", "BMDs_", ss, "_samples.csv"))
+saveRDS(fitted_output_summary, file = paste0("Data/fitted_output_summary_", ss, "_samples.RDS"))
+saveRDS(bmds_fitted, file = paste0("Data/fitted_bmds_", ss, "_samples.RDS"))
 ```

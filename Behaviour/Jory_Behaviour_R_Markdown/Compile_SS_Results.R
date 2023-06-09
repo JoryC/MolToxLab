@@ -8,15 +8,17 @@ print(args)
 
 endpoint_R <- c("pearson", "spearman")
 method_R <- c("rcurvep", "fitted")
+fitted_part_R <- c("part_1", "part_2")
 
 endpoint <- endpoint_R[as.numeric(args[6])] #index which endpoint to use for this iteration of the loop after running the script with `runCompile_SS_Results.sh`
 method <- method_R[as.numeric(args[7])] #index which method to use for this iteration of the loop after running the script with `runCompile_SS_Results.sh`
 i=endpoint
 j=method
 
-value <- c("totaldist") # Can add more endpoints to this like lardist, smldist, etc.
-sample_size <- 100 #Change this to whatever sample size you want. Test with 10 or 100, get results with 1000 samples
+value <- c("totaldist") # Can add other endpoints to this like lardist, smldist, etc.
+sample_size <- 1000 #Change this to whatever sample size you want. Test with 10 or 100, get results with 1000 samples
 
+if (j == "rcurvep") {
 rmarkdown::render(
   input = paste0(i, "_", j, ".rmd"),
   output_file = paste0("report_", i, "_", j, "_", Sys.Date(), ".html"),
@@ -42,4 +44,33 @@ print(paste0("Done", "report_", i, "_", j, "_", Sys.Date(), ".html"))
 rm(list = ls())
 gc(reset = TRUE, full = TRUE)
 #rstudioapi::executeCommand("restartR")
+} else {
+  for (k in 1:2){
+    rmarkdown::render(
+      input = paste0(i, "_", j, "_", fitted_part_R[k], ".rmd"),
+      output_file = paste0("report_", i, "_", j, "_", fitted_part_R[k], "_", Sys.Date(), ".html"),
+      rmarkdown::html_document(
+        toc = TRUE,
+        toc_depth = 5,
+        toc_float = TRUE,
+        number_sections = TRUE,
+        code_folding = "show",
+        df_print = "paged",
+        code_download = TRUE,
+        theme = "readable"
+      ),
+      params = list(
+        value = value,
+        sample_size = sample_size,
+        endpoint = i,
+        method = j
+      )
+    )
+    print(paste0("Done", "report_", i, "_", j, "_", Sys.Date(), ".html"))
+    #Free up memory
+    # rm(list = ls())
+    gc(reset = TRUE, full = TRUE)
+    #rstudioapi::executeCommand("restartR")
+  }
+}
 q(save = "no")

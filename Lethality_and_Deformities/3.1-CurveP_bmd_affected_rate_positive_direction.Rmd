@@ -12,7 +12,7 @@ output:
     theme: readable
 params:
   direction: "pos"
-  sample_size: 50
+  sample_size: 1000
   n_dose_groups: 6
   endpoint: "Affected.Rate"
 ---
@@ -103,7 +103,7 @@ simulated_curves_summary <-
     resp_set = sum_bmd_dat_pos$result$resp_set,
     act_set = sum_bmd_dat_pos$result$act_set,
     act_summary = sum_bmd_dat_pos$act_summary,
-    reject_hit_conf_under = 0.1
+    reject_hit_conf_under = 0.001
   )
 
 bmds <- bmd_results(simulated_curves_summary)
@@ -111,82 +111,74 @@ bmds <- bmd_results(simulated_curves_summary)
 curve_hits <- simulated_curves_summary %>%
   filter(hit == 1)
 
-confident_curves <- confident_hits(summary_dat = simulated_curves_summary, reject_hit_conf_under = 0.1)
+confident_curves <- confident_hits(summary_dat = simulated_curves_summary, reject_hit_conf_under = 0.001)
 # If Error says "out of bounds", reduce conf filter
 ```
 
-```{r plot_results, echo=FALSE}
-p <- ggplot(NULL, aes(conc, resp)) +
+```{r _simulated_plot_results, echo=FALSE, warning=FALSE}
+#Data Wrangling for nice labels
+simulated_curves_summary <- simulated_curves_summary %>%
+  group_by(chemical) %>%
+  mutate(x_label_num = if_else(condition = conc == lowest_conc, true = 0, false = (10^conc)*lowest_dose_treatment_group)) %>%
+  mutate(x_label = factor(x_label_num, levels = c(0, lowest_dose_treatment_group, lowest_dose_treatment_group*10, lowest_dose_treatment_group*100, lowest_dose_treatment_group*1000, lowest_dose_treatment_group*10000, lowest_dose_treatment_group*100000, lowest_dose_treatment_group*1000000, lowest_dose_treatment_group*10000000, lowest_dose_treatment_group*100000000, lowest_dose_treatment_group*1000000000, lowest_dose_treatment_group*10000000000), ordered = TRUE))
+
+curve_hits <- curve_hits %>%
+  group_by(chemical) %>%
+  mutate(x_label_num = if_else(condition = conc == lowest_conc, true = 0, false = (10^conc)*lowest_dose_treatment_group)) %>%
+  mutate(x_label = factor(x_label_num, levels = c(0, lowest_dose_treatment_group, lowest_dose_treatment_group*10, lowest_dose_treatment_group*100, lowest_dose_treatment_group*1000, lowest_dose_treatment_group*10000, lowest_dose_treatment_group*100000, lowest_dose_treatment_group*1000000, lowest_dose_treatment_group*10000000, lowest_dose_treatment_group*100000000, lowest_dose_treatment_group*1000000000, lowest_dose_treatment_group*10000000000), ordered = TRUE))
+
+
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+
+p <- ggplot(NULL, aes(x_label, resp)) +
   geom_point(
     data = simulated_curves_summary,
-    mapping = aes(x = conc, y  = resp, group = sample_id),
+    mapping = aes(x = x_label, y  = resp, group = sample_id),
     color = "gray75",
     alpha = 0.2
   ) +
   geom_point(
     data = curve_hits,
-    mapping = aes(x = conc, y = resp, group = sample_id),
+    mapping = aes(x = x_label, y = resp, group = sample_id),
     color = "#a9a9a9",
     alpha = 0.7
   ) +
   geom_line(
     data = simulated_curves_summary,
-    mapping = aes(x = conc, y = resp, group = sample_id),
+    mapping = aes(x = x_label, y = resp, group = sample_id),
     color = "gray75",
     alpha = 0.2
   ) +
   geom_line(
     data = curve_hits,
-    mapping = aes(x = conc, y = resp, group = sample_id),
+    mapping = aes(x = x_label, y = resp, group = sample_id),
     color = "#a9a9a9",
     alpha = 0.7
   ) +
-  # geom_line(data = confident_curves[["cil"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "purple") +
-  # geom_line(data = confident_curves[["ciu"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "yellow") +
-  # geom_line(data = confident_curves[["mean"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "green") +
-  # geom_line(data = confident_curves[["median"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "blue") +
-  geom_hline(
-    yintercept = bmr_thresh,
-    linetype = "dashed",
-    color = "red"
-  ) +
-  geom_vline(data = bmds,
-             aes(xintercept = median_POD),
-             color = "blue") +
-  # geom_vline(data = bmds,
-  #            aes(xintercept = POD_med),
-  #            color = "green") +
-  geom_vline(data = bmds, aes(xintercept = ciu_POD), color = "yellow") +
-  # geom_vline(data = bmds_pearson, aes(xintercept = mean_POD), color = "green") +
-  geom_vline(data = bmds, aes(xintercept = cil_POD), color = "purple") +
-  geom_text(
-    data = bmds,
-    mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc +
-                    1),
-    y = -85,
-    inherit.aes = FALSE,
-    size = 4
-  ) +
-  facet_wrap( ~ chemical, scales = "free") +
+  facet_wrap( ~ chemical, scales = "free_x") +
   ylim(-0.3, 1) +
   theme_minimal() +
   theme(
     panel.border = element_rect(colour = "grey50", fill = NA),
-    panel.grid.major = element_blank(),
+    #panel.grid.major = element_blank(),
     panel.grid.minor = element_blank()
-  )
+  ) +
+  scale_y_continuous(breaks = c(0,0.2,0.4,0.6,0.8,1)) +
+  xlab("Dose (mg/L)") +
+  ylab("Affected Rate")
 ```
 
 ```{r save_the_resutls, include=FALSE}
 #save the image
-ggsave(
+ggplot2::ggsave(
   plot = p,
   filename = paste0(
-    "Output/Images/", "affected_rate_", dir, "_", "_processed_curves_",
+    "Output/Images/", "affected_rate_", dir, "_", "_simulated_curves_",
     ss,
-    "_samples.svg"
+    "_samples.png"
   ),
-  device = "svg",
+  device = "png",
   units = "px",
   width = 1920,
   height = 1080,
@@ -202,85 +194,221 @@ knitr::include_graphics(
     "affected_rate_",
     dir,
     "_",
-    "_processed_curves_",
+    "_simulated_curves_",
     ss,
-    "_samples.svg"
+    "_samples.png"
   )
 )
 ```
 
-```{r alternativeplot_results, echo=FALSE}
-p <- ggplot(NULL, aes(conc, resp)) +
-  geom_point(
-    data = simulated_curves_summary,
-    mapping = aes(x = conc, y  = resp, group = sample_id),
+```{r processed_results, echo=FALSE}
+  
+# p_facet <- ggplot() +
+#   geom_point(
+#     data = simulated_curves_summary,
+#     mapping = aes(x = conc, y  = corrected_resp, group = sample_id),
+#     color = "gray75",
+#     alpha = 0.2
+#   ) +
+#   geom_point(
+#     data = curve_hits,
+#     mapping = aes(x = conc, y = corrected_resp, group = sample_id),
+#     color = "#a9a9a9",
+#     alpha = 0.7
+#   ) +
+#   geom_line(
+#     data = simulated_curves_summary,
+#     mapping = aes(x = conc, y = corrected_resp, group = sample_id),
+#     color = "gray75",
+#     alpha = 0.2
+#   ) +
+#   geom_line(
+#     data = curve_hits,
+#     mapping = aes(x = conc, y = corrected_resp, group = sample_id),
+#     color = "#a9a9a9",
+#     alpha = 0.7
+#   ) +
+#   # geom_line(data = confident_curves[["cil"]], mapping = aes(x = conc, y = corrected_resp, group = sample_id), color = "purple") +
+#   # geom_line(data = confident_curves[["ciu"]], mapping = aes(x = conc, y = corrected_resp, group = sample_id), color = "yellow") +
+#   # geom_line(data = confident_curves[["mean"]], mapping = aes(x = conc, y = corrected_resp, group = sample_id), color = "green") +
+#   # geom_line(data = confident_curves[["median"]], mapping = aes(x = conc, y = corrected_resp, group = sample_id), color = "blue") +
+#   geom_hline(
+#     yintercept = bmr_thresh,
+#     linetype = "dashed",
+#     color = "red"
+#   ) +
+#   geom_vline(data = bmds,
+#              aes(xintercept = median_POD),
+#              color = "blue") +
+#   # geom_vline(data = bmds,
+#   #            aes(xintercept = POD_med),
+#   #            color = "green") +
+#   geom_vline(data = bmds, aes(xintercept = ciu_POD), color = "yellow") +
+#   # geom_vline(data = bmds_pearson, aes(xintercept = mean_POD), color = "green") +
+#   geom_vline(data = bmds, aes(xintercept = cil_POD), color = "purple") +
+#   geom_text(
+#     data = bmds,
+#     mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc),
+#     position = position_nudge(x = 1),
+#     y = 0.85,
+#     inherit.aes = FALSE,
+#     size = 4
+#   ) +
+#   facet_wrap( ~ chemical, scales = "free_x") +
+#   ylim(-0.3, 1) +
+#   theme_minimal() +
+#   theme(
+#     panel.border = element_rect(colour = "grey50", fill = NA),
+#     #panel.grid.major = element_blank(),
+#     panel.grid.minor = element_blank()
+#   ) +
+#   scale_y_continuous(breaks = c(0,0.2,0.4,0.6,0.8,1)) +
+#   scale_x_continuous(breaks = c(-1, 0, 1, 2, 3, 4, 5, 6 , 7, 8, 9, 10)) +
+#   xlab("Dose log10(mg/L)*1e-7") +
+#   ylab("Corrected Affected Rate")
+```
+
+```{r processed_results_No_facet, echo=FALSE, warning=FALSE}
+options(scipen2 = 3)
+print.numeric <- function(x, ...) {
+  scipen2 <- getOption("scipen2", default = 3)
+  ifelse(abs(log(x, 10L)) >= scipen2,
+               format(x, digits = 5, scientific = TRUE),
+               x)
+}
+chemicalNames <- unique(simulated_curves_summary$chemical)
+p_list <- list()
+for (k in 1:length(chemicalNames)) {
+  labels <- simulated_curves_summary %>%
+    filter(chemical == chemicalNames[k]) %>%
+    select(x_label_num) %>%
+    pull() %>%
+    unique() %>%
+    print.numeric()
+  temp_simulated <- simulated_curves_summary %>%
+    filter(chemical == chemicalNames[k])
+  temp_curve_hits <- curve_hits %>%
+    filter(chemical == chemicalNames[k])
+  temp_bmds <- bmds %>%
+    filter(chemical == chemicalNames[k])
+  
+  p <- ggplot() + 
+    geom_point(
+    data = temp_simulated,
+    mapping = aes(x = conc, y  = corrected_resp, group = sample_id),
     color = "gray75",
     alpha = 0.2
   ) +
   geom_point(
-    data = curve_hits,
-    mapping = aes(x = conc, y = resp, group = sample_id),
+    data = temp_curve_hits,
+    mapping = aes(x = conc, y = corrected_resp, group = sample_id),
     color = "#a9a9a9",
     alpha = 0.7
   ) +
   geom_line(
-    data = simulated_curves_summary,
-    mapping = aes(x = conc, y = resp, group = sample_id),
+    data = temp_simulated,
+    mapping = aes(x = conc, y = corrected_resp, group = sample_id),
     color = "gray75",
     alpha = 0.2
   ) +
   geom_line(
-    data = curve_hits,
-    mapping = aes(x = conc, y = resp, group = sample_id),
+    data = temp_curve_hits,
+    mapping = aes(x = conc, y = corrected_resp, group = sample_id),
     color = "#a9a9a9",
     alpha = 0.7
   ) +
-  # geom_line(data = confident_curves[["cil"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "purple") +
-  # geom_line(data = confident_curves[["ciu"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "yellow") +
-  # geom_line(data = confident_curves[["mean"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "green") +
-  # geom_line(data = confident_curves[["median"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "blue") +
+  # geom_line(data = confident_curves[["cil"]], mapping = aes(x = conc, y = corrected_resp, group = sample_id), color = "purple") +
+  # geom_line(data = confident_curves[["ciu"]], mapping = aes(x = conc, y = corrected_resp, group = sample_id), color = "yellow") +
+  # geom_line(data = confident_curves[["mean"]], mapping = aes(x = conc, y = corrected_resp, group = sample_id), color = "green") +
+  # geom_line(data = confident_curves[["median"]], mapping = aes(x = conc, y = corrected_resp, group = sample_id), color = "blue") +
   geom_hline(
     yintercept = bmr_thresh,
     linetype = "dashed",
     color = "red"
   ) +
-  geom_vline(data = bmds,
-             aes(xintercept = median_POD),
-             color = "blue") +
-  geom_vline(data = bmds,
-             aes(xintercept = POD_med),
-             color = "green") +
-  geom_vline(data = bmds, aes(xintercept = ciu_POD), color = "yellow") +
+  {if(temp_bmds$ciu_POD != temp_bmds$highest_conc)geom_vline(data = temp_bmds, aes(xintercept = ciu_POD), color = "black")} +
   # geom_vline(data = bmds_pearson, aes(xintercept = mean_POD), color = "green") +
-  geom_vline(data = bmds, aes(xintercept = cil_POD), color = "purple") +
+  {if(temp_bmds$cil_POD != temp_bmds$highest_conc)geom_vline(data = temp_bmds, aes(xintercept = cil_POD), color = "black")} +
+     {if(temp_bmds$median_POD != temp_bmds$highest_conc)geom_vline(data = temp_bmds,
+             aes(xintercept = median_POD),
+             color = "blue")} +
   geom_text(
-    data = bmds,
-    mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc +
-                    1),
-    y = -85,
+    data = temp_bmds,
+    mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc),
+    position = position_nudge(x = 1),
+    y = 0.85,
     inherit.aes = FALSE,
     size = 4
   ) +
-  facet_wrap( ~ chemical, scales = "free") +
-  ylim(-0.3, 1) +
   theme_minimal() +
   theme(
     panel.border = element_rect(colour = "grey50", fill = NA),
     panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank()
-  )
+    panel.grid.minor = element_blank(),
+    axis.title.x=element_blank(),
+    axis.title.y=element_blank()
+  ) +
+  scale_y_continuous(breaks = c(0,0.2,0.4,0.6,0.8,1), limits = c(0,1)) +
+  scale_x_continuous(breaks = unique(temp_simulated$conc), labels = labels) +
+  # xlab("Dose (mg/L)") +
+  # ylab("Corrected Affected Rate") +
+  ggtitle(paste0(chemicalNames[k]))
+  
+  p_list[[chemicalNames[k]]] <- list(p, chemicalNames[k])
+}
 ```
 
 ```{r alternative_save_the_resutls, include=FALSE}
+yleft <-
+  grid::textGrob("Corrected Affected Rate Response",
+           rot = 90,
+           gp = grid::gpar(fontsize = 12))
+bottom <- grid::textGrob("Dose (mg/L)", gp = grid::gpar(fontsize = 12))
+p <- gridExtra::grid.arrange(
+  p_list[[1]][[1]],
+  p_list[[2]][[1]],
+  p_list[[3]][[1]],
+  p_list[[4]][[1]],
+  p_list[[5]][[1]],
+  p_list[[6]][[1]],
+  p_list[[7]][[1]],
+  p_list[[8]][[1]],
+  p_list[[9]][[1]],
+  p_list[[10]][[1]],
+  p_list[[11]][[1]],
+  p_list[[12]][[1]],
+  p_list[[13]][[1]],
+  p_list[[14]][[1]],
+  p_list[[15]][[1]],
+  p_list[[16]][[1]],
+  p_list[[17]][[1]],
+  p_list[[18]][[1]],
+  p_list[[19]][[1]],
+  p_list[[20]][[1]],
+  p_list[[21]][[1]],
+  p_list[[22]][[1]],
+  p_list[[23]][[1]],
+  p_list[[24]][[1]],
+  p_list[[25]][[1]],
+  p_list[[26]][[1]],
+  p_list[[27]][[1]],
+  p_list[[28]][[1]],
+  p_list[[29]][[1]],
+  ncol = 6,
+  nrow = 5,
+  left = yleft,
+  bottom = bottom
+)
+
 #save the image
 ggsave(
   plot = p,
   filename = paste0(
     "Output/Images/", "affected_rate_", dir, "_", "_processed_curves_",
     ss,
-    "_samples_alternative.svg"
+    "_samples.png"
   ),
-  device = "svg",
+  device = "png",
   units = "px",
   width = 1920,
   height = 1080,
@@ -298,7 +426,7 @@ knitr::include_graphics(
     "_",
     "_processed_curves_",
     ss,
-    "_samples_alternative.svg"
+    "_samples.png"
   )
 )
 ```
@@ -350,7 +478,7 @@ knitr::include_graphics(
 ```{r table_the_results, echo=TRUE}
 #Table the results
 temp <- list(bmds)
-names(temp) <- c(paste0("affected_rate_", dir, "_dir"))
+names(temp) <- c(paste0("affected_rate_", dir, "_dir_", ss, "_ss"))
 all_summarized_bmd_dat <- plyr::ldply(temp)
 all_summarized_bmd_dat <- all_summarized_bmd_dat %>%
   arrange(chemical)

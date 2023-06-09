@@ -683,6 +683,150 @@ fishBehavDat <- raw_data %>%
 
 ### Plots
 
+```{r raw_behaviour_plots, echo=FALSE}
+fishBehavDat$Dose <- factor(fishBehavDat$Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)
+p_raw_list <- list()
+for (k in 1:length(chemicalNames)) {
+  labels <-
+    c(
+      dplyr::select(
+        .data = dplyr::filter(metaData, plate_id == chemicalNames[k]),
+        Control
+      )[[1]],
+      dplyr::select(.data = dplyr::filter(metaData, plate_id == chemicalNames[k]), Dose5)[[1]],
+      dplyr::select(.data = dplyr::filter(metaData, plate_id == chemicalNames[k]), Dose4)[[1]],
+      dplyr::select(.data = dplyr::filter(metaData, plate_id == chemicalNames[k]), Dose3)[[1]],
+      dplyr::select(.data = dplyr::filter(metaData, plate_id == chemicalNames[k]), Dose2)[[1]],
+      dplyr::select(.data = dplyr::filter(metaData, plate_id == chemicalNames[k]), Dose1)[[1]]
+    )
+  p <- fishBehavDat %>%
+    group_by(plate_id, Dose, time_end) %>%
+    mutate(
+      avgtotaldist = mean(totaldist, na.rm = TRUE),
+      sdtotaldist = sd(totaldist, na.rm = TRUE)
+    ) %>%
+    ungroup() %>%
+    dplyr::filter(plate_id == chemicalNames[k]) %>%
+    ggplot() +
+    geom_rect(
+      data = data.frame(start = c(20, 30, 40), end = c(25, 35, 45)),
+      aes(
+        xmin = start,
+        xmax = end,
+        ymin = -Inf,
+        ymax = Inf
+      ),
+      fill = 'slategray',
+      alpha = 0.2
+    ) +
+    # geom_errorbar(
+    #   aes(
+    #     x = time_end,
+    #     ymin = avgtotaldist + sdtotaldist,
+    #     ymax = avgtotaldist - sdtotaldist,
+    #     colour = Dose
+    #   ),
+    #   width = 1
+    # ) +
+    geom_point(
+      aes(x = time_end, y = avgtotaldist, fill = Dose),
+      shape = 21,
+      colour = "black",
+      size = 3
+    ) +
+    geom_line(aes(x = time_end, y = avgtotaldist, group = Dose)) +
+    scale_fill_grey(
+      start = 1,
+      end = 0,
+      labels = labels,
+      name = "Dose (mg/L)"
+    ) +
+    scale_colour_grey(
+      start = 1,
+      end = 0,
+      labels = labels,
+      name = "Dose (mg/L)"
+    ) +
+    geom_vline(xintercept = 20, linetype = "dashed") +
+    ylab("") +
+    xlab("") +
+    xlim(0, 50) +
+    labs(title = chemicalNames[k]) +
+    theme_classic() +
+    theme(
+      plot.title = element_text(size = 18),
+      legend.text = element_text(size = 12),
+      legend.title = element_text(size = 16)
+    ) +
+    ylim(0, 2000)
+    
+    p_raw_list[[chemicalNames[k]]] <- list(p, chemicalNames[k])
+}
+  
+```
+
+```{r raw_behaviour_plots_saving_images, echo=FALSE}
+p1 <-
+  gridExtra::grid.arrange(
+    p_raw_list[[1]][[1]],
+    p_raw_list[[2]][[1]],
+    p_raw_list[[3]][[1]],
+    p_raw_list[[4]][[1]],
+    p_raw_list[[5]][[1]],
+    p_raw_list[[6]][[1]],
+    p_raw_list[[7]][[1]],
+    p_raw_list[[8]][[1]],
+    p_raw_list[[9]][[1]],
+    p_raw_list[[10]][[1]],
+    p_raw_list[[11]][[1]],
+    p_raw_list[[12]][[1]],
+    p_raw_list[[13]][[1]],
+    p_raw_list[[14]][[1]],
+    p_raw_list[[15]][[1]],
+    bottom = grid::textGrob("Time (min)",gp=grid::gpar(fontsize=18)),
+    left = grid::textGrob("Total Distance moved (mm)", rot = 90, gp=grid::gpar(fontsize=18))
+  )
+ggsave(
+  plot = p1,
+  filename = "Part_1_Raw_Behavioural_Data.png",
+  path = "~/MolToxLab/Behaviour/Jory_Behaviour_R_Markdown/Output",
+  device = "png",
+  scale = 4,
+  units = "px",
+  width = 1920,
+  height = 1080
+)
+p2 <-
+  gridExtra::grid.arrange(
+    p_raw_list[[16]][[1]],
+    p_raw_list[[17]][[1]],
+    p_raw_list[[18]][[1]],
+    p_raw_list[[19]][[1]],
+    p_raw_list[[20]][[1]],
+    p_raw_list[[21]][[1]],
+    p_raw_list[[22]][[1]],
+    p_raw_list[[23]][[1]],
+    p_raw_list[[24]][[1]],
+    p_raw_list[[25]][[1]],
+    p_raw_list[[26]][[1]],
+    p_raw_list[[27]][[1]],
+    p_raw_list[[28]][[1]],
+    p_raw_list[[29]][[1]],
+    bottom = grid::textGrob("Time (min)",gp=grid::gpar(fontsize=18)),
+    left = grid::textGrob("Total Distance moved (mm)", rot = 90, gp=grid::gpar(fontsize=18))
+  )
+ggsave(
+  plot = p2,
+  filename = "Part_2_Raw_Behavioural_Data.png",
+  path = "~/MolToxLab/Behaviour/Jory_Behaviour_R_Markdown/Output",
+  device = "png",
+  scale = 4,
+  units = "px",
+  width = 1920,
+  height = 1080
+)
+```
+
 #### Normality
 
 <!-- ![Statistical Analysis of Zebrafish Locomotor Behaviour by Generalized Linear Mixed Models](https://pubmed.ncbi.nlm.nih.gov/28592855/) -->
@@ -853,6 +997,7 @@ We see that we have normally distributed data but unequal variance across dose g
 #### Bar Graphs
 
 ```{r 32binning_fishBehavDat, include=FALSE}
+behavdata_ol_rm <- read_csv(file = "Data/behavdata_ol_rm.csv")
 fishBehavDat <- behavdata_ol_rm #Fish behaviour data with outliers removed for the rest of the analysis!
 fishBehavDatBin5 <- fishBehavDat %>%
   dplyr::mutate(Cycle = if_else(
@@ -1159,6 +1304,7 @@ for (i in chemicalNames) {
 After adjusting the significance values for multiple comparisons using the false discovery rate adjustment, the percent difference was calculated for each comparison (for very dose, for every chemical, Group A to B, Group A to C, Group B to C). The subgroups A, B and C were pooled in each dose group because 169/522 exceeded a 10% difference in the mean total distance moved response and only 39/522 comparisons exceeded a 25% difference in the mean response.
 
 ```{r 33.1ANOVA_test_all_bins, include=FALSE} 
+#One-way ANOVA
 cycle_filter <- c("Light_1",
       "Dark_1",
       "Light_2",
@@ -1449,7 +1595,6 @@ for (i in seq_along(p_list)){
 }
 ```
 
-
 ##### {-}
 
 ```{r 36.6AOV_Results_Kable, echo=FALSE}
@@ -1529,86 +1674,393 @@ fishBehavDatBinLD <- fishBehavDat %>%
 ```
 
 ```{r 38.1ANOVA_test_all_bins, include=FALSE} 
-cycle_filter <- c("Light", "Dark")
-
-aov_list <- list()
-aov_list_all_chems <- list()
-pval_list <- list()
-pval_list_all_chems <- list()
-aov_list_4_dunnett <- list()
-aov_list_all_chems_4_dunnett <- list()
-for (j in 1:length(chemicalNames)){
-  for (i in 1:2) {
-    temp <- fishBehavDatBinLD %>%
-      dplyr::filter(plate_id == chemicalNames[j]) %>%
-      dplyr::filter(Cycle != "Acclimation") %>%
-      group_by(Cycle, Dose) %>%
-      dplyr::mutate(Dose = as.factor(Dose)) %>%
-      na.omit() %>%
-      as.data.frame() %>%
-      dplyr::filter(Cycle == cycle_filter[i]) # 6 cycles in total - Light & Dark 1 through 3
-    temp_aov <- aov(get(params$value) ~ Dose, data = temp)
-    aov_list[[i]] <- summary(temp_aov)
-    aov_list_4_dunnett[[i]] <- temp_aov
-    pval_list[[i]] <- na.omit(aov_list[[i]][[1]][[5]])[1]
-  }
-names(aov_list) <- paste0(chemicalNames[j], "_", cycle_filter)
-names(pval_list) <- paste0(chemicalNames[j], "_", cycle_filter)
-
-aov_list_all_chems[[j]] <- aov_list
-pval_list_all_chems[[j]] <- pval_list
-aov_list_all_chems_4_dunnett[[j]] <- aov_list_4_dunnett
-
-}
-names(aov_list_all_chems) <- chemicalNames
-names(aov_list_all_chems_4_dunnett) <- chemicalNames
-names(pval_list_all_chems) <- chemicalNames
-# aov_p_results <- ldply(pval_list) %>%
+# #One-way ANOVA
+# cycle_filter <- c("Light", "Dark")
+# 
+# aov_list <- list()
+# aov_list_all_chems <- list()
+# pval_list <- list()
+# pval_list_all_chems <- list()
+# aov_list_4_dunnett <- list()
+# aov_list_all_chems_4_dunnett <- list()
+# for (j in 1:length(chemicalNames)){
+#   for (i in 1:2) {
+#     temp <- fishBehavDatBinLD %>%
+#       dplyr::filter(plate_id == chemicalNames[j]) %>%
+#       dplyr::filter(Cycle != "Acclimation") %>%
+#       group_by(Cycle, Dose) %>%
+#       dplyr::mutate(Dose = as.factor(Dose)) %>%
+#       na.omit() %>%
+#       as.data.frame() %>%
+#       dplyr::filter(Cycle == cycle_filter[i]) # 6 cycles in total - Light & Dark 1 through 3
+#     temp_aov <- aov(get(params$value) ~ Dose, data = temp)
+#     aov_list[[i]] <- summary(temp_aov)
+#     aov_list_4_dunnett[[i]] <- temp_aov
+#     pval_list[[i]] <- na.omit(aov_list[[i]][[1]][[5]])[1]
+#   }
+# names(aov_list) <- paste0(chemicalNames[j], "_", cycle_filter)
+# names(pval_list) <- paste0(chemicalNames[j], "_", cycle_filter)
+# 
+# aov_list_all_chems[[j]] <- aov_list
+# pval_list_all_chems[[j]] <- pval_list
+# aov_list_all_chems_4_dunnett[[j]] <- aov_list_4_dunnett
+# 
+# }
+# names(aov_list_all_chems) <- chemicalNames
+# names(aov_list_all_chems_4_dunnett) <- chemicalNames
+# names(pval_list_all_chems) <- chemicalNames
+# aov_p_results <- plyr::ldply(pval_list_all_chems) %>%
 #   rename(Cycle = .id, p_value = V1) %>%
-#   dplyr::mutate(p_value = p.adjust(p_value, method = "fdr")) %>%
-#   dplyr::mutate(is_sig = if_else(condition = p_value <= 0.05, true = TRUE, false= FALSE)) %>%
-#   dplyr::mutate(p_value = formatC(p_value, format = "e", digits = 2))
-#   
+#   dplyr::mutate(adj_p_value = p.adjust(p_value, method = "fdr")) %>%
+#   dplyr::mutate(is_sig = if_else(condition = adj_p_value <= 0.05, true = TRUE, false= FALSE)) %>%
+#   dplyr::mutate(adj_p_value = formatC(p_value, format = "e", digits = 2))
+# 
 # kable(aov_p_results, align = "lr", caption = paste("Table 2 - ANOVA test p-values after FDR adjustment, comparing effects of different genotypes on", params$value, "for each light cycle")) %>%
 #     kable_styling(full_width = TRUE) %>%
 #   scroll_box(height = "400px")
+```
+
+```{r 1.ANCOVA_results, echo=TRUE}
+#One-way ANOVA
+ANOVA <- fishBehavDatBinLD %>%
+  filter(Cycle %in% c("Dark", "Light")) %>%
+  group_by(plate_id, Cycle) %>%
+  mutate(Dose_mg_L = as.factor(Dose_mg_L),
+         Dose = factor(Dose, levels = c("Control", "Dose_5", "Dose_4", "Dose_3", "Dose_2", "Dose_1"), ordered = TRUE),
+         Group = as.factor(Group)) %>%
+  nest() %>%
+  dplyr::mutate(model = map(data, ~ aov(
+    totaldist ~ Dose_mg_L,
+    data = .
+  ))) %>% #Where 'Group' is the dose group replicate... group A B or C for one of 3 petri dishes in the dose group... Tukey's results showed us that there is a significant interaction between the subgroups and the repsonse variable
+  dplyr::select(model)
+
+ANOVACheck_2 <- ANOVA %>%
+  mutate(model_tidy = map(model, broom::tidy)) %>%
+  unnest(model_tidy)
+
+ANOVACheck$p.value <- p.adjust(ANOVACheck$p.value, method = "fdr")
+  
+ANOVACheck %>%
+  mutate(is.significant = if_else(
+    condition = p.value <= 0.05,
+    true = TRUE,
+    false = FALSE
+  ))
+DT::datatable(ANOVACheck) #Final Data Frame for the ANOVA... will write later
+```
+
+```{r 1.ANCOVA_results, echo=TRUE}
+#ANCOVA
+ANCOVA <- fishBehavDatBinLD %>%
+  filter(Cycle %in% c("Dark", "Light")) %>%
+  group_by(plate_id, Cycle) %>%
+  mutate(Dose_mg_L = as.factor(Dose_mg_L),
+         Dose = factor(Dose, levels = c("Control", "Dose_5", "Dose_4", "Dose_3", "Dose_2", "Dose_1"), ordered = TRUE),
+         Group = as.factor(Group)) %>%
+  nest() %>%
+  dplyr::mutate(model = map(data, ~ aov(
+    totaldist ~ Dose_mg_L + Group,
+    data = .
+  ))) %>% #Where 'Group' is the dose group replicate... group A B or C for one of 3 petri dishes in the dose group... Tukey's results showed us that there is a significant interaction between the subgroups and the repsonse variable
+  dplyr::select(model)
+
+ANCOVACheck <- ANCOVA %>%
+  mutate(model_tidy = map(model, broom::tidy)) %>%
+  unnest(model_tidy)
+
+ANCOVACheck <- ANCOVACheck %>%
+  mutate(adj_p.value = p.adjust(p.value, method = "fdr")) %>%
+  mutate(is.significant = if_else(
+    condition = adj_p.value <= 0.05,
+    true = TRUE,
+    false = FALSE
+  ))
+DT::datatable(ANCOVACheck) #Final Data Frame for the ANOVA... will write later
+```
+
+```{r 1.ANCOVA_results, echo=TRUE}
+# #two-way ANOVA
+# ANOVA_2 <- fishBehavDatBinLD %>%
+#   filter(Cycle %in% c("Dark", "Light")) %>%
+#   group_by(plate_id, Cycle) %>%
+#   mutate(Dose_mg_L = as.factor(Dose_mg_L),
+#          Dose = factor(Dose, levels = c("Control", "Dose_5", "Dose_4", "Dose_3", "Dose_2", "Dose_1"), ordered = TRUE),
+#          Group = as.factor(Group)) %>%
+#   nest() %>%
+#   dplyr::mutate(model = map(data, ~ aov(
+#     totaldist ~ Dose_mg_L * Group,
+#     data = .
+#   ))) %>% #Where 'Group' is the dose group replicate... group A B or C for one of 3 petri dishes in the dose group... Tukey's results showed us that there is a significant interaction between the subgroups and the repsonse variable
+#   dplyr::select(model)
+# 
+# ANOVACheck_2 <- ANOVA_2 %>%
+#   mutate(model_tidy = map(model, broom::tidy)) %>%
+#   unnest(model_tidy)
+# 
+# ANOVACheck_2 <- ANOVACheck_2 %>%
+#   mutate(adj_p.value = p.adjust(p.value, method = "fdr")) %>%
+#   mutate(is.significant = if_else(
+#     condition = adj_p.value <= 0.05,
+#     true = TRUE,
+#     false = FALSE
+#   ))
+# DT::datatable(ANOVACheck_2) #Final Data Frame for the ANOVA... will write later
+
+#two-way ANOVA
+# Testing if noise can be accounted for by the time !!!
+# We saw from preliminary data that fish take a bit of time to get acclimated to the machine and the responsiveness diminishes over time. So accounting for this observation in a two-way ANOVA model and totally ignoring any subgroup effects.
+ANOVA_2 <- fishBehavDatBinLD %>%
+  filter(Cycle %in% c("Dark", "Light")) %>%
+  group_by(plate_id, Cycle) %>%
+  mutate(Dose_mg_L = as.factor(Dose_mg_L),
+         Dose = factor(Dose, levels = c("Control", "Dose_5", "Dose_4", "Dose_3", "Dose_2", "Dose_1"), ordered = TRUE),
+         Group = as.factor(Group)) %>%
+  nest() %>%
+  dplyr::mutate(model = map(data, ~ aov(
+    totaldist ~ Dose_mg_L * Group,
+    data = .
+  ))) %>% #Where 'Group' is the dose group replicate... group A B or C for one of 3 petri dishes in the dose group... Tukey's results showed us that there is a significant interaction between the subgroups and the repsonse variable
+  dplyr::select(model)
+
+ANOVACheck_2 <- ANOVA_2 %>%
+  mutate(model_tidy = map(model, broom::tidy)) %>%
+  unnest(model_tidy)
+
+ANOVACheck_2 <- ANOVACheck_2 %>%
+  mutate(adj_p.value = p.adjust(p.value, method = "fdr")) %>%
+  mutate(is.significant = if_else(
+    condition = adj_p.value <= 0.05,
+    true = TRUE,
+    false = FALSE
+  ))
+DT::datatable(ANOVACheck_2) #Final Data Frame for the ANOVA... will write later
+
+
+
+#two-way ANOVA
+# Testing if noise can be accounted for by the time !!!
+# We saw from preliminary data that fish take a bit of time to get acclimated to the machine and the responsiveness diminishes over time. So accounting for this observation in a two-way ANOVA model and totally ignoring any subgroup effects.
+ANCOVA_2 <- fishBehavDatBinLD %>%
+  filter(Cycle %in% c("Dark", "Light")) %>%
+  group_by(plate_id, Cycle) %>%
+  mutate(Dose_mg_L = as.factor(Dose_mg_L),
+         Dose = factor(Dose, levels = c("Control", "Dose_5", "Dose_4", "Dose_3", "Dose_2", "Dose_1"), ordered = TRUE),
+         Group = as.factor(Group)) %>%
+  nest() %>%
+  dplyr::mutate(model = map(data, ~ aov(
+    totaldist ~ Dose_mg_L * time_end + Group,
+    data = .
+  ))) %>% #Where 'Group' is the dose group replicate... group A B or C for one of 3 petri dishes in the dose group... Tukey's results showed us that there is a significant interaction between the subgroups and the repsonse variable
+  dplyr::select(model)
+
+ANCOVACheck_2 <- ANCOVA_2 %>%
+  mutate(model_tidy = map(model, broom::tidy)) %>%
+  unnest(model_tidy)
+
+ANCOVACheck_2 <- ANCOVACheck_2 %>%
+  mutate(adj_p.value = p.adjust(p.value, method = "fdr")) %>%
+  mutate(is.significant = if_else(
+    condition = adj_p.value <= 0.05,
+    true = TRUE,
+    false = FALSE
+  ))
+DT::datatable(ANCOVACheck_2) #Final Data Frame for the ANOVA... will write later
+
+```
+
+```{r 2.ANOVA_results, echo=TRUE}
+ANOVA_Sig_Results <-
+  ANOVACheck[which(ANOVACheck$adj_p.value[] <= 0.05), ]
+ANOVA_Sig_Results <- ANOVA_Sig_Results %>%
+  dplyr::select(plate_id, term, df, statistic, adj_p.value)
+
+#Saving the ANCOVA Results
+write_csv(x = ANOVACheck, file = "Output/One_way_ANOVA_Results.csv") #ANOVA
+DT::datatable(ANOVA_Sig_Results) #Just the significant results of the ANOVA
+```
+
+```{r 2.ANCOVA_results, echo=TRUE}
+ANCOVA_Sig_Results <-
+  ANCOVACheck[which(ANCOVACheck$adj_p.value[] <= 0.05), ]
+ANCOVA_Sig_Results <- ANCOVA_Sig_Results %>%
+  dplyr::select(plate_id, term, df, statistic, adj_p.value)
+
+#Saving the ANCOVA Results
+write_csv(x = ANCOVACheck, file = "Output/ANCOVA_Results.csv") #ANCOVA
+DT::datatable(ANCOVA_Sig_Results) #Just the significant results of the ANCOVA
+```
+
+```{r 2.ANOVA_results, echo=TRUE}
+ANOVA_2_Sig_Results <-
+  ANOVACheck_2[which(ANOVACheck_2$adj_p.value[] <= 0.05), ]
+ANOVA_2_Sig_Results <- ANOVA_2_Sig_Results %>%
+  dplyr::select(plate_id, term, df, statistic, adj_p.value)
+
+#Saving the ANCOVA Results
+write_csv(x = ANOVACheck_2, file = "Output/Two_way_ANOVA_Results.csv") #ANOVA
+DT::datatable(ANOVA_2_Sig_Results) #Just the significant results of the ANOVA
+```
+
+```{r Check_if_ANCOVA_and_one-way-ANOVA_models_are_different, echo=FALSE, include=FALSE}
+model_check <- map2(.x = ANCOVA$model, .y = ANOVA$model, .f = anova)
+chemicalNames_Cycle <- paste0(rep(chemicalNames, each = 2), rep(c("_Dark", "_Light")))
+names(model_check) <- chemicalNames_Cycle
+
+list <- list()
+for (i in names(model_check)) {
+  temp <- broom::tidy(model_check[[i]])
+  list[[i]] <- temp
+}
+model_check_2 <- plyr::ldply(list)
+model_check_2 <- model_check_2 %>%
+  na.omit() %>%
+  mutate(adj.p.value = p.adjust(p.value, method = "fdr"))
+
+
+write_csv(model_check_2, "Output/Comparison_one_way_ANOVA_and_ANCOVA.csv")
+#These results tell me that adding the subgroup as a covariate significantly effects the results... Not in a good way>????
+```
+
+```{r Check_if_ANCOVA_and_two-way-ANOVA_models_are_different, echo=FALSE, include=FALSE}
+model_check <- map2(.x = ANOVA$model, .y = ANOVA_2$model, .f = anova)
+chemicalNames_Cycle <- paste0(rep(chemicalNames, each = 2), rep(c("_Dark", "_Light")))
+names(model_check) <- chemicalNames_Cycle
+
+list <- list()
+for (i in names(model_check)) {
+  temp <- broom::tidy(model_check[[i]])
+  list[[i]] <- temp
+}
+model_check_2 <- plyr::ldply(list)
+model_check_2 <- model_check_2 %>%
+  na.omit() %>%
+  mutate(adj.p.value = p.adjust(p.value, method = "fdr"))
+
+
+write_csv(model_check_2, "Output/Comparison_two_way_ANOVA_and_ANCOVA.csv")
+#These results tell me that ANCOVA is perfectly legitimate since the interaction effects between the two independent variables is weak
 ```
 
 ```{r 38Dunnetts_test, echo=FALSE}
 cycle_filter <- c("Light", "Dark")
 
 dun_list <- NULL
-dun_list_2 <- NULL
-for (j in 1:length(chemicalNames)) {
-  for (i in 1:2) {
-   temp_dun <- dunnettT3Test(aov_list_all_chems_4_dunnett[[j]][[i]])
-
+chemicalNames_Cycle <- paste0(rep(chemicalNames, each = 2), rep(c("_Dark", "_Light")))
+for (j in 1:length(chemicalNames_Cycle)) {
+   temp_dun <- PMCMRplus::dunnettTest(ANOVA_2$model[[j]])
+   
     temp_dun_df <- as.data.frame(temp_dun$p.value[,1]) %>%
       rownames_to_column( var = "Dose") %>%
       rename(pval = "temp_dun$p.value[, 1]")
-      
-    dun_list[[cycle_filter[i]]] <- temp_dun_df
 
-  }
-  dun_list_2[[chemicalNames[j]]] <- ldply(dun_list, .id = "Cycle")
+    dun_list[[chemicalNames_Cycle[j]]] <- temp_dun_df
+
+  # dun_list_2[[chemicalNames_Cycle[j]]] <- ldply(dun_list, .id = "Cycle")
+  #   
+    
   # dun_list_2[[j]]$pval <- p.adjust(dun_list_2[[j]]$pval, method = "fdr") # p value adjustment https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6099145/ (for single test - same samples)
 
-  new_row <- as.data.frame(matrix(data = c("Light", "Control", 1,
-                           "Dark", "Control", 1),
-                  nrow = 2, ncol = 3, byrow = TRUE))
-  colnames(new_row) <- c("Cycle", "Dose", "pval")
-  new_row$pval <- as.numeric(new_row$pval)
-
-  dun_list_2[[j]] <- dun_list_2[[j]] %>%
-    rbind(new_row)
+    new_row <- as.data.frame(matrix(
+      data = c(0, 1),
+      nrow = 1,
+      ncol = 2,
+      byrow = TRUE
+    ))
+    colnames(new_row) <- c("Dose", "pval")
+    new_row$pval <- as.numeric(new_row$pval)
+    
+    dun_list[[j]] <- dun_list[[j]] %>%
+      rbind(new_row)
 }
 
-dunnett_binned <- ldply(dun_list_2, .id = "plate_id")
+dunnett_binned <- ldply(dun_list, .id = "plate_id")
 
 dunnett_binned <- dunnett_binned %>%
+  dplyr::rename(Dose_mg_L = Dose) %>%
+  dplyr::mutate(Cycle = str_split(string = plate_id, pattern = "_", simplify = TRUE)[,2],
+                plate_id = str_split(string = plate_id, pattern = "_", simplify = TRUE)[,1]) %>%
+  dplyr::select(plate_id, Cycle, Dose_mg_L, pval) %>%
   ungroup() %>%
   dplyr::mutate(pval = p.adjust(p = pval, method = "fdr"))
+
+Dunnett_comb <- dunnett_binned
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+
+# cycle_filter <- c("Light", "Dark")
+# 
+# dun_list <- NULL
+# dun_list_2 <- NULL
+# for (j in 1:length(chemicalNames)) {
+#   for (i in 1:2) {
+#    temp_dun <- DunnettTest(aov_list_all_chems_4_dunnett[[j]][[i]])
+# 
+#     temp_dun_df <- as.data.frame(temp_dun$p.value[,1]) %>%
+#       rownames_to_column( var = "Dose") %>%
+#       rename(pval = "temp_dun$p.value[, 1]")
+# 
+#     dun_list[[cycle_filter[i]]] <- temp_dun_df
+# 
+#   }
+#   dun_list_2[[chemicalNames[j]]] <- ldply(dun_list, .id = "Cycle")
+#   # dun_list_2[[j]]$pval <- p.adjust(dun_list_2[[j]]$pval, method = "fdr") # p value adjustment https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6099145/ (for single test - same samples)
+# 
+#   new_row <- as.data.frame(matrix(data = c("Light", "Control", 1,
+#                            "Dark", "Control", 1),
+#                   nrow = 2, ncol = 3, byrow = TRUE))
+#   colnames(new_row) <- c("Cycle", "Dose", "pval")
+#   new_row$pval <- as.numeric(new_row$pval)
+# 
+#   dun_list_2[[j]] <- dun_list_2[[j]] %>%
+#     rbind(new_row)
+# }
+# 
+# dunnett_binned <- ldply(dun_list_2, .id = "plate_id")
+# 
+# dunnett_binned <- dunnett_binned %>%
+#   ungroup() %>%
+#   dplyr::mutate(pval = p.adjust(p = pval, method = "fdr"))
 ```
+
+```{r Dunnett_TY3_New_code, echo=FALSE}
+# #PostHoc tests
+# set.seed(2345)
+# 
+# #Performing Dunnett's test on an ANCOVA
+# 
+# library(multcomp)
+# 
+# 
+# fit_dunnett <- ANOVA %>%
+#   dplyr::mutate(Dunnett = map(model, ~ glht(.x, linfct = mcp(Dose_mg_L="Dunnett")))) %>%
+#   dplyr::mutate(tidy_Dunnett = map(Dunnett, ~ broom::tidy(.x))) %>%
+#   dplyr::mutate(tidy_Dunnett_1 = map(tidy_Dunnett, ~ mutate(.x, plate_id = plate_id, Cycle = Cycle)))
+# 
+# Dunnett_comb <- plyr::ldply(fit_dunnett$tidy_Dunnett_1) %>%
+#   dplyr::mutate(Dose_mg_L = str_split(contrast, pattern = " - ", simplify = TRUE)[,1]) %>%
+#   dplyr::select(plate_id, Cycle, Dose_mg_L, estimate, std.error, statistic, adj.p.value) %>%
+#   dplyr::mutate(pval = p.adjust(adj.p.value, method = "fdr")) %>% # p-values not already adjusted
+#   dplyr::select(-adj.p.value)
+# 
+# Dunnett_comb_join_1 <- Dunnett_comb %>%
+#   dplyr::filter(plate_id %in% c("TEG", "TGSH")) %>%
+#   dplyr::filter(Cycle == "Light") %>%
+#   dplyr::mutate_at(.vars = c("estimate", "std.error", "statistic", "pval"), function(x){x = NA})
+# 
+# Dunnett_comb_join_2 <- Dunnett_comb %>%
+#   dplyr::filter(plate_id %in% c("24DMP")) %>%
+#   dplyr::filter(Cycle == "Dark") %>%
+#   dplyr::mutate_at(.vars = c("estimate", "std.error", "statistic", "pval"), function(x){x = NA})
+# 
+# Dunnett_comb_join_fixed_pvals <- rbind(Dunnett_comb_join_1, Dunnett_comb_join_2)
+# 
+# filtered_Dunnett_comb <- Dunnett_comb %>%
+#   anti_join(Dunnett_comb_join_fixed_pvals, by = join_by(plate_id, Cycle, Dose_mg_L))
+# 
+# Dunnett_comb <- rbind(Dunnett_comb_join_fixed_pvals, filtered_Dunnett_comb)
+```
+
 
 ```{r 39summary_all_chems, include=FALSE}
 summary_fishBehavDatBinLD <- fishBehavDatBinLD %>%
@@ -1623,59 +2075,58 @@ summary_fishBehavDatBinLD <- fishBehavDatBinLD %>%
   dplyr::mutate(Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>%
   dplyr::filter(Cycle != "Acclimation") %>%
   group_by(plate_id, Cycle, Dose) %>%
-  dplyr::summarise(se = sd(totaldist, na.rm = TRUE)/sqrt(length(totaldist)), value = mean(totaldist, na.rm = TRUE), sd = sd(totaldist, na.rm = TRUE))
+  dplyr::summarise(se = sd(totaldist, na.rm = TRUE)/sqrt(length(totaldist)), value = mean(totaldist, na.rm = TRUE), sd = sd(totaldist, na.rm = TRUE), Dose_mg_L = unique(as.character(Dose_mg_L)))
 ```
 
 ```{r 40dunnett_summary_all_chems, include=FALSE}
-dunnett_binned$Cycle <-
+Dunnett_comb$Cycle <-
   factor(
-    dunnett_binned$Cycle,
+    Dunnett_comb$Cycle,
     levels = c(
-      "Acclimation",
       "Light",
       "Dark"
     ),
   )
 dunnett_summary_all_chems_LD <-
-  right_join(dunnett_binned, summary_fishBehavDatBinLD)
+  right_join(Dunnett_comb, summary_fishBehavDatBinLD, by = c("Dose_mg_L", "plate_id", "Cycle"))
 dunnett_summary_all_chems_LD$Dose <- factor(dunnett_summary_all_chems_LD$Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)
 ```
 
 ```{r 40.2AOV_summary_all_chems, include=FALSE}
-d <- data.frame()
-d_all_chem <- list()
-#Old code for the Dunnett's test (not Dunnett's T3 test)
+# d <- data.frame()
+# d_all_chem <- list()
+# #Old code for the Dunnett's test (not Dunnett's T3 test)
+# # for (j in 1:length(chemicalNames)) {
+# #   for (i in 1:length(cycle_filter)) {
+# #     temp <- data.frame(Df = aov_list_all_chems[[chemicalNames[j]]][[i]][[1]][[1]], 
+# #                    Sum_Sq = aov_list_all_chems[[chemicalNames[j]]][[i]][[1]][[2]],
+# #                    Mean_Sq = aov_list_all_chems[[chemicalNames[j]]][[i]][[1]][[3]],
+# #                    F_Value = aov_list_all_chems[[chemicalNames[j]]][[i]][[1]][[4]],
+# #                    P_value = aov_list_all_chems[[chemicalNames[j]]][[i]][[1]][[5]],
+# #                    row.names = c(paste0(names(aov_list_all_chems[[j]][i]), "_Dose"), paste0(names(aov_list_all_chems[[j]][i]), "_Residuals")))
+# # temp$Measurement <- row.names(temp)
+# # d <- rbind(d, temp)
+# #   }
+# # }
+# # 
+# # AOV_summary_all_chems_BinLD <- d %>%
+# #   dplyr::mutate(Chemical = str_split(string = Measurement, pattern = "_", simplify=TRUE)[,1],
+# #          Cycle = str_split(string = Measurement, pattern = "_", simplify=TRUE)[,2],
+# #          Measurement = str_split(string = Measurement, pattern = "_", simplify=TRUE)[,3])
+# 
 # for (j in 1:length(chemicalNames)) {
 #   for (i in 1:length(cycle_filter)) {
-#     temp <- data.frame(Df = aov_list_all_chems[[chemicalNames[j]]][[i]][[1]][[1]], 
-#                    Sum_Sq = aov_list_all_chems[[chemicalNames[j]]][[i]][[1]][[2]],
-#                    Mean_Sq = aov_list_all_chems[[chemicalNames[j]]][[i]][[1]][[3]],
-#                    F_Value = aov_list_all_chems[[chemicalNames[j]]][[i]][[1]][[4]],
-#                    P_value = aov_list_all_chems[[chemicalNames[j]]][[i]][[1]][[5]],
-#                    row.names = c(paste0(names(aov_list_all_chems[[j]][i]), "_Dose"), paste0(names(aov_list_all_chems[[j]][i]), "_Residuals")))
-# temp$Measurement <- row.names(temp)
-# d <- rbind(d, temp)
+#     temp <- aov_list_all_chems_4_dunnett[[j]][[i]] %>%
+#       broom::tidy() %>%
+#       dplyr::mutate(plate_id = chemicalNames[j],
+#              Cycle = cycle_filter[i])
+#     d <- rbind(d, temp)
 #   }
 # }
 # 
 # AOV_summary_all_chems_BinLD <- d %>%
-#   dplyr::mutate(Chemical = str_split(string = Measurement, pattern = "_", simplify=TRUE)[,1],
-#          Cycle = str_split(string = Measurement, pattern = "_", simplify=TRUE)[,2],
-#          Measurement = str_split(string = Measurement, pattern = "_", simplify=TRUE)[,3])
-
-for (j in 1:length(chemicalNames)) {
-  for (i in 1:length(cycle_filter)) {
-    temp <- aov_list_all_chems_4_dunnett[[j]][[i]] %>%
-      broom::tidy() %>%
-      dplyr::mutate(plate_id = chemicalNames[j],
-             Cycle = cycle_filter[i])
-    d <- rbind(d, temp)
-  }
-}
-
-AOV_summary_all_chems_BinLD <- d %>%
-  dplyr::mutate(p.value = p.adjust(p = p.value, method = "fdr")) %>%
-  dplyr::mutate(Chemical = plate_id)
+#   dplyr::mutate(p.value = p.adjust(p = p.value, method = "fdr")) %>%
+#   dplyr::mutate(Chemical = plate_id)
 ```
 
 ```{r 41meantotaldist_BinnedDatLD, echo=FALSE}
@@ -1778,12 +2229,70 @@ for (i in seq_along(p_list)){
 }
 ```
 
+```{r 41.1meantotaldist_BinnedDatLD_OneFig, echo=FALSE}
+p1 <-
+  gridExtra::grid.arrange(
+    p_list[[1]][[1]],
+    p_list[[2]][[1]],
+    p_list[[3]][[1]],
+    p_list[[4]][[1]],
+    p_list[[5]][[1]],
+    p_list[[6]][[1]],
+    p_list[[7]][[1]],
+    p_list[[8]][[1]],
+    p_list[[9]][[1]],
+    p_list[[10]][[1]],
+    p_list[[11]][[1]],
+    p_list[[12]][[1]],
+    p_list[[13]][[1]],
+    p_list[[14]][[1]],
+    p_list[[15]][[1]]
+  )
+ggsave(
+  plot = p1,
+  filename = "BehaviourTotaldistANOVA_Two-way_factorial_subgroup_DunnettResults_Part1.png",
+  path = "~/MolToxLab/Behaviour/Jory_Behaviour_R_Markdown/Output",
+  device = "png",
+  scale = 4,
+  units = "px",
+  width = 1920,
+  height = 1080
+)
+p2 <-
+  gridExtra::grid.arrange(
+    p_list[[16]][[1]],
+    p_list[[17]][[1]],
+    p_list[[18]][[1]],
+    p_list[[19]][[1]],
+    p_list[[20]][[1]],
+    p_list[[21]][[1]],
+    p_list[[22]][[1]],
+    p_list[[23]][[1]],
+    p_list[[24]][[1]],
+    p_list[[25]][[1]],
+    p_list[[26]][[1]],
+    p_list[[27]][[1]],
+    p_list[[28]][[1]],
+    p_list[[29]][[1]]
+  )
+ggsave(
+  plot = p2,
+  filename = "BehaviourTotaldistANOVA_Two-way_factorial_subgroup_DunnettResults_Part2.png",
+  path = "~/MolToxLab/Behaviour/Jory_Behaviour_R_Markdown/Output",
+  device = "png",
+  scale = 4,
+  units = "px",
+  width = 1920,
+  height = 1080
+)
+```
+
 ##### {-}
 
 ```{r 41.6AOV_Results_Kable, echo=FALSE}
-AOV_datatable_binLD <- AOV_summary_all_chems_BinLD %>%
-  dplyr::mutate(P_value = formatC(p.value, format = "e", digits = 2)) %>%
-  dplyr::select(Chemical, Cycle, term, df, sumsq, meansq, statistic, P_value)
+AOV_datatable_binLD <- ANCOVACheck %>%
+  dplyr::mutate(P_value = formatC(adj_p.value, format = "e", digits = 2)) %>%
+  dplyr::select(plate_id, Cycle, term, df, sumsq, meansq, statistic, P_value)
 ```
 
 ```{r 41.7Datatable, echo=FALSE}
@@ -1805,8 +2314,8 @@ LOECs_BinLD <- LOEC_Summary %>%
 ```
 
 ```{r write_the_results_of_LD_Bins, include=FALSE}
-write_csv(AOV_summary_all_chems_BinLD, file = "Output/ANCOVA_Results_Raw_Data_Bin_Light_Dark.csv")
-write_csv(dunnett_summary_all_chems_LD, file = "Output/DunnettT3Test_Results_Raw_Data_Bin_Light_Dark.csv")
+write_csv(AOV_datatable_binLD, file = "Output/ANCOVA_Results_Raw_Data_Bin_Light_Dark.csv")
+write_csv(dunnett_summary_all_chems_LD, file = "Output/DunnettTest_Results_Raw_Data_Bin_Light_Dark.csv")
 for (i in seq_along(p_list)){
   temp <- p_list[[i]]
   ggsave(plot = temp[[1]], filename = paste0(chemicalNames[i], "_Bin_Light_Dark_", params$value, "_results.png"), path = paste0("Output/", chemicalNames[i]), device = "png", scale = 1.5, units = "px", width = 1920, height = 1080)

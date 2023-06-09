@@ -1,0 +1,291 @@
+.id,chemical,min,max,median_POD,POD_med,mean_POD,low_conf,high_conf,n_genes,Assay,confidence,.id_legacy
+Overt Toxicity,1-Decanol,1e-4,1,NA,1,1,1,1,NA,Lethality & Deformity,0,Affected Rate RCurvep
+Overt Toxicity,1-Octanol,0.001,10,NA,10,10,10,10,NA,Lethality & Deformity,0,Affected Rate RCurvep
+Overt Toxicity,17betaestradiol,1e-5,0.1,NA,0.1,0.1,0.1,0.1,NA,Lethality & Deformity,0,Affected Rate RCurvep
+Overt Toxicity,24-DMP,1e-4,1,NA,1,1,1,1,NA,Lethality & Deformity,0,Affected Rate RCurvep
+Overt Toxicity,24-DNP,0.001,10,1.43844988828766,1.43844988828766,0.594277754492605,0.00562341325190349,1.43844988828766,NA,Lethality & Deformity,1,Affected Rate RCurvep
+Overt Toxicity,34-DCA,1e-4,1,0.156879842525655,0.156879842525655,0.156879842525655,0.156879842525655,0.156879842525655,NA,Lethality & Deformity,1,Affected Rate RCurvep
+Overt Toxicity,4-TPP,1e-4,1,0.142928529155284,0.142928529155284,0.142928529155284,0.142928529155284,0.142928529155284,NA,Lethality & Deformity,1,Affected Rate RCurvep
+Overt Toxicity,4C3MP,1e-4,1,NA,1,1,1,1,NA,Lethality & Deformity,0,Affected Rate RCurvep
+Overt Toxicity,4TOP,1e-5,0.1,NA,0.1,0.1,0.1,0.1,NA,Lethality & Deformity,0,Affected Rate RCurvep
+Overt Toxicity,Aniline,0.001,10,NA,10,10,10,10,NA,Lethality & Deformity,0,Affected Rate RCurvep
+Overt Toxicity,BPA,1e-4,1,NA,1,1,1,1,NA,Lethality & Deformity,0,Affected Rate RCurvep
+Overt Toxicity,BPAF,1e-4,1,NA,1,1,1,1,NA,Lethality & Deformity,0,Affected Rate RCurvep
+Overt Toxicity,Clofibric-acid,0.001,10,NA,10,10,10,10,NA,Lethality & Deformity,0,Affected Rate RCurvep
+Overt Toxicity,DES,1e-5,0.1,2.9729398324913e-4,0.1,1.0053479087598e-4,7.91049376954302e-6,3.6458412370707e-4,NA,Lethality & Deformity,0.231,Affected Rate RCurvep
+Overt Toxicity,DMSO,0.001,10,NA,10,10,10,10,NA,Lethality & Deformity,0,Affected Rate RCurvep
+Overt Toxicity,EE2,1e-7,0.001,6.6019484840818e-4,0.001,2.8597870391218e-4,4.40328528605307e-5,6.6019484840818e-4,NA,Lethality & Deformity,0.356,Affected Rate RCurvep
+Overt Toxicity,Fadrozole,1e-4,1,NA,1,1,1,1,NA,Lethality & Deformity,0,Affected Rate RCurvep
+Overt Toxicity,Fenitrothion,1e-4,1,NA,1,1,1,1,NA,Lethality & Deformity,0,Affected Rate RCurvep
+Overt Toxicity,Fluoxetine,1e-5,0.1,NA,0.1,0.1,0.1,0.1,NA,Lethality & Deformity,0,Affected Rate RCurvep
+Overt Toxicity,Flutamide,1e-4,1,NA,1,1,1,1,NA,Lethality & Deformity,0,Affected Rate RCurvep
+Overt Toxicity,Glyphosate,1e-4,1,NA,1,1,1,1,NA,Lethality & Deformity,0,Affected Rate RCurvep
+Overt Toxicity,Malathion,1e-4,1,0.791049376954302,1,0.360714109587674,0.0791049376954302,0.791049376954302,NA,Lethality & Deformity,0.346,Affected Rate RCurvep
+Overt Toxicity,NN-Dimethylformamide,0.1,1000,NA,1000,1000,1000,1000,NA,Lethality & Deformity,0,Affected Rate RCurvep
+Overt Toxicity,Prochloraz,1e-4,1,NA,1,1,1,1,NA,Lethality & Deformity,0,Affected Rate RCurvep
+Overt Toxicity,SDS,1e-5,0.1,NA,0.1,0.1,0.1,0.1,NA,Lethality & Deformity,0,Affected Rate RCurvep
+Overt Toxicity,TEG,0.1,1000,NA,1000,1000,1000,1000,NA,Lethality & Deformity,0,Affected Rate RCurvep
+Overt Toxicity,TGSH,1e-4,1,NA,1,1,1,1,NA,Lethality & Deformity,0,Affected Rate RCurvep
+Overt Toxicity,Trenbolone,1e-5,0.1,3.3887172678387e-4,0.1,1.0119601296399e-4,4.40328528605307e-6,3.3887172678387e-4,NA,Lethality & Deformity,0.115,Affected Rate RCurvep
+Overt Toxicity,Vinclozolin,1e-4,1,0.66019484840819,1,0.111563012383726,6.60194848408189e-5,0.66019484840819,NA,Lethality & Deformity,0.316,Affected Rate RCurvep
+Overt Toxicity,1-Decanol,1e-4,1,NA,1,1,1,1,NA,Lethality & Deformity,0,Affected Rate Hill
+Overt Toxicity,1-Octanol,0.001,10,NA,10,10,10,10,NA,Lethality & Deformity,0,Affected Rate Hill
+Overt Toxicity,17betaestradiol,1e-5,0.1,NA,0.1,0.1,0.1,0.1,NA,Lethality & Deformity,0,Affected Rate Hill
+Overt Toxicity,24-DMP,1e-4,1,NA,1,1,1,1,NA,Lethality & Deformity,0,Affected Rate Hill
+Overt Toxicity,24-DNP,0.001,10,1.2368829934356522,1.2370755475180593,1.4122339308736127,1.0726472546111432,3.1085668870099004,NA,Lethality & Deformity,0.998,Affected Rate Hill
+Overt Toxicity,34-DCA,1e-4,1,0.24432097806468475,0.24480867148300792,0.2858814785091615,0.1302747837257896,0.6562158185376604,NA,Lethality & Deformity,0.997,Affected Rate Hill
+Overt Toxicity,4-TPP,1e-4,1,0.250189323354525,0.2502725242282274,0.31709180549091875,0.1410135232430218,0.6328022868662462,NA,Lethality & Deformity,0.975,Affected Rate Hill
+Overt Toxicity,4C3MP,1e-4,1,NA,1,1,1,1,NA,Lethality & Deformity,0,Affected Rate Hill
+Overt Toxicity,4TOP,1e-5,0.1,NA,0.1,0.1,0.1,0.1,NA,Lethality & Deformity,0,Affected Rate Hill
+Overt Toxicity,Aniline,0.001,10,NA,10,10,10,10,NA,Lethality & Deformity,0,Affected Rate Hill
+Overt Toxicity,BPA,1e-4,1,NA,1,1,1,1,NA,Lethality & Deformity,0,Affected Rate Hill
+Overt Toxicity,BPAF,1e-4,1,NA,1,1,1,1,NA,Lethality & Deformity,0,Affected Rate Hill
+Overt Toxicity,Clofibric-acid,0.001,10,NA,10,10,10,10,NA,Lethality & Deformity,0,Affected Rate Hill
+Overt Toxicity,DES,1e-5,0.1,0.00107292833615877,0.00334184892274777,9.594852207536604e-4,5.0863194808510046e-5,0.04099082304563265,NA,Lethality & Deformity,0.671,Affected Rate Hill
+Overt Toxicity,DMSO,0.001,10,NA,10,10,10,10,NA,Lethality & Deformity,0,Affected Rate Hill
+Overt Toxicity,EE2,1e-7,0.001,5.029775061214402e-4,0.001,4.07994804689136e-4,1.0989494363837084e-4,0.001,NA,Lethality & Deformity,0.182,Affected Rate Hill
+Overt Toxicity,Fadrozole,1e-4,1,NA,1,1,1,1,NA,Lethality & Deformity,0,Affected Rate Hill
+Overt Toxicity,Fenitrothion,1e-4,1,NA,1,1,1,1,NA,Lethality & Deformity,0,Affected Rate Hill
+Overt Toxicity,Fluoxetine,1e-5,0.1,NA,0.1,0.1,0.1,0.1,NA,Lethality & Deformity,0,Affected Rate Hill
+Overt Toxicity,Flutamide,1e-4,1,NA,1,1,1,1,NA,Lethality & Deformity,0,Affected Rate Hill
+Overt Toxicity,Glyphosate,1e-4,1,NA,1,1,1,1,NA,Lethality & Deformity,0,Affected Rate Hill
+Overt Toxicity,Malathion,1e-4,1,NA,1,0.7791035050876045,0.2758225682565475,1,NA,Lethality & Deformity,0.171,Affected Rate Hill
+Overt Toxicity,NN-Dimethylformamide,0.1,1000,NA,1000,1000,1000,1000,NA,Lethality & Deformity,0,Affected Rate Hill
+Overt Toxicity,Prochloraz,1e-4,1,NA,1,1,1,1,NA,Lethality & Deformity,0,Affected Rate Hill
+Overt Toxicity,SDS,1e-5,0.1,NA,0.1,0.1,0.1,0.1,NA,Lethality & Deformity,0,Affected Rate Hill
+Overt Toxicity,TEG,0.1,1000,NA,1000,1000,1000,1000,NA,Lethality & Deformity,0,Affected Rate Hill
+Overt Toxicity,TGSH,1e-4,1,NA,1,1,1,1,NA,Lethality & Deformity,0,Affected Rate Hill
+Overt Toxicity,Trenbolone,1e-5,0.1,0.00119653318365256,0.1,0.00186290160705028,1.881534614385856e-4,0.01544742943878249,NA,Lethality & Deformity,0.131,Affected Rate Hill
+Overt Toxicity,Vinclozolin,1e-4,1,NA,1,1,1,1,NA,Lethality & Deformity,0,Affected Rate Hill
+Behaviour,1-Decanol,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Pearson Hill
+Behaviour,1-Octanol,0.001,10,NA,10,10,10,10,NA,Swim Behaviour,0,Pearson Hill
+Behaviour,17betaestradiol,1e-5,0.1,NA,0.1,0.1,0.1,0.1,NA,Swim Behaviour,0,Pearson Hill
+Behaviour,24-DMP,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Pearson Hill
+Behaviour,24-DNP,0.001,10,NA,10,10,10,10,NA,Swim Behaviour,0,Pearson Hill
+Behaviour,34-DCA,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Pearson Hill
+Behaviour,4-TPP,1e-4,1,0.9836288718666312,1,0.9704541838621368,0.8700398065173217,1,NA,Swim Behaviour,0.33,Pearson Hill
+Behaviour,4C3MP,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Pearson Hill
+Behaviour,4TOP,1e-5,0.1,NA,0.1,0.1,0.1,0.1,NA,Swim Behaviour,0,Pearson Hill
+Behaviour,Aniline,0.001,10,NA,10,10,10,10,NA,Swim Behaviour,0,Pearson Hill
+Behaviour,BPA,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Pearson Hill
+Behaviour,BPAF,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Pearson Hill
+Behaviour,Clofibric-acid,0.001,10,NA,10,10,10,10,NA,Swim Behaviour,0,Pearson Hill
+Behaviour,DES,1e-5,0.1,NA,0.1,0.1,0.1,0.1,NA,Swim Behaviour,0,Pearson Hill
+Behaviour,DMSO,0.001,10,NA,10,10,10,10,NA,Swim Behaviour,0,Pearson Hill
+Behaviour,EE2,1e-7,0.001,NA,0.001,0.001,0.001,0.001,NA,Swim Behaviour,0,Pearson Hill
+Behaviour,Fadrozole,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Pearson Hill
+Behaviour,Fenitrothion,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Pearson Hill
+Behaviour,Fluoxetine,1e-5,0.1,0.0295775730089561,0.1,0.02885136522769006,0.00762434246795575,0.1,NA,Swim Behaviour,0.498,Pearson Hill
+Behaviour,Flutamide,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Pearson Hill
+Behaviour,Glyphosate,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Pearson Hill
+Behaviour,Malathion,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Pearson Hill
+Behaviour,NN-Dimethylformamide,0.1,1000,NA,1000,1000,1000,1000,NA,Swim Behaviour,0,Pearson Hill
+Behaviour,Prochloraz,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Pearson Hill
+Behaviour,SDS,1e-5,0.1,NA,0.1,0.1,0.1,0.1,NA,Swim Behaviour,0,Pearson Hill
+Behaviour,TEG,0.1,1000,NA,1000,1000,1000,1000,NA,Swim Behaviour,0,Pearson Hill
+Behaviour,TGSH,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Pearson Hill
+Behaviour,Trenbolone,1e-5,0.1,NA,0.1,0.1,0.1,0.1,NA,Swim Behaviour,0,Pearson Hill
+Behaviour,Vinclozolin,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Pearson Hill
+Behaviour,1-Decanol,1e-4,1,0.0070715467105381,1,0.01686464074245274,0.00286143753802041,0.6577034775574808,NA,Swim Behaviour,0.232,Pearson RCurvep
+Behaviour,1-Octanol,0.001,10,0.4150669039117921,10,0.5477247813523769,0.0483994383685992,3.348981759822397,NA,Swim Behaviour,0.151,Pearson RCurvep
+Behaviour,17betaestradiol,1e-5,0.1,0.0925824224998568,0.1,0.03554579934805272,3.833844939831213e-4,0.0925824224998568,NA,Swim Behaviour,0.108,Pearson RCurvep
+Behaviour,24-DMP,1e-4,1,0.46245995781052845,1,0.25506155236621775,0.0940406711475466,0.46245995781052845,NA,Swim Behaviour,0.107,Pearson RCurvep
+Behaviour,24-DNP,0.001,10,NA,10,10,10,10,NA,Swim Behaviour,0,Pearson RCurvep
+Behaviour,34-DCA,1e-4,1,0.00685393137012227,1,0.001730947812555,6.348586858323316e-5,0.00685393137012227,NA,Swim Behaviour,0.01,Pearson RCurvep
+Behaviour,4-TPP,1e-4,1,0.5347655232337233,0.9745224039791824,0.284737830161374,0.00480493711693137,0.9745224039791824,NA,Swim Behaviour,0.564,Pearson RCurvep
+Behaviour,4C3MP,1e-4,1,0.36591923475213206,1,0.2352349213955932,0.00454229251659651,0.6001458633686719,NA,Swim Behaviour,0.237,Pearson RCurvep
+Behaviour,4TOP,1e-5,0.1,NA,0.1,0.1,0.1,0.1,NA,Swim Behaviour,0,Pearson RCurvep
+Behaviour,Aniline,0.001,10,NA,10,10,10,10,NA,Swim Behaviour,0,Pearson RCurvep
+Behaviour,BPA,1e-4,1,0.6077873860801553,1,0.7105580797717195,0.6077873860801553,0.9090784499990252,NA,Swim Behaviour,0.232,Pearson RCurvep
+Behaviour,BPAF,1e-4,1,0.00849592053824255,1,0.01304490510053926,9.866784377398271e-5,0.3970220442876996,NA,Swim Behaviour,0.186,Pearson RCurvep
+Behaviour,Clofibric-acid,0.001,10,3.2694628750513313,10,0.9480449933333112,0.03120109190490627,5.069052324715541,NA,Swim Behaviour,0.242,Pearson RCurvep
+Behaviour,DES,1e-5,0.1,NA,0.1,0.1,0.1,0.1,NA,Swim Behaviour,0,Pearson RCurvep
+Behaviour,DMSO,0.001,10,6.409355068381298,10,2.7439754544712067,0.04499501470448373,6.409355068381298,NA,Swim Behaviour,0.1,Pearson RCurvep
+Behaviour,EE2,1e-7,0.001,4.739994330726743e-4,0.001,2.939009239248783e-4,6.445491470891488e-6,4.739994330726743e-4,NA,Swim Behaviour,0.109,Pearson RCurvep
+Behaviour,Fadrozole,1e-4,1,0.25864608033407077,1,0.11480627582800264,0.00423309290067572,0.4847002943649365,NA,Swim Behaviour,0.245,Pearson RCurvep
+Behaviour,Fenitrothion,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Pearson RCurvep
+Behaviour,Fluoxetine,1e-5,0.1,0.04970177378192814,0.1,0.01646056028720233,6.543139860404844e-4,0.09252546718018784,NA,Swim Behaviour,0.444,Pearson RCurvep
+Behaviour,Flutamide,1e-4,1,0.49680116160964544,1,0.3690643693165714,0.04707425405973759,0.7997474980959234,NA,Swim Behaviour,0.316,Pearson RCurvep
+Behaviour,Glyphosate,1e-4,1,0.46383676053553946,1,0.13896112636011934,0.00466849137660619,0.7672321691920059,NA,Swim Behaviour,0.237,Pearson RCurvep
+Behaviour,Malathion,1e-4,1,0.3049234708438384,1,0.2424366158993963,0.3049234708438384,0.3049234708438384,NA,Swim Behaviour,0.114,Pearson RCurvep
+Behaviour,NN-Dimethylformamide,0.1,1000,314.1705290848476,1000,146.45572403706998,3.367519067143348,878.9680725188229,NA,Swim Behaviour,0.229,Pearson RCurvep
+Behaviour,Prochloraz,1e-4,1,0.38064222910142514,1,0.1635714618074439,0.00862282000666627,0.39090835846112654,NA,Swim Behaviour,0.365,Pearson RCurvep
+Behaviour,SDS,1e-5,0.1,0.03080729512636604,0.1,0.01064381965799089,4.689543235725644e-4,0.08799824620353931,NA,Swim Behaviour,0.24,Pearson RCurvep
+Behaviour,TEG,0.1,1000,NA,1000,1000,1000,1000,NA,Swim Behaviour,0,Pearson RCurvep
+Behaviour,TGSH,1e-4,1,0.4568351331513024,1,0.07061405417565243,2.9851025671244106e-4,0.4568351331513024,NA,Swim Behaviour,0.137,Pearson RCurvep
+Behaviour,Trenbolone,1e-5,0.1,0.06330038028445312,0.1,0.03843968768610957,0.00383025650031221,0.06690400227950835,NA,Swim Behaviour,0.429,Pearson RCurvep
+Behaviour,Vinclozolin,1e-4,1,0.29191093555345393,1,0.08000950219586302,6.499146488222075e-4,0.7068904177460144,NA,Swim Behaviour,0.36,Pearson RCurvep
+Behaviour,1-Decanol,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Spearman Hill
+Behaviour,1-Octanol,0.001,10,NA,10,10,10,10,NA,Swim Behaviour,0,Spearman Hill
+Behaviour,17betaestradiol,1e-5,0.1,NA,0.1,0.1,0.1,0.1,NA,Swim Behaviour,0,Spearman Hill
+Behaviour,24-DMP,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Spearman Hill
+Behaviour,24-DNP,0.001,10,NA,10,10,10,10,NA,Swim Behaviour,0,Spearman Hill
+Behaviour,34-DCA,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Spearman Hill
+Behaviour,4-TPP,1e-4,1,0.9481206310387238,1,0.9056341169526724,0.7477824239926574,0.9655194829340864,NA,Swim Behaviour,0.33,Spearman Hill
+Behaviour,4C3MP,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Spearman Hill
+Behaviour,4TOP,1e-5,0.1,NA,0.1,0.1,0.1,0.1,NA,Swim Behaviour,0,Spearman Hill
+Behaviour,Aniline,0.001,10,NA,10,10,10,10,NA,Swim Behaviour,0,Spearman Hill
+Behaviour,BPA,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Spearman Hill
+Behaviour,BPAF,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Spearman Hill
+Behaviour,Clofibric-acid,0.001,10,NA,10,10,10,10,NA,Swim Behaviour,0,Spearman Hill
+Behaviour,DES,1e-5,0.1,NA,0.1,0.1,0.1,0.1,NA,Swim Behaviour,0,Spearman Hill
+Behaviour,DMSO,0.001,10,NA,10,10,10,10,NA,Swim Behaviour,0,Spearman Hill
+Behaviour,EE2,1e-7,0.001,NA,0.001,0.001,0.001,0.001,NA,Swim Behaviour,0,Spearman Hill
+Behaviour,Fadrozole,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Spearman Hill
+Behaviour,Fenitrothion,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Spearman Hill
+Behaviour,Fluoxetine,1e-5,0.1,0.03825740557861144,0.04181391340742128,0.03454480197683885,0.01118818091555644,0.1,NA,Swim Behaviour,0.914,Spearman Hill
+Behaviour,Flutamide,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Spearman Hill
+Behaviour,Glyphosate,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Spearman Hill
+Behaviour,Malathion,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Spearman Hill
+Behaviour,NN-Dimethylformamide,0.1,1000,NA,1000,1000,1000,1000,NA,Swim Behaviour,0,Spearman Hill
+Behaviour,Prochloraz,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Spearman Hill
+Behaviour,SDS,1e-5,0.1,NA,0.1,0.1,0.1,0.1,NA,Swim Behaviour,0,Spearman Hill
+Behaviour,TEG,0.1,1000,NA,1000,1000,1000,1000,NA,Swim Behaviour,0,Spearman Hill
+Behaviour,TGSH,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Spearman Hill
+Behaviour,Trenbolone,1e-5,0.1,NA,0.1,0.1,0.1,0.1,NA,Swim Behaviour,0,Spearman Hill
+Behaviour,Vinclozolin,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Spearman Hill
+Behaviour,1-Decanol,1e-4,1,0.03224046974203528,1,0.03989574471001946,8.946323371066737e-4,0.6404496312031686,NA,Swim Behaviour,0.425,Spearman RCurvep
+Behaviour,1-Octanol,0.001,10,0.8164031653947413,10,0.6498555827225482,0.04626512479163042,5.280919326002413,NA,Swim Behaviour,0.261,Spearman RCurvep
+Behaviour,17betaestradiol,1e-5,0.1,0.08279573985335713,0.1,0.01314694367500013,7.750915662841155e-5,0.08279573985335713,NA,Swim Behaviour,0.119,Spearman RCurvep
+Behaviour,24-DMP,1e-4,1,0.3671280113273154,1,0.23754118670164048,6.419327683452128e-4,0.8289310149202457,NA,Swim Behaviour,0.22,Spearman RCurvep
+Behaviour,24-DNP,0.001,10,8.170810417657087,10,8.170810417657087,8.170810417657087,8.170810417657087,NA,Swim Behaviour,0.111,Spearman RCurvep
+Behaviour,34-DCA,1e-4,1,0.00500753033016678,1,0.00500753033016678,0.00500753033016678,0.00500753033016678,NA,Swim Behaviour,0.023,Spearman RCurvep
+Behaviour,4-TPP,1e-4,1,0.3911958541895627,0.9257724127160886,0.16620675601786947,0.00575731589596393,0.9257724127160886,NA,Swim Behaviour,0.559,Spearman RCurvep
+Behaviour,4C3MP,1e-4,1,0.4708775480733128,1,0.16036413110585968,9.472833971089086e-4,0.795534175550425,NA,Swim Behaviour,0.339,Spearman RCurvep
+Behaviour,4TOP,1e-5,0.1,NA,0.1,0.1,0.1,0.1,NA,Swim Behaviour,0,Spearman RCurvep
+Behaviour,Aniline,0.001,10,NA,10,10,10,10,NA,Swim Behaviour,0,Spearman RCurvep
+Behaviour,BPA,1e-4,1,0.6618350820782882,1,0.6618350820782882,0.6618350820782882,0.6618350820782882,NA,Swim Behaviour,0.119,Spearman RCurvep
+Behaviour,BPAF,1e-4,1,0.360399134502547,1,0.12561669957539298,5.024300332580077e-4,0.6841961119123285,NA,Swim Behaviour,0.233,Spearman RCurvep
+Behaviour,Clofibric-acid,0.001,10,3.2239065191225884,10,1.0197360211014048,0.03025805049769882,6.663832454695363,NA,Swim Behaviour,0.333,Spearman RCurvep
+Behaviour,DES,1e-5,0.1,0.06374048878009558,0.1,0.01985658572083069,7.906009184013617e-5,0.06374048878009558,NA,Swim Behaviour,0.119,Spearman RCurvep
+Behaviour,DMSO,0.001,10,NA,10,10,10,10,NA,Swim Behaviour,0.009,Spearman RCurvep
+Behaviour,EE2,1e-7,0.001,NA,0.001,0.001,0.001,0.001,NA,Swim Behaviour,0,Spearman RCurvep
+Behaviour,Fadrozole,1e-4,1,0.2643251155725126,1,0.1383475108212502,0.00730721760529742,0.6318131519685706,NA,Swim Behaviour,0.346,Spearman RCurvep
+Behaviour,Fenitrothion,1e-4,1,NA,1,1,1,1,NA,Swim Behaviour,0,Spearman RCurvep
+Behaviour,Fluoxetine,1e-5,0.1,0.04895177226563884,0.09103421286970552,0.01880654341480159,8.941684003545689e-4,0.09103421286970552,NA,Swim Behaviour,0.553,Spearman RCurvep
+Behaviour,Flutamide,1e-4,1,0.4362297324789613,1,0.3052544141536808,0.06158700260823401,0.5195012634765809,NA,Swim Behaviour,0.316,Spearman RCurvep
+Behaviour,Glyphosate,1e-4,1,0.5331354415417437,1,0.17498183811896245,0.00418013354977918,0.9497251583553272,NA,Swim Behaviour,0.36,Spearman RCurvep
+Behaviour,Malathion,1e-4,1,0.32295212150115504,1,0.19459348723615785,8.435692372765694e-5,0.32295212150115504,NA,Swim Behaviour,0.114,Spearman RCurvep
+Behaviour,NN-Dimethylformamide,0.1,1000,326.72967670272857,1000,80.78952740556952,3.180133312701035,930.8103634026272,NA,Swim Behaviour,0.246,Spearman RCurvep
+Behaviour,Prochloraz,1e-4,1,0.36504078415707225,1,0.2623597201526455,0.02571068576908403,0.3812100897265969,NA,Swim Behaviour,0.358,Spearman RCurvep
+Behaviour,SDS,1e-5,0.1,0.00645462959132253,0.1,0.00354613464444343,5.426311565791371e-6,0.03481440343237565,NA,Swim Behaviour,0.137,Spearman RCurvep
+Behaviour,TEG,0.1,1000,NA,1000,1000,1000,1000,NA,Swim Behaviour,0,Spearman RCurvep
+Behaviour,TGSH,1e-4,1,0.4870256287210455,1,0.14103912608005997,5.399085311096254e-4,0.4870256287210455,NA,Swim Behaviour,0.127,Spearman RCurvep
+Behaviour,Trenbolone,1e-5,0.1,0.06672216968025377,0.1,0.05151901107033205,0.00495306310317337,0.08607978545351692,NA,Swim Behaviour,0.429,Spearman RCurvep
+Behaviour,Vinclozolin,1e-4,1,0.2722200033480745,1,0.06202612883920689,5.408074552984555e-4,0.7360468627825079,NA,Swim Behaviour,0.362,Spearman RCurvep
+Metabolic Rate,1-Decanol,1e-4,1,NA,1,1,1,1,NA,Metabolic,0,Z Score RCurvep
+Metabolic Rate,1-Octanol,0.001,10,NA,10,10,10,10,NA,Metabolic,0,Z Score RCurvep
+Metabolic Rate,17betaestradiol,1e-5,0.1,0.00521010298328245,0.00521010298328245,0.00297468471634994,4.812431828549723e-4,0.03758621268907802,NA,Metabolic,0.9,Z Score RCurvep
+Metabolic Rate,24-DMP,1e-4,1,0.2761300721290055,1,0.15922126611696016,0.0026810628135117,0.9864895682267076,NA,Metabolic,0.283,Z Score RCurvep
+Metabolic Rate,24-DNP,0.001,10,5.1244745790279,10,4.188709204560923,0.464328130236987,5.965185292532971,NA,Metabolic,0.218,Z Score RCurvep
+Metabolic Rate,34-DCA,1e-4,1,0.8036258728571751,1,0.8036258728571751,0.8036258728571751,0.8036258728571751,NA,Metabolic,0.118,Z Score RCurvep
+Metabolic Rate,4-TPP,1e-4,1,0.21957066667232628,0.23796088348999792,0.03828934860521547,3.238595920013243e-4,0.7087494142212009,NA,Metabolic,0.896,Z Score RCurvep
+Metabolic Rate,4C3MP,1e-4,1,0.9021371463372408,1,0.40241891516085826,0.00791435407493809,0.9124704916165302,NA,Metabolic,0.332,Z Score RCurvep
+Metabolic Rate,4TOP,1e-5,0.1,0.05091871246991317,0.07517662606901729,0.02021490981368315,9.93689024325316e-4,0.08765073153314855,NA,Metabolic,0.638,Z Score RCurvep
+Metabolic Rate,Aniline,0.001,10,2.776070924841854,10,2.402278706429371,0.29394262246674346,3.890042041693458,NA,Metabolic,0.372,Z Score RCurvep
+Metabolic Rate,BPA,1e-4,1,0.9286933546539896,1,0.9286933546539896,0.9286933546539896,0.9286933546539896,NA,Metabolic,0.093,Z Score RCurvep
+Metabolic Rate,BPAF,1e-4,1,NA,1,1,1,1,NA,Metabolic,0,Z Score RCurvep
+Metabolic Rate,Clofibric-acid,0.001,10,8.606023199433933,10,7.597421823556812,5.8500671637474895,8.811477189304789,NA,Metabolic,0.337,Z Score RCurvep
+Metabolic Rate,DES,1e-5,0.1,6.143889459574695e-4,0.06330163164467778,6.495335053180075e-4,3.4720398981871355e-6,0.03315312327603295,NA,Metabolic,0.579,Z Score RCurvep
+Metabolic Rate,DMSO,0.001,10,0.03525453226120727,10,0.03017474035996517,0.00655416040125892,0.08486823669616775,NA,Metabolic,0.022,Z Score RCurvep
+Metabolic Rate,EE2,1e-7,0.001,NA,0.001,0.001,0.001,0.001,NA,Metabolic,0,Z Score RCurvep
+Metabolic Rate,Fadrozole,1e-4,1,0.2843465680240106,1,0.03532947692450328,7.397225645213518e-5,0.2843465680240106,NA,Metabolic,0.126,Z Score RCurvep
+Metabolic Rate,Fenitrothion,1e-4,1,0.00821479393346251,1,0.036685313590017,8.808362450879211e-4,0.4158803960634867,NA,Metabolic,0.314,Z Score RCurvep
+Metabolic Rate,Fluoxetine,1e-5,0.1,0.06755961825243594,0.1,0.0519586186208917,0.00713582073525877,0.08329402187766868,NA,Metabolic,0.444,Z Score RCurvep
+Metabolic Rate,Flutamide,1e-4,1,0.00557620352977398,0.00841084577354501,0.00192660387807905,2.8553952379926003e-5,0.0398460454753993,NA,Metabolic,0.627,Z Score RCurvep
+Metabolic Rate,Glyphosate,1e-4,1,0.09934358605700518,1,0.0557064884080147,0.00484112543480919,0.28858460436069383,NA,Metabolic,0.173,Z Score RCurvep
+Metabolic Rate,Malathion,1e-4,1,0.9281824427798396,1,0.9281824427798396,0.9281824427798396,0.9281824427798396,NA,Metabolic,0.106,Z Score RCurvep
+Metabolic Rate,NN-Dimethylformamide,0.1,1000,57.38675226281298,1000,26.315973974813073,0.0487996899751734,499.6196531945426,NA,Metabolic,0.37,Z Score RCurvep
+Metabolic Rate,Prochloraz,1e-4,1,0.761556487972011,1,0.761556487972011,0.761556487972011,0.761556487972011,NA,Metabolic,0.107,Z Score RCurvep
+Metabolic Rate,SDS,1e-5,0.1,NA,0.1,0.1,0.1,0.1,NA,Metabolic,0,Z Score RCurvep
+Metabolic Rate,TEG,0.1,1000,342.4766321984638,1000,109.30934313167442,0.04537185607964716,342.4766321984638,NA,Metabolic,0.112,Z Score RCurvep
+Metabolic Rate,TGSH,1e-4,1,NA,1,1,1,1,NA,Metabolic,0,Z Score RCurvep
+Metabolic Rate,Trenbolone,1e-5,0.1,8.280765485259946e-6,0.1,1.3238003041264258e-5,3.8182407506236584e-6,7.458622569047238e-4,NA,Metabolic,0.075,Z Score RCurvep
+Metabolic Rate,Vinclozolin,1e-4,1,0.5234590152820962,1,0.2963581460710824,0.00452385273624617,0.6855230960542257,NA,Metabolic,0.456,Z Score RCurvep
+Metabolic Rate,1-Decanol,1e-4,1,NA,1,1,1,1,NA,Metabolic,0,Z Score Hill
+Metabolic Rate,1-Octanol,0.001,10,NA,10,10,10,10,NA,Metabolic,0,Z Score Hill
+Metabolic Rate,17betaestradiol,1e-5,0.1,0.00292419538379581,0.00292494670597547,0.00249038375437243,8.975844021715764e-4,0.00554867177534371,NA,Metabolic,1,Z Score Hill
+Metabolic Rate,24-DMP,1e-4,1,NA,1,1,1,1,NA,Metabolic,0,Z Score Hill
+Metabolic Rate,24-DNP,0.001,10,NA,10,10,10,10,NA,Metabolic,0,Z Score Hill
+Metabolic Rate,34-DCA,1e-4,1,NA,1,1,1,1,NA,Metabolic,0,Z Score Hill
+Metabolic Rate,4-TPP,1e-4,1,0.02501025524872096,0.02502258515343338,0.02904468681417783,0.01099325245469476,0.12661527257299715,NA,Metabolic,0.999,Z Score Hill
+Metabolic Rate,4C3MP,1e-4,1,0.8844061197229377,1,0.6933959189472326,0.15417599959404624,0.9246395790773484,NA,Metabolic,0.172,Z Score Hill
+Metabolic Rate,4TOP,1e-5,0.1,0.05790114075406925,0.05791275930692571,0.05643002466409189,0.04597877572360462,0.06690354136519117,NA,Metabolic,1,Z Score Hill
+Metabolic Rate,Aniline,0.001,10,NA,10,6.1409992224252266,1.4644194209643486,10,NA,Metabolic,0.152,Z Score Hill
+Metabolic Rate,BPA,1e-4,1,NA,1,1,1,1,NA,Metabolic,0,Z Score Hill
+Metabolic Rate,BPAF,1e-4,1,NA,1,1,1,1,NA,Metabolic,0,Z Score Hill
+Metabolic Rate,Clofibric-acid,0.001,10,NA,10,5.5320504754233735,1.6224112898793468,10,NA,Metabolic,0.146,Z Score Hill
+Metabolic Rate,DES,1e-5,0.1,8.707829266619181e-5,0.1,1.2086548422660784e-4,1.047955814031976e-5,0.02831781155084265,NA,Metabolic,0.344,Z Score Hill
+Metabolic Rate,DMSO,0.001,10,NA,10,10,10,10,NA,Metabolic,0,Z Score Hill
+Metabolic Rate,EE2,1e-7,0.001,NA,0.001,0.001,0.001,0.001,NA,Metabolic,0,Z Score Hill
+Metabolic Rate,Fadrozole,1e-4,1,NA,1,1,1,1,NA,Metabolic,0,Z Score Hill
+Metabolic Rate,Fenitrothion,1e-4,1,NA,1,1,1,1,NA,Metabolic,0,Z Score Hill
+Metabolic Rate,Fluoxetine,1e-5,0.1,NA,0.1,0.1,0.1,0.1,NA,Metabolic,0,Z Score Hill
+Metabolic Rate,Flutamide,1e-4,1,0.00370182282583755,0.00598885965267958,0.00503686166401035,2.8625192667979145e-4,0.2823501065904711,NA,Metabolic,0.874,Z Score Hill
+Metabolic Rate,Glyphosate,1e-4,1,NA,1,1,1,1,NA,Metabolic,0,Z Score Hill
+Metabolic Rate,Malathion,1e-4,1,NA,1,1,1,1,NA,Metabolic,0,Z Score Hill
+Metabolic Rate,NN-Dimethylformamide,0.1,1000,0.16336998934834218,1000,0.7260990814191733,0.01805780666407902,187.6190846397245,NA,Metabolic,0.252,Z Score Hill
+Metabolic Rate,Prochloraz,1e-4,1,NA,1,1,1,1,NA,Metabolic,0,Z Score Hill
+Metabolic Rate,SDS,1e-5,0.1,NA,0.1,0.1,0.1,0.1,NA,Metabolic,0,Z Score Hill
+Metabolic Rate,TEG,0.1,1000,NA,1000,1000,1000,1000,NA,Metabolic,0,Z Score Hill
+Metabolic Rate,TGSH,1e-4,1,NA,1,1,1,1,NA,Metabolic,0,Z Score Hill
+Metabolic Rate,Trenbolone,1e-5,0.1,0.0329492647583885,0.1,0.01268972005683234,2.005267629654543e-5,0.1,NA,Metabolic,0.079,Z Score Hill
+Metabolic Rate,Vinclozolin,1e-4,1,0.5170351097031715,1,0.46507954324252904,0.13754418500787113,1,NA,Metabolic,0.319,Z Score Hill
+Lit Acute LOEC,BPAF,1e-4,1,0.01,NA,NA,NA,NA,NA,Literature,1,Lit Acute LOEC
+Lit Chronic LOEC,BPAF,1e-4,1,0.05,NA,NA,NA,NA,NA,Literature,1,Lit Chronic LOEC
+Lit Acute LOEC,BPA,1e-4,1,1.15,NA,NA,NA,NA,NA,Literature,1,Lit Acute LOEC
+Lit Chronic LOEC,BPA,1e-4,1,0.001,NA,NA,NA,NA,NA,Literature,1,Lit Chronic LOEC
+Lit Acute LOEC,DES,1e-5,0.1,0.027,NA,NA,NA,NA,NA,Literature,1,Lit Acute LOEC
+Lit Chronic LOEC,DES,1e-5,0.1,0.001,NA,NA,NA,NA,NA,Literature,1,Lit Chronic LOEC
+Lit Acute LOEC,TGSH,1e-4,1,33.4,NA,NA,NA,NA,NA,Literature,1,Lit Acute LOEC
+Lit Chronic LOEC,TGSH,1e-4,1,0.24,NA,NA,NA,NA,NA,Literature,1,Lit Chronic LOEC
+Lit Acute LOEC,EE2,1e-7,0.001,2.83e-5,NA,NA,NA,NA,NA,Literature,1,Lit Acute LOEC
+Lit Chronic LOEC,EE2,1e-7,0.001,9.7e-7,NA,NA,NA,NA,NA,Literature,1,Lit Chronic LOEC
+Lit Acute LOEC,BPA,1e-4,1,0.01,NA,NA,NA,NA,NA,Literature,1,Lit Acute LOEC
+Lit Acute LOEC,BPA,1e-4,1,4.99999999613144,NA,NA,NA,NA,NA,Literature,1,Lit Acute LOEC
+Lit Acute LOEC,BPA,1e-4,1,8.70000000764e-4,NA,NA,NA,NA,NA,Literature,1,Lit Acute LOEC
+Lit Acute LOEC,BPA,1e-4,1,0.0227999999999762,NA,NA,NA,NA,NA,Literature,1,Lit Acute LOEC
+Lit Chronic LOEC,BPA,1e-4,1,0.200000000154742,NA,NA,NA,NA,NA,Literature,1,Lit Chronic LOEC
+Lit Acute LOEC,BPA,1e-4,1,2.2799999999976e-4,NA,NA,NA,NA,NA,Literature,1,Lit Acute LOEC
+Lit Acute LOEC,BPAF,1e-4,1,0.001,NA,NA,NA,NA,NA,Literature,1,Lit Acute LOEC
+Lit Acute LOEC,BPAF,1e-4,1,NA,NA,NA,NA,NA,NA,Literature,1,Lit Acute LOEC
+Lit Acute LOEC,BPAF,1e-4,1,NA,NA,NA,NA,NA,NA,Literature,1,Lit Acute LOEC
+Lit Chronic LOEC,BPAF,1e-4,1,0.25000000018879,NA,NA,NA,NA,NA,Literature,1,Lit Chronic LOEC
+Lit Acute LOEC,DES,1e-5,0.1,0.0267999999982235,NA,NA,NA,NA,NA,Literature,1,Lit Acute LOEC
+Lit Chronic LOEC,DES,1e-5,0.1,1e-5,NA,NA,NA,NA,NA,Literature,1,Lit Chronic LOEC
+Lit Acute LOEC,EE2,1e-7,0.001,1e-5,NA,NA,NA,NA,NA,Literature,1,Lit Acute LOEC
+Lit Acute LOEC,EE2,1e-7,0.001,2.5e-5,NA,NA,NA,NA,NA,Literature,1,Lit Acute LOEC
+Lit Chronic LOEC,EE2,1e-7,0.001,1.1e-6,NA,NA,NA,NA,NA,Literature,1,Lit Chronic LOEC
+Lit Acute LOEC,TGSH,1e-4,1,33.0000000092788,NA,NA,NA,NA,NA,Literature,1,Lit Acute LOEC
+LOEC,34-DCA,1e-4,1,1,NA,NA,NA,NA,NA,Lethality & Deformity,1,Overt Toxicity LOEC
+LOEC,4-TPP,1e-4,1,1,NA,NA,NA,NA,NA,Lethality & Deformity,1,Overt Toxicity LOEC
+LOEC,1-Octanol,0.001,10,0.01,NA,NA,NA,NA,NA,Swim Behaviour,1,Behaviour LOEC
+LOEC,17betaestradiol,1e-5,0.1,1e-5,NA,NA,NA,NA,NA,Swim Behaviour,1,Behaviour LOEC
+LOEC,24-DNP,0.001,10,0.01,NA,NA,NA,NA,NA,Swim Behaviour,1,Behaviour LOEC
+LOEC,34-DCA,1e-4,1,1,NA,NA,NA,NA,NA,Swim Behaviour,1,Behaviour LOEC
+LOEC,4-TPP,1e-4,1,1,NA,NA,NA,NA,NA,Swim Behaviour,1,Behaviour LOEC
+LOEC,4C3MP,1e-4,1,1e-4,NA,NA,NA,NA,NA,Swim Behaviour,1,Behaviour LOEC
+LOEC,Aniline,0.001,10,0.01,NA,NA,NA,NA,NA,Swim Behaviour,1,Behaviour LOEC
+LOEC,BPA,1e-4,1,1e-4,NA,NA,NA,NA,NA,Swim Behaviour,1,Behaviour LOEC
+LOEC,BPAF,1e-4,1,1e-4,NA,NA,NA,NA,NA,Swim Behaviour,1,Behaviour LOEC
+LOEC,Clofibric-acid,0.001,10,0.001,NA,NA,NA,NA,NA,Swim Behaviour,1,Behaviour LOEC
+LOEC,DES,1e-5,0.1,0.01,NA,NA,NA,NA,NA,Swim Behaviour,1,Behaviour LOEC
+LOEC,EE2,1e-7,0.001,1e-7,NA,NA,NA,NA,NA,Swim Behaviour,1,Behaviour LOEC
+LOEC,Fadrozole,1e-4,1,1e-4,NA,NA,NA,NA,NA,Swim Behaviour,1,Behaviour LOEC
+LOEC,Flutamide,1e-4,1,0.001,NA,NA,NA,NA,NA,Swim Behaviour,1,Behaviour LOEC
+LOEC,Malathion,1e-4,1,1e-4,NA,NA,NA,NA,NA,Swim Behaviour,1,Behaviour LOEC
+LOEC,NN-Dimethylformamide,0.1,1000,1,NA,NA,NA,NA,NA,Swim Behaviour,1,Behaviour LOEC
+LOEC,SDS,1e-5,0.1,1e-5,NA,NA,NA,NA,NA,Swim Behaviour,1,Behaviour LOEC
+LOEC,TEG,0.1,1000,0.1,NA,NA,NA,NA,NA,Swim Behaviour,1,Behaviour LOEC
+LOEC,TGSH,1e-4,1,1,NA,NA,NA,NA,NA,Swim Behaviour,1,Behaviour LOEC
+LOEC,1-Decanol,1e-4,1,1e-4,NA,NA,NA,NA,NA,Swim Behaviour,1,Behaviour LOEC
+LOEC,24-DMP,1e-4,1,0.001,NA,NA,NA,NA,NA,Swim Behaviour,1,Behaviour LOEC
+LOEC,4TOP,1e-5,0.1,1e-5,NA,NA,NA,NA,NA,Swim Behaviour,1,Behaviour LOEC
+LOEC,DMSO,0.001,10,0.001,NA,NA,NA,NA,NA,Swim Behaviour,1,Behaviour LOEC
+LOEC,Fenitrothion,1e-4,1,1e-4,NA,NA,NA,NA,NA,Swim Behaviour,1,Behaviour LOEC
+LOEC,Fluoxetine,1e-5,0.1,1e-5,NA,NA,NA,NA,NA,Swim Behaviour,1,Behaviour LOEC
+LOEC,Glyphosate,1e-4,1,0.01,NA,NA,NA,NA,NA,Swim Behaviour,1,Behaviour LOEC
+LOEC,Prochloraz,1e-4,1,0.001,NA,NA,NA,NA,NA,Swim Behaviour,1,Behaviour LOEC
+LOEC,Trenbolone,1e-5,0.1,1e-4,NA,NA,NA,NA,NA,Swim Behaviour,1,Behaviour LOEC
+LOEC,Vinclozolin,1e-4,1,1e-4,NA,NA,NA,NA,NA,Swim Behaviour,1,Behaviour LOEC
+LOEC,4-TPP,1e-4,1,1,NA,NA,NA,NA,NA,Metabolic,1,Metabolic Rate LOEC

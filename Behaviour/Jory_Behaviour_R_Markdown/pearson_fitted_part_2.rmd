@@ -1,0 +1,333 @@
+---
+title: "Report for `r params$endpoint` using the `r params$method` method (`r params$sample_size` samples)"
+author: "Jory Curry"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  html_document:
+    code_folding: show
+    df_print: paged
+    toc: true
+    toc_depth: 5
+    toc_float: true
+    theme: readable
+params:
+  value: "value"
+  sample_size: "sammple_size"
+  endpoint: "pearson"
+  method: "fitted"
+---
+
+```{r 1setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE)
+options(scipen = 9)
+```
+
+```{r 2libraries, include=FALSE}
+library(knitr)
+library(kableExtra)
+library(gridExtra)
+library(rlang)
+library(Rcurvep)
+library(DescTools)
+library(data.table)
+library(car)
+library(lazyeval)
+library(DT)
+library(here)
+library(future) 
+library(future.apply) # from original future author
+library(furrr) # use future.apply but similar to purrr package
+library(tidyverse)
+library(tcpl)
+future::plan(multisession, workers = availableCores()) # windows, Mac needs multicore
+source("Functions/cal_auc_simi_endpoints.R")
+source("Functions/behavioural_endpoint_calc.R")
+source("Functions/RCurveP_Data_Wrangling_Functions.R")
+```
+
+
+
+# Toxicology Behavioural Analysis Report
+
+## Version Control
+```{r 3version_control, comment="", class.source ='fold-hide'}
+# - My Machine Info:
+#   - R version 4.2.1 (2022-06-23)
+#   - Platform: x86_64-pc-linux-gnu (64-bit)         5.11.0-34-generic / Ubuntu 22.04.1 LTS
+#   - Desktop: GNOME 3.36.5
+#   - Hardware: CPU - Intel Core i5-9400F 6 core 4.1GHz / RAM - 15924MiB
+```
+
+
+```{r 8directory, include=FALSE}
+dir <- paste0(getwd(), "/Data/All")
+```
+
+```{r 9directory_files_filenames, include=FALSE}
+fileNames <- list.files("Data/Raw") #Get the name of each .csv file
+chemicalNames <- str_split(string = fileNames, pattern = ".csv", simplify = TRUE)[,1] #Identify the chemicals included in the files
+
+pearson_fitted_output_summary <- readRDS(file = paste0("Data/", params$endpoint, "_fitted_output_summary_", params$sample_size, "_samples.RDS"))
+bmds_fitted_pearson <- readRDS(file = paste0("Data/", params$endpoint, "_fitted_bmds_", params$sample_size, "_samples.RDS"))
+bmr_thresh_pearson <- readRDS(file = paste0("Data/", params$endpoint, "_rcurvep", "BMR.rds"))
+```
+
+
+```{r 61.1simulated_curveps, include = FALSE}
+#Plotting
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+options(scipen2 = 3)
+print.numeric <- function(x, ...) {
+  scipen2 <- getOption("scipen2", default = 3)
+  ifelse(abs(log(x, 10L)) >= scipen2,
+               format(x, digits = 5, scientific = TRUE),
+               x)
+}
+#Pearson
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+p_list <- list()
+for (k in 1:length(chemicalNames)) {
+  temp_simulated <- pearson_fitted_output_summary %>%
+    filter(chemical == chemicalNames[k])
+  temp_bmds <- bmds_fitted_pearson %>%
+    filter(chemical == chemicalNames[k])
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#ToxCast Pipeline (tcpl) package
+
+#Checking RCurveP HIll Model Fitted responses and hill paramaters... Yep looks exactly the same
+p1 <- temp_simulated %>%
+  group_by(sample_id) %>%
+  #Calculate the baseline response median absolute deviation
+  mutate(bmad = mad(resp, center = median(resp))) %>%
+  nest() %>%
+  ungroup() %>%
+  #Fit Hill model and extract estimated paramaters
+  mutate(model = map(data, ~ tcplFit(.x$conc, .x$resp, bmad = unique(.x$bmad), bidirectional = TRUE, force.fit = TRUE)))
+#Definte fitted response values for plot
+p1_point <- plyr::ldply(p1$data)
+
+#Define white space around plot
+par(mar = c(2.1,2.1,1,0.1))
+#Plot Fitted response values
+plot(p1_point$resp ~ p1_point$conc, pch = 16, axes=FALSE, frame.plot=TRUE, ylim=c(-100, 50), ann=FALSE, col = "white")
+#add title
+title(main = chemicalNames[k])
+#Build the X axis
+Axis(side = 1, labels=print.numeric(unique(p1_point$x_label_num)), at = unique(p1_point$conc))
+Axis(side = 2, labels = c(-100,-80,-60,-40,-20,0,25,50), at = c(-100,-80,-60,-40,-20,0,25,50))
+#Build the Y axis
+#plot each hill model using tcpl funstion tcplAddModel
+for(i in 1:params$sample_size){
+#Define what model to plot
+modl <- if_else(condition = !is.null(p1[[3]][[i]]$hill_modl), true = "hill", false = if_else(condition = !is.null(p1[[3]][[i]]$gnls_modl), true = "gnls", false = "cnst"))
+#Only show hill models
+tcplAddModel(pars = p1[[3]][[i]], modl = "hill")
+rm(modl)
+}
+#Add BMR
+abline(h=-bmr_thresh_pearson, lty = "dashed", col = "red")
+#Add BMDU
+{if(temp_bmds$ciu_POD != temp_bmds$highest_conc)abline(v=temp_bmds$ciu_POD, col = "yellow")}
+#Add BMDL
+{if(temp_bmds$cil_POD != temp_bmds$highest_conc)abline(v=temp_bmds$cil_POD, col = "purple")}
+#Add BMD
+{if(temp_bmds$median_POD != temp_bmds$highest_conc)abline(v=temp_bmds$median_POD, col = "blue")}
+#Add Hit confidence
+text(x = min(unique(p1_point$conc)+1), y = -80, paste0("Hit = ", temp_bmds$hit_confidence))
+
+p <- recordPlot()
+
+p_list[[chemicalNames[k]]] <- p
+
+print(paste("Done", chemicalNames[k]))
+
+rm(p, p1, p1_point, temp_simulated, temp_bmds)
+
+}
+
+rm(bmds_fitted_pearson, pearson_fitted_output_summary)
+gc()
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+```
+
+```{r alternative_save_the_resutls, include=FALSE}
+save_png <- function(i) {
+  png(
+    paste0(
+      "Output/",
+      chemicalNames[i], "/", chemicalNames[i], 
+      "_hill_fitted_", params$endpoint, "_", params$sample_size, "_samples.png"
+    ),
+      units = "px",
+      width = 325,
+      height = 215,
+      bg = "white"
+  )
+}
+
+save_png(i=1)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=2)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=3)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=4)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=5)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=6)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=7)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=8)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=9)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=10)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=11)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=12)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=13)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=14)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=15)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=16)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=17)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=18)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=19)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=20)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=21)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=22)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=23)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=24)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=25)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=26)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=27)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=28)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=29)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+rm(p_list)
+gc()
+
+source("Functions/Save_fitted_model_images.R", local = TRUE)
+
+rm(png_list, yleft, bottom)
+gc()
+```
+
+```{r alternative_print_image, echo=FALSE}
+knitr::include_graphics(
+  paste0(
+    "Output/Images/",
+    "all_chems_hill_fitted_", params$endpoint, "_",
+    params$sample_size,
+    "_samples.png"
+  )
+)
+```

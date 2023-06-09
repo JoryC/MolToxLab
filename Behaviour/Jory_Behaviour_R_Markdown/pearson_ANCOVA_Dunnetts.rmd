@@ -725,6 +725,18 @@ for (i in seq_along(p_both_endpoints)){
 }
 ```
 
+```{r save_image, echo=FALSE}
+ggsave(
+  plot = p_both_endpoints$pearson,
+  filename = "Output/ANCOVA_Dunnetts_pearson.png",
+  device = "png",
+  scale = 3,
+  units = "px",
+  width = 1920,
+  height = 1080
+)
+```
+
 #### {-}
 
 ## Similarity Scores/Correlation coefficients

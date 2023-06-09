@@ -22,15 +22,17 @@ library(stringr)
 library(dplyr)
 library(ggplot2)
 library(scales)
+library(ggh4x)
 ```
 
 
 ```{r import, echo=FALSE, message=FALSE}
+#BMDs
 files <- list.files(path = "BMDs", recursive = FALSE, pattern = "*.csv", full.names = TRUE)
-
 dat <- lapply(files, read_csv)
 names(dat) <- str_remove(files, pattern = "./BMDs/")
 names(dat) <- str_remove(names(dat), pattern = ".csv")
+
 all_dat <- plyr::ldply(dat)
 ```
 
@@ -80,12 +82,11 @@ dat <- all_dat %>%
       false = chemical
     )
   ) %>%
-  mutate(
-    chemical = if_else(condition = (chemical == "Fenitrothione"),
-      true = "Fenitrothion",
-      false = chemical
-    )
-  ) %>%
+  mutate(chemical = if_else(
+    condition = (chemical == "Fenitrothione"),
+    true = "Fenitrothion",
+    false = chemical
+  )) %>%
   group_by(.id, chemical) %>%
   summarise(
     min = min(lowest_conc),
@@ -124,54 +125,40 @@ dat <- all_dat %>%
     false = Assay
   )) %>%
   mutate(Assay = if_else(
-    condition = .id %in% c(
-      "20th gene",
-      "10th pct",
-      "1st Mode",
-      "GO Term",
-      "Reactome"
-    ),
+    condition = .id %in% c("20th gene",
+                           "10th pct",
+                           "1st Mode",
+                           "GO Term",
+                           "Reactome"),
     true = "Transcriptomic",
     false = Assay
   )) %>%
   mutate(Assay = factor(
     Assay,
-    levels = c("Swim Behaviour", "Metabolic", "Lethality & Deformity", "Transcriptomic"),
+    levels = c(
+      "Swim Behaviour",
+      "Metabolic",
+      "Lethality & Deformity",
+      "Transcriptomic"
+    ),
     ordered = TRUE
   )) %>%
   arrange(.id) %>%
   mutate(confidence = hit_confidence,
-         hit_confidence = NULL)
+         hit_confidence = NULL) %>%
+  mutate(species = "Zebrafish")
 ```
 
 ```{r}
-#Points of departure from the literature
-# dat_lit <-
-#   data.frame(
-#     .id = c("Chronic LOEC", "Acute LOEC", "Chronic LOEC", "Chronic LOEC", "Acute LOEC", "Chronic LOEC"),
-#     chemical = c("4-TPP", "Fluoxetine", "Fluoxetine", "17betaestradiol", "BPAF", "BPAF"),
-#     min = c(0.0001, 0.00001, 0.00001, 0.00001, 0.0001, 0.0001),
-#     max = c(1, 0.1, 0.1, 0.1, 1, 1),
-#     median_POD = c(0.212, 0.25, 0.00054, 0.0000283, 0.01, 0.05),
-#     POD_med = c(NA, NA, NA, NA, NA, NA),
-#     mean_POD = c(NA, NA, NA, NA, NA, NA),
-#     low_conf = c(NA, NA, NA, NA, NA, NA),
-#     high_conf = c(NA, NA, NA, NA, NA, NA),
-#     n_genes = c(NA, NA, NA, NA, NA, NA),
-#     Assay = c(
-#       "Literature",
-#       "Literature",
-#       "Literature",
-#       "Literature",
-#       "Literature",
-#       "Literature"
-#     ),
-#     confidence = c(1, 1, 1, 1, 1, 1)
-#   )
-# 
-# write_csv(dat_lit, file = "BMDs/Literature_data_Rice_Lake.csv")
+dat_lit <- read_csv(file = "LOECs/Literature_data.csv")
 
-dat_lit <- read_csv(file = "Temp/Literature_data_BPA_Replacemets.csv")
+observed_LOECs <- read_csv(file = "LOECs/observed_LOECs_all_chems.csv")
+```
+```{r export_all_data_combined}
+PODs <- dat %>%
+  rbind(dat_lit, observed_LOECs)
+
+write_csv(PODs, file = "PODs/All_PODs.csv")
 ```
 
 
@@ -208,7 +195,8 @@ bind_z_score_hill <- dat %>%
             confidence = max(confidence)) %>%
   unique()
 
-bind_z_scores <- rbind(bind_z_score_curvep, bind_z_score_hill)
+bind_z_scores <- rbind(bind_z_score_curvep, bind_z_score_hill) %>%
+  mutate(species = "Zebrafish")
 
 #Renaming for nicer labels
 dat <- dat %>%
@@ -240,69 +228,74 @@ dat <- dat %>%
   )) %>%
   rbind(bind_z_scores, dat_lit)
 
-dat <- dat %>%
-  filter(
-    .id %in% c(
-      "Pearson RCurvep",
-      "Pearson Hill",
-      "Spearman RCurvep",
-      "Spearman Hill",
-      "Z Score RCurvep",
-      "Z Score Hill",
-      "Affected Rate RCurvep",
-      "Affected Rate Hill",
-      "20th gene",
-      "10th pct",
-      "1st Mode",
-      "GO Term",
-      "Reactome",
-      "Acute LOEC",
-      "Chronic LOEC"
-    )
-  )
+# dat <- dat %>%
+#   filter(
+#     .id %in% c(
+#       "Pearson RCurvep",
+#       "Pearson Hill",
+#       "Spearman RCurvep",
+#       "Spearman Hill",
+#       "Z Score RCurvep",
+#       "Z Score Hill",
+#       "Affected Rate RCurvep",
+#       "Affected Rate Hill",
+#       "20th gene",
+#       "10th pct",
+#       "1st Mode",
+#       "GO Term",
+#       "Reactome",
+#       "Acute LOEC",
+#       "Chronic LOEC"
+#     )
+#   )
 
-dat$.id <- factor(dat$.id, levels = c(
-      "Affected Rate RCurvep",
-      "Affected Rate Hill",
-      "Pearson RCurvep",
-      "Pearson Hill",
-      "Spearman RCurvep",
-      "Spearman Hill",
-      "Z Score RCurvep",
-      "Z Score Hill",
-      "20th gene",
-      "10th pct",
-      "1st Mode",
-      "GO Term",
-      "Reactome",
-      "Acute LOEC",
-      "Chronic LOEC"
-    ),
-    ordered = TRUE
-  )
+# dat$.id <- factor(dat$.id, levels = c(
+#       "Affected Rate RCurvep",
+#       "Affected Rate Hill",
+#       "Pearson RCurvep",
+#       "Pearson Hill",
+#       "Spearman RCurvep",
+#       "Spearman Hill",
+#       "Z Score RCurvep",
+#       "Z Score Hill",
+#       "20th gene",
+#       "10th pct",
+#       "1st Mode",
+#       "GO Term",
+#       "Reactome",
+#       "Acute LOEC",
+#       "Chronic LOEC"
+#     ),
+#     ordered = TRUE
+#   )
 
 #Filter for just those chemicals to plot in the summarry figure
-chems_to_plot <- c("BPA", "BPAF", "DES", "TGSH", "EE2")
+#chems_to_plot <- c("BPA", "BPAF", "DES", "TGSH", "EE2")
 dat <- dat %>%
-  filter(chemical %in% chems_to_plot) %>%
+  #filter(chemical %in% chems_to_plot) %>%
   filter(.id %in% c(
-    "1st Mode",
-    "Reactome",
-    "Z Score RCurvep",
-    "Pearson RCurvep",
+    # "1st Mode",
+    # "Reactome",
     "Affected Rate RCurvep",
-    "Acute LOEC",
-    "Chronic LOEC"
+    "Affected Rate Hill",
+    "Z Score RCurvep",
+    "Z Score Hill",
+    "Pearson RCurvep",
+    "Pearson Hill",
+    "Spearman RCurvep",
+    "Spearman Hill",
+    "Acute LC50",
+    "Chronic POD"
   )) %>%
-  mutate(.id = as.character(.id)) %>%
+  mutate(.id_legacy = as.character(.id)) %>%
   mutate(.id = if_else(
-    condition = .id == "Z Score RCurvep",
+    condition = .id %in% c("Z Score RCurvep", "Z Score Hill"),
     true = "Metabolic Rate",
     false = if_else(
-      condition = .id == "Pearson RCurvep",
+      condition = .id %in% c("Pearson RCurvep", "Pearson Hill","Spearman RCurvep", "Spearman Hill"),
       true = "Behaviour",
       false = if_else(
-        condition = .id == "Affected Rate RCurvep",
+        condition = .id %in% c("Affected Rate RCurvep", "Affected Rate Hill"),
         true = "Overt Toxicity",
         false = if_else(
           condition = .id == "1st Mode",
@@ -311,53 +304,75 @@ dat <- dat %>%
         )
       )
     )
-  ))
+  )) %>%
+  mutate(median_POD = if_else(condition = median_POD == max, true = as.double(NA), false = median_POD)) %>% # Deleting PODs that are just the highest dose
+  rbind(observed_LOECs)
 
 #Or be lazy and import the data iwthout wrangling
 #dat <- read_csv(file = "BMDs/BPA_and_replacements_data.csv")
 
-dat$chemical <-
-  factor(
-    dat$chemical,
-    levels = c("BPA", "BPAF", "TGSH", "DES", "EE2"),
-    ordered = TRUE
-  )
+# dat$chemical <-
+#   factor(
+#     dat$chemical,
+#     levels = c("BPA", "BPAF", "TGSH", "DES", "EE2"),
+#     ordered = TRUE
+#   )
 
 chems <- unique(dat$chemical)
 
-condition <- dat %>%
-  filter(.id == "tPOD") %>%
-  group_by(chemical) %>%
-  summarise(chemical = unique(chemical),
-            cond = !is.na(median_POD),
-            n_genes = unique(n_genes))
+# condition <- dat %>%
+#   filter(.id == "tPOD") %>%
+#   group_by(chemical) %>%
+#   summarise(chemical = unique(chemical),
+#             cond = !is.na(median_POD),
+#             n_genes = unique(n_genes))
+# 
+# paste_n_genes <- function(x) {
+#   if_else(
+#     condition = x == condition$chemical &
+#       condition$cond,
+#     true = paste0(x, " n=", condition[which(condition$chemical == x),]$n_genes, " genes"),
+#     false = x
+#   )
+# }
 
-paste_n_genes <- function(x) {
-  if_else(
-    condition = x == condition$chemical &
-      condition$cond,
-    true = paste0(x, " n=", condition[which(condition$chemical == x),]$n_genes, " genes"),
-    false = x
-  )
-}
-
-dat$.id <- factor(dat$.id, levels = c(
-      "Acute LOEC",
-      "Chronic LOEC",
-      "Overt Toxicity",
-      "Behaviour",
-      "Metabolic Rate",
-      "tPOD",
-      "Pathway tPOD"
+dat$.id_legacy <- factor(dat$.id_legacy, levels = c(
+      # "1st Mode",
+      # "Reactome",
+      "Z Score RCurvep",
+      "Z Score Hill",
+      "Pearson RCurvep",
+      "Pearson Hill",
+      "Spearman RCurvep",
+      "Spearman Hill",
+      "Affected Rate RCurvep",
+      "Affected Rate Hill",
+      "LOEC",
+      "Acute LC50",
+      "Chronic POD"
     ),
     ordered = TRUE
   )
+
+dat$.id <- factor(
+  dat$.id,
+  levels = c(
+    # "tPOD",
+    # "Pathway tPOD",
+    "Metabolic Rate",
+    "Behaviour",
+    "Overt Toxicity",
+    "Acute LC50",
+    "Chronic POD"
+  ),
+  ordered = TRUE
+)
 
 dat$Assay <-
   factor(
     dat$Assay,
     levels = c(
-      "Transcriptomic",
+      # "Transcriptomic",
       "Metabolic",
       "Swim Behaviour",
       "Lethality & Deformity",
@@ -366,130 +381,396 @@ dat$Assay <-
     ordered = TRUE
   )
 
-# Deleting PODs that are just the highest dose
-dat <- dat %>%
-  mutate(median_POD = if_else(condition = median_POD == max, true = as.double(NA), false = median_POD))
-
 #Only plot active PODs
-dat <- dat %>%
-  mutate(median_POD = if_else(condition = confidence < 0.5, true = as.double(NA), false = median_POD)) %>%
-  mutate(low_conf = if_else(condition = confidence < 0.5, true = max, false = low_conf)) %>%
-  mutate(high_conf = if_else(condition = confidence < 0.5, true = max, false = high_conf))
+# dat <- dat %>%
+#   mutate(median_POD = if_else(condition = confidence < 0, true = as.double(NA), false = median_POD)) %>%
+#   mutate(low_conf = if_else(condition = confidence < 0, true = max, false = low_conf)) %>%
+#   mutate(high_conf = if_else(condition = confidence < 0, true = max, false = high_conf))
 
-  
-#plot for Rice Lake
+#Remove NA
+dat <- dat %>%
+  filter(!is.na(.id))
+
+#Summarise LOECs
+# LOECs <- dat %>%
+#   filter(.id_legacy == "LOEC") %>%
+#   group_by(chemical) %>%
+#   filter(!median_POD %in% NA) %>%
+#   mutate(is.LOEC = if_else(condition = median_POD == min(median_POD, na.rm = TRUE), true = TRUE, false = FALSE)) %>%
+#   filter(is.LOEC == TRUE) %>%
+#   distinct() %>%
+#   dplyr::select(-is.LOEC)
+# dat <- dat %>%
+#   filter(!.id_legacy == "LOEC") %>%
+#   rbind(LOECs)
+
+
+#Fix Literature labels and LOEC labels on plot
+test <- dat %>%
+  # mutate(
+  #   .id = if_else(
+  #     condition = .id == "Lit. Acute LOEC",
+  #     true = "Lit Acute LOEC",
+  #     false = .id
+  #   ),
+  #   .id = if_else(
+  #     condition = .id == "Lit. Chronic LOEC",
+  #     true = "Lit Chronic LOEC",
+  #     false = .id
+  #   ),
+  #   .id_legacy = if_else(
+  #     condition = .id_legacy == "Lit. Acute LOEC",
+  #     true = "Lit Acute LOEC",
+  #     false = .id_legacy
+  #   ),
+  #   .id_legacy = if_else(
+  #     condition = .id_legacy == "Lit. Chronic LOEC",
+  #     true = "Lit Chronic LOEC",
+  #     false = .id_legacy
+  #   )
+  # ) %>%
+  mutate(
+    .id = if_else(
+      condition = .id_legacy %in% c("LOEC"),
+      true = "LOEC",
+      false = .id
+    )
+  )
+
+#Filter out just the most sensitive endpoints
+Most_sens_BMDs_confident <- test %>%
+  filter(!.id %in% c("Acute LC50", "Chronic POD", "LOEC")) %>%
+  filter(confidence > 0.5) %>%
+  group_by(chemical, .id) %>%
+  mutate(keep = if_else(
+    condition = median_POD == min(median_POD, na.rm = TRUE),
+    true = TRUE,
+    false = FALSE
+  )) %>%
+  filter(keep == TRUE)
+Most_sens_BMDs_not_confident <- test %>%
+  filter(!.id %in% c("Lit Chronic LOEC", "Lit Acute LOEC", "LOEC")) %>%
+  filter(confidence < 0.5) %>%
+  group_by(chemical, .id) %>%
+  mutate(keep = if_else(
+    condition = median_POD == min(median_POD, na.rm = TRUE),
+    true = TRUE,
+    false = FALSE
+  )) %>%
+  filter(keep == TRUE)
+Most_sens_BMDs <- rbind(Most_sens_BMDs_not_confident, Most_sens_BMDs_confident)
+
+LOECs_zebrafish <- test %>%
+  filter(.id %in% c("Acute LC50", "Chronic POD", "LOEC")) %>%
+  mutate(LOEC_group = if_else(condition = .id == "LOEC", true = paste(Assay, .id), false = .id)) %>%
+  group_by(chemical, .id, LOEC_group) %>%
+  filter(!is.na(median_POD)) %>%
+  filter(species == "Zebrafish") %>%
+  distinct()
+LOECs_other_fish <- test %>%
+  filter(.id %in% c("Acute LC50", "Chronic POD", "LOEC")) %>%
+  mutate(LOEC_group = if_else(condition = .id == "LOEC", true = paste(Assay, .id), false = .id)) %>%
+  group_by(chemical, .id, LOEC_group) %>%
+  filter(!is.na(median_POD)) %>%
+  filter(species == "Other Fish") %>%
+  distinct()
+
+LOECs <- rbind(LOECs_other_fish, LOECs_zebrafish)
+
+Most_sens_LOECs <- test %>%
+  semi_join(LOECs, by = c("chemical", ".id", "median_POD"))
+
+test <- rbind(Most_sens_BMDs, Most_sens_LOECs)
+
+#Wrangle the data for more appropriate ggplot labels and aestheics
+wrangled_data <- test %>%
+  mutate(POD = if_else(
+    condition = .id %in% c("LOEC"),
+    true = "LOEC",
+    false = if_else(
+      condition = .id %in% c("Acute LC50"),
+      true = "LC50",
+      false = if_else(
+        condition = .id %in% c("Chronic POD"),
+        true = "NOEC/LOEC/EC10",
+        false = "BMD"
+      )
+    )
+  )) %>%
+  mutate(ID = if_else(
+    condition = .id %in% c("Acute LC50"),
+    true = "Acute LC50",
+    false = if_else(
+      condition = .id %in% c("Chronic POD"),
+      true = "Chronic POD",
+      false = if_else(
+        condition = .id %in% c("LOEC"),
+        true = "LOEC",
+        false = if_else(
+          condition = .id %in% c("Metabolic Rate"),
+          true = "Metabolic",
+          false = if_else(
+            condition = .id %in% c("Behaviour"),
+            true = "Behaviour",
+            false = "Overt Toxicity"
+          )
+        )
+      )
+    )
+  )) %>%
+  mutate(
+    POD_value_mg_L = median_POD,
+    POD_low_conf = low_conf,
+    POD_high_conf = high_conf,
+    confident_logical = if_else(
+      condition = confidence >= 0.5,
+      true = TRUE,
+      false = FALSE
+    ),
+    origin = if_else(
+      condition = ID %in% c("Acute LC50", "Chronic POD"),
+      true = "Literature",
+      false = "Experimental"
+    )
+  ) %>%
+  mutate(
+    ID = if_else(
+      condition = ID == "LOEC" &
+        Assay == "Swim Behaviour",
+      true = "Behaviour",
+      false = if_else(
+        condition = ID == "LOEC" &
+          Assay == "Metabolic",
+        true = "Metabolic",
+        false = if_else(
+          condition = ID == "LOEC" &
+            Assay == "Lethality & Deformity",
+          true = "Overt Toxicity",
+          false = ID
+        )
+      )
+    )
+  ) %>%
+  dplyr::select(
+    chemical,
+    ID,
+    min,
+    max,
+    POD,
+    POD_value_mg_L,
+    POD_low_conf,
+    POD_high_conf,
+    confidence,
+    confident_logical,
+    species,
+    origin
+  )
+
+wrangled_data$ID <-
+  factor(
+    wrangled_data$ID,
+    levels = c(
+      "Acute LC50",
+      "Chronic POD",
+      "Overt Toxicity",
+      "Behaviour",
+      "Metabolic"
+    )
+  )
+
+wrangled_data$origin <-
+  factor(wrangled_data$origin, levels = c("Literature", "Experimental"))
+
+write_csv(wrangled_data, "./PODs/Wrangled_filtered_and_cleaned_PODs.csv")
+
+#I AM MANUALLY CLEANING UP THE WRANGLED FILTERED AND CLEANED PODS CSV FILE BY HAND. ELIMINATING ANY REDUNDANT PODS AND MAKING SURE TO *NOT* REMOVE ANY OF THE CONFIDENT PODS WHEN FILTERING JUST THE MOST SENSITIVE ONES...
+
+```
+
+```{r plotting_the_cleaned_up_data}
+
+#There was a bug before where i was filtering only the most sensitive BMDs but I manually fixed this ina spreadsheet and deleted rows in favor of the more confident BMD instead of the more sensitive BMD (except for if none of them were confident, i just took the most sensitive one). This had a major effect on DES and fluoxetine!!!
+
+wrangled_data <- read_csv(file = "./PODs/Wrangled_filtered_and_cleaned_PODs.csv")
+
+wrangled_data$ID <-
+  factor(
+    wrangled_data$ID,
+    levels = c(
+      "Acute LC50",
+      "Chronic POD",
+      "Overt Toxicity",
+      "Behaviour",
+      "Metabolic"
+    )
+  )
+
+wrangled_data$origin <-
+  factor(wrangled_data$origin, levels = c("Literature", "Experimental"))
+
+#Library for nested Y axis labels
+#library(ggh4x)
+
+#plot for All data
 p <- ggplot() +
+  #Shade the literature values to show clear separation
+  geom_tile(
+    data = data.frame(
+      ID = factor(
+        c(
+          "Chronic POD",
+          "Acute LC50",
+          "Metabolic",
+          "Behaviour",
+          "Overt Toxicity"
+        ),
+        levels = rev(
+          c(
+            "Chronic POD",
+            "Acute LC50",
+            "Overt Toxicity",
+            "Behaviour",
+            "Metabolic"
+          )
+        ),
+        ordered = TRUE
+      ),
+      origin = factor(
+        c(
+          "Literature",
+          "Literature",
+          "Experimental",
+          "Experimental",
+          "Experimental"
+          ),
+        levels = rev(
+          c(
+            "Literature",
+            "Experimental"
+            )
+          ),
+        ordered = TRUE
+      ),
+      alpha = c(1, 1, 0, 0, 0),
+      x = Inf
+    ),
+    aes(
+      x = 1,
+      y = weave_factors(ID, origin),
+      height = 1,
+      width = Inf,
+      alpha = alpha
+    ),
+    fill = "black"
+  ) +
+  scale_alpha_continuous(range = c(0, 0.05), guide = "none") +
   #y axis
-  scale_y_discrete(name = "Endpoint") +
+  scale_y_discrete(name = "Endpoint",
+                   guide = guide_axis_nested(delim = "!")) + #limits = rev to reverse order of factors
   #x axis
-  scale_x_log10(name = "Concentration (mg/L)",
-                breaks = c(1000, 100, 10, 1, 0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001, 0.0000001)) +
+  scale_x_log10(
+    name = "Dose (mg/L)",
+    breaks = c(
+      1000,
+      100,
+      10,
+      1,
+      0.1,
+      0.01,
+      0.001,
+      0.0001,
+      0.00001,
+      0.000001,
+      0.0000001
+    )
+  ) +
   #layout
   theme_classic() +
-  geom_vline(data = dat,
-             aes(xintercept = min),
-             linetype = "dashed",
-             color = "gray") +
-  geom_vline(data = dat,
-             aes(xintercept = max),
-             linetype = "dashed",
-             color = "gray") +
-  #Confidence intervals
-  geom_errorbarh(data = dat, 
-                 aes(xmin = low_conf,
-                     xmax = high_conf,
-                     y = .id)) +
-  #Median Points
-  geom_point(data = dat,
-             aes(x = median_POD,
-                 y = .id,
-                 colour = Assay),
-             size = 4) +
-  #Deleting legend
-  scale_color_discrete('POD') +
-  #RCurveP Median Points
-  # geom_point(data = dat,
-  #            aes(x = POD_med,
-  #                y = .id),
-  #            position = position_nudge(y = 0.4),
-  #            color = "red") +
-  #Dummy data for x-axis-limits
-  geom_blank(data = dat,
-             aes(x = min, y = .id)) +
-  geom_blank(data = dat,
-             aes(x = max, y = .id)) +
+  geom_vline(
+    data = wrangled_data,
+    aes(xintercept = min),
+    linetype = "dashed",
+    colour = "gray"
+  ) +
+  geom_vline(
+    data = wrangled_data,
+    aes(xintercept = max),
+    linetype = "dashed",
+    colour = "gray"
+  ) +
+  #Confidence intervals black - high confidence
+  geom_errorbarh(data = ~filter(wrangled_data, confident_logical == TRUE & POD == "BMD"),
+                 aes(
+                   xmin = POD_low_conf,
+                   xmax = POD_high_conf,
+                   y = weave_factors(ID, origin)
+                 )) +
+  guides(y = "axis_nested") +
+  #Confidence intervals grey - low confidence
+  geom_errorbarh(data = ~filter(wrangled_data, confident_logical == FALSE),
+                 aes(
+                   xmin = POD_low_conf,
+                   xmax = POD_high_conf,
+                   y = weave_factors(ID, origin)
+                 ),
+                 colour = "grey55") +
+  guides(y = "axis_nested") +
+  #Literature LOECS
+  geom_point(
+    data = ~filter(wrangled_data, ID %in% c("Acute LC50", "Chronic POD")),
+    aes(
+      x = POD_value_mg_L,
+      y = weave_factors(ID, origin),
+      shape = species
+    ),
+    size = 4,
+    colour = "slategrey"
+  ) +
+  scale_shape_manual(values = c(15, 17)) +
+  #Experimental LOECs
+  geom_point(data = ~filter(wrangled_data, .id == "LOEC"),
+             aes(x = POD_value_mg_L,
+                 y = weave_factors(ID, origin),
+                 colour = ID),
+             size = 4,
+             shape = 17) +
+  #Non-confident BMDs
+  geom_point(
+    data = ~filter(wrangled_data, confident_logical == FALSE),
+    aes(
+      x = POD_value_mg_L,
+      y = weave_factors(ID, origin),
+      colour = ID
+    ),
+    size = 4,
+    shape = 1,
+    stroke = 1.1
+  ) +
+  #Confident BMDs
+  geom_point(
+    data = ~filter(wrangled_data, confident_logical == TRUE & POD == "BMD"),
+    aes(
+      x = POD_value_mg_L,
+      y = weave_factors(ID, origin),
+      colour = ID
+    ),
+    size = 4,
+    shape = 19
+  ) +
+  guides(y = "axis_nested") +
   #Facet wrap plots by chemical
-  facet_wrap( ~ chemical, labeller = labeller(chemical = paste_n_genes)) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.01),
-        strip.text = element_text(size = 15)) +
-  theme(text = element_text(size = 20))
+  facet_wrap(~ chemical) + #labeller = labeller(chemical = paste_n_genes)
+  theme(axis.text.x = element_text(angle = 75, vjust = 0.5),
+        strip.text = element_text(size = 14)) +
+  theme(
+    ggh4x.axis.nesttext.y = element_text(colour = c("black", "slategrey"), angle = 45, size = 10, vjust = 0.01),
+    axis.text.y =element_text(size = 8),
+    axis.title.y = element_blank()
+  )
 
-# p <- ggplot() +
-#   #y axis
-#   scale_y_discrete(name = "Endpoint") +
-#   #x axis
-#   scale_x_log10(name = "Concentration (mg/L)",
-#                 breaks = c(1000, 100, 10, 1, 0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001, 0.0000001)) +
-#   #layout
-#   theme_classic() +
-#   geom_vline(data = dat,
-#              aes(xintercept = min),
-#              linetype = "dashed",
-#              color = "gray") +
-#   geom_vline(data = dat,
-#              aes(xintercept = max),
-#              linetype = "dashed",
-#              color = "gray") +
-#   #Confidence intervals
-#   geom_errorbarh(data = dat, 
-#                  aes(xmin = low_conf,
-#                      xmax = high_conf,
-#                      y = .id)) +
-#   #Median Points
-#   geom_point(data = dat,
-#              aes(x = median_POD,
-#                  y = .id,
-#                  group = Assay,
-#                  shape = Assay,
-#                  color = Assay,
-#                  size = confidence,
-#                  alpha = confidence)) +
-#   #Changing point sizes
-#   scale_size_continuous("Confidence", range = c(1,4), limits = c(0.1, 1), breaks = pretty_breaks()) +
-#   scale_shape_manual(values=c(15, 19, 17, 18)) +
-#   scale_alpha(range = c(0.6, 0.65), limits = c(0, 0.5), guide = "none") +
-#   #RCurveP Median Points
-#   # geom_point(data = dat,
-#   #            aes(x = POD_med,
-#   #                y = .id),
-#   #            position = position_nudge(y = 0.4),
-#   #            color = "red") +
-#   #Dummy data for x-axis-limits
-#   geom_blank(data = dat,
-#              aes(x = min, y = .id)) +
-#   geom_blank(data = dat,
-#              aes(x = max, y = .id)) +
-#   #Facet wrap plots by chemical
-#   facet_wrap( ~ chemical, labeller = labeller(chemical = paste_n_genes)) +
-#   theme(legend.position = "bottom",
-#         legend.direction = "horizontal",
-#         legend.box = "vertical",
-#         axis.text.x = element_text(angle = 90, vjust = 0.01)) + 
-#   guides(colour = guide_legend(override.aes = list(size=4)))
+
 ```
 
-```{r saveplot, echo=TRUE}
-ggsave(
-  p,
-  file = "POD_summary.svg",
-  width = 297,
-  height = 210,
-  units = "mm",
-  scale = 1,
-  device = "svg",
-  bg = "white"
-)
-```
 
 ```{r saveplot2, echo=TRUE}
 ggsave(
@@ -502,6 +783,23 @@ ggsave(
   device = "png",
   bg = "white"
 )
+
+knitr::include_graphics(path = "POD_summary.png")
+```
+
+```{r saveplot2, echo=TRUE}
+ggsave(
+  p,
+  file = "POD_summary.svg",
+  width = 297,
+  height = 210,
+  units = "mm",
+  scale = 1.5,
+  device = "svg",
+  bg = "white"
+)
+
+knitr::include_graphics(path = "POD_summary.svg")
 ```
 
 ```{r plot_genome_Quebec_Samples}
@@ -577,19 +875,6 @@ p <- ggplot() +
         legend.box = "vertical",
         axis.text.x = element_text(angle = 90, vjust = 0.01)) + 
   guides(colour = guide_legend(override.aes = list(size=4)))
-```
-
-```{r saveplot_GQ, echo=TRUE}
-ggsave(
-  p,
-  file = "POD_summary_GQ_samples.svg",
-  width = 297,
-  height = 210,
-  units = "mm",
-  scale = 1.5,
-  device = "svg",
-  bg = "white"
-)
 ```
 
 ```{r saveplot2_GQ, echo=TRUE}
@@ -697,90 +982,6 @@ ggsave(
 ggsave(
   p,
   file = "POD_summary_BPA_and_Replacements.png",
-  width = 297,
-  height = 210,
-  units = "mm",
-  scale = 1.5,
-  device = "png",
-  bg = "white"
-)
-```
-
-```{r plot_BPA_Replacements_chemicals}
-dat4 <- dat %>%
-  filter(Assay %in% c("Swim Behaviour", "Metabolic Activity", "Lethality & Deformity"))
-
-p <- ggplot() +
-  #y axis
-  scale_y_discrete(name = "Endpoint") +
-  #x axis
-  scale_x_log10(name = "Concentration (mg/L)",
-                breaks = c(1000, 100, 10, 1, 0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001, 0.0000001)) +
-  #layout
-  theme_classic() +
-  geom_vline(data = dat4,
-             aes(xintercept = min),
-             linetype = "dashed",
-             color = "gray") +
-  geom_vline(data = dat4,
-             aes(xintercept = max),
-             linetype = "dashed",
-             color = "gray") +
-  #Confidence intervals
-  geom_errorbarh(data = dat4, 
-                 aes(xmin = low_conf,
-                     xmax = high_conf,
-                     y = .id)) +
-  #Median Points
-  geom_point(data = dat4,
-             aes(x = median_POD,
-                 y = .id,
-                 group = Assay,
-                 shape = Assay,
-                 color = Assay,
-                 size = confidence,
-                 alpha = confidence)) +
-  #Changing point sizes
-  scale_size_continuous("Confidence", range = c(1,4), limits = c(0.1, 1), breaks = pretty_breaks()) +
-  scale_shape_manual(values=c(15, 19, 17, 18)) +
-  scale_alpha(range = c(0.6, 0.65), limits = c(0, 0.5), guide = "none") +
-  #RCurveP Median Points
-  # geom_point(data = dat,
-  #            aes(x = POD_med,
-  #                y = .id),
-  #            position = position_nudge(y = 0.4),
-  #            color = "red") +
-  #Dummy data for x-axis-limits
-  geom_blank(data = dat4,
-             aes(x = min, y = .id)) +
-  geom_blank(data = dat4,
-             aes(x = max, y = .id)) +
-  #Facet wrap plots by chemical
-  facet_wrap( ~ chemical) +
-  theme(legend.position = "bottom",
-        legend.direction = "horizontal",
-        legend.box = "vertical",
-        axis.text.x = element_text(angle = 90, vjust = 0.01)) + 
-  guides(colour = guide_legend(override.aes = list(size=4)))
-```
-
-```{r saveplot_all_apical_effects, echo=TRUE}
-ggsave(
-  p,
-  file = "aPOD_summary.svg",
-  width = 297,
-  height = 210,
-  units = "mm",
-  scale = 1.5,
-  device = "svg",
-  bg = "white"
-)
-```
-
-```{r saveplot2_all_apical_effects, echo=TRUE}
-ggsave(
-  p,
-  file = "aPOD_summary.png",
   width = 297,
   height = 210,
   units = "mm",

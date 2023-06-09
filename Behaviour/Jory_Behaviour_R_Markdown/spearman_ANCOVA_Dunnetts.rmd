@@ -154,9 +154,9 @@ lowest_dose_treatment_group <- lowest_dose_treatment_group[1,][[1]]
 # fishBehavDatBinLD <- bind_rows(temp, temp2)
 ```
 
-```{r remove_control_fish, include=FALSE}
+```{r remove_control_fish, include=FALSE, eval=false}
 p <- fishBehavDat %>%
-  filter(Dose == "Control") %>%
+  #filter(Dose == "Control") %>%
   group_by(plate_id, embryo_id) %>%
   summarise(mean_totaldist = mean(totaldist, na.rm=TRUE)) %>%
   ungroup() %>%
@@ -368,7 +368,7 @@ cor_dat <- fishBehavDat %>%
   dplyr::arrange(embryo_id) %>%
   tidyr::pivot_wider(., names_from = "embryo_id", values_from = "totaldist") %>%
   dplyr::select(-time_end) %>%
-  dplyr::summarize(cor = cor(x = as.matrix(.), method = "pearson", use = "pairwise.complete.obs"))
+  dplyr::summarize(cor = cor(x = as.matrix(.), method = "spearman", use = "pairwise.complete.obs"))
 cor_dat <- as.data.frame(cor_dat[10,]) %>%
   round(., digits = 2)
 cor_dat <- as_tibble(cor_dat[,1])
@@ -380,7 +380,7 @@ p1 <- fishBehavDat %>%
   geom_line() +
   geom_point() +
   scale_color_manual(values=c("#444444", "#F8766D")) +
-  geom_text(label = paste("Pearson's r = ", as.character(cor_dat$Control_1)), mapping = aes(x = 10, y = 100), inherit.aes = FALSE)
+  geom_text(label = paste("spearman's r = ", as.character(cor_dat$Control_1)), mapping = aes(x = 10, y = 100), inherit.aes = FALSE)
 
 p2 <- fishBehavDat %>%
   filter(plate_id == "BPA", time_end > 20, Dose %in% c("Dose2", "Control"), embryo_id %in% c("Dose2_1", "Control_9")) %>%
@@ -389,7 +389,7 @@ p2 <- fishBehavDat %>%
   geom_line() +
   geom_point() +
   scale_color_manual(values=c("#c9c9c9", "#F8766D")) +
-  geom_text(label = paste("Pearson's r = ", as.character(cor_dat$Control_9)), mapping = aes(x = 10, y = 100), inherit.aes = FALSE)
+  geom_text(label = paste("spearman's r = ", as.character(cor_dat$Control_9)), mapping = aes(x = 10, y = 100), inherit.aes = FALSE)
 
 grid.arrange(p1, p2)
 ```
@@ -405,7 +405,7 @@ cor_dat_long %>%
   geom_point() +
   geom_point(aes(y = mean_cor_dat), color = "blue", size = 3) +
   xlab("embryo_id") +
-  ylab("Pearson's r")
+  ylab("spearman's r")
 ```
 
 
@@ -554,7 +554,7 @@ anova_comb_nobin_spearman %>%
   kable(
     col.names = c("Chemical", "Degrees of Freedom", "F-Value", "P-value", "Endpoint"),
     align = 'llrrr',
-    caption = "Table 6. Summary table of ANOVA results from the `totaldist` variable after pooling sub-groups"
+    caption = "Table 6. Summary table of ANOVA results from the `spearman` endpoint after pooling sub-groups"
   ) %>%
   kable_styling()
 ```
@@ -725,6 +725,19 @@ for (i in seq_along(p_both_endpoints)){
 }
 ```
 
+```{r save_image, echo=FALSE}
+ggsave(
+  plot = p_both_endpoints$spearman,
+  filename = "Output/ANCOVA_Dunnetts_spearman.png",
+  device = "png",
+  scale = 3,
+  units = "px",
+  width = 1920,
+  height = 1080
+)
+```
+
+
 #### {-}
 
 ## Similarity Scores/Correlation coefficients
@@ -750,49 +763,49 @@ Since we do not know what the benchmark response is for each one of the chemical
 ```{r 55.1Clear_Memory, include=FALSE}
 rm(
   p_spearman,
-  p_pearson,
+  p_spearman,
   ANCOVA_results,
   Dunnett_results,
   Nobin_dunnet_results_both_endpoints,
-  dunnett_comb_nobin_pearson,
+  dunnett_comb_nobin_spearman,
   ancova_summary_both_endpoints,
   ancova_comb_nobin_spearman,
-  ancova_comb_nobin_pearson,
-  temp_pearson,
+  ancova_comb_nobin_spearman,
   temp_spearman,
-  outliers_pearson,
+  temp_spearman,
+  outliers_spearman,
   outliers,
   spearman,
   summarystats_list_nobin_spearman,
-  summarystats_list_nobin_pearson,
+  summarystats_list_nobin_spearman,
   simi_endpoints_nobin_spearman,
-  simi_endpoints_nobin_pearson,
+  simi_endpoints_nobin_spearman,
   cor_dat_long,
   p1,
   p2,
   cor_dat,
   temp,
   temp2,
-  simi_norm_nobin_pearson,
+  simi_norm_nobin_spearman,
   simi_endpoints_nobin_spearman,
   p_both_endpoints,
-  outliers_pearson,
+  outliers_spearman,
   outliers_spearman,
   ggBoxPlotOutliers,
   filter_out,
   dunnett_temp,
-  dunnett_list_nobin_pearson,
+  dunnett_list_nobin_spearman,
   dunnett_comb_nobin_spearman,
   dunnett_list_nobin_spearman,
   BoxPlotOutliers,
   BoxPlotOutliersRemove,
-  ancova_list_nobin_pearson,
+  ancova_list_nobin_spearman,
   ancova_list_nobin_spearman,
   fishBehavDat,
   fishBehavDatBin5,
   fishBehavDatBinLD,
   lfishBehavDat,
-  simi_norm_tib_pearson
+  simi_norm_tib_spearman
 )
 gc(reset=TRUE, full = TRUE)
 ```

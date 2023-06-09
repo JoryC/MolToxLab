@@ -1,0 +1,327 @@
+---
+title: "4.1_Fitted_z_score_negative_direction"
+author: "Jory Curry"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  html_document:
+    code_folding: show
+    df_print: paged
+    toc: true
+    toc_depth: 5
+    toc_float: true
+    theme: readable
+params:
+  direction: "direction"
+  sample_size: "sample_size"
+  n_dose_groups: "n_dose_groups"
+---
+
+```{r setup, include=FALSE}
+#knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r Libraries, include=FALSE}
+library(Rcurvep)
+library(tidyverse)
+library(future)
+library(future.apply)
+library(furrr)
+library(kableExtra)
+library(tcpl)
+source("Functions/RCurveP_Data_Wrangling_Functions.R")
+```
+
+```{r import_data, include=FALSE, message=FALSE, warning=FALSE}
+z_dat <- read_csv(file = "Data/z-score_data.csv")
+
+metaData <- read.csv(file = "Data/MetaData.csv") #Import the Meta Data that includes information about the data in the folders
+#CAS is the Chemical Abstract Service, MOA is the Mode of Action. This table includes useful information about the exposure concentrations for each chemical dose in mg/L. We'll use this later to create our final data frame
+doseData <- metaData %>%
+  dplyr::select(plate_id, Dose1:Control) %>%
+  gather(key = Dose, value = "Dose_mg_L", Dose1:Control)
+
+lowest_dose_treatment_group <- doseData %>%
+  filter(Dose != "Control") %>%
+  dplyr::summarize(lowest_dose_treatment_group = min(Dose_mg_L))
+lowest_dose_treatment_group <- lowest_dose_treatment_group[1,][[1]]
+
+ss <- params$sample_size
+dir <- params$direction
+number_of_dose_groups_per_chem <- params$n_dose_groups # Set this to the number of dose groups you have (including control)
+
+bmr_thresh <- readRDS("Data/negative_direction_bmr.R")
+input_tib <- readRDS("Data/negative_direction_bmr_tibble.R")
+fitted_output_summary <- readRDS(file = paste0("Data/", "fitted_z_score_", dir,"_output_summary_", params$sample_size, "_samples.RDS"))
+bmds_fitted <- readRDS(file = paste0("Data/", "fitted_z_score_", dir,"_bmds_", params$sample_size, "_samples.RDS"))
+```
+
+<!-- # ```{r prep_data_for_rCurveP, echo=TRUE} -->
+<!-- # z_dat <- z_dat %>% -->
+<!-- #   mutate(endpoint = "z_score") %>% -->
+<!-- #   rename(resp = z_score, -->
+<!-- #          chemical = Chemical) %>% -->
+<!-- #   mutate(`Dose(mg/L)` = `Dose(mg/L)`/lowest_dose_treatment_group[[1]]) %>% -->
+<!-- #   mutate(conc = log10(`Dose(mg/L)`)) %>% -->
+<!-- #   group_by(chemical, endpoint) %>% -->
+<!-- #   mutate(control_conc = max(conc)-5) %>% #making sure there are no infinite values for concentrations. Controls are made to be 1 dose group down from the lowest concentration -->
+<!-- #   mutate(conc = if_else(condition = conc == -Inf, true = control_conc, false = conc)) %>% -->
+<!-- #   dplyr::select(endpoint, chemical, conc, resp) -->
+<!-- # ``` -->
+
+```{r 61.1simulated_curveps, include = FALSE}
+#Plotting
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+options(scipen2 = 3)
+print.numeric <- function(x, ...) {
+  scipen2 <- getOption("scipen2", default = 3)
+  ifelse(abs(log(x, 10L)) >= scipen2,
+               format(x, digits = 5, scientific = TRUE),
+               x)
+}
+chemicalNames <- unique(bmds_fitted$chemical)
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+p_list <- list()
+for (k in 1:length(chemicalNames)) {
+  temp_simulated <- fitted_output_summary %>%
+    filter(chemical == chemicalNames[k])
+  temp_bmds <- bmds_fitted %>%
+    filter(chemical == chemicalNames[k])
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#ToxCast Pipeline (tcpl) package
+
+#Checking RCurveP HIll Model Fitted responses and hill paramaters... Yep looks exactly the same
+p1 <- temp_simulated %>%
+  group_by(sample_id) %>%
+  #Calculate the baseline response median absolute deviation
+  mutate(bmad = mad(resp, center = median(resp))) %>%
+  nest() %>%
+  ungroup() %>%
+  #Fit Hill model and extract estimated paramaters
+  mutate(model = map(data, ~ tcplFit(.x$conc, .x$resp, bmad = unique(.x$bmad), bidirectional = TRUE, force.fit = TRUE)))
+#Definte fitted response values for plot
+p1_point <- plyr::ldply(p1$data)
+
+#Define white space around plot
+par(mar = c(2.1,2.1,1,0.1))
+#Plot Fitted response values
+plot(p1_point$resp ~ p1_point$conc, pch = 16, axes=FALSE, frame.plot=TRUE, ylim=c(-6, 0), ann=FALSE, col = "white")
+#add title
+title(main = chemicalNames[k])
+#Build the X axis
+Axis(side = 1, labels=print.numeric(unique(p1_point$x_label_num)), at = unique(p1_point$conc))
+Axis(side = 2, labels = c(-6,-5,-4,-3,-2,-1,0,1), at = c(-6,-5,-4,-3,-2,-1,0,1))
+#Build the Y axis
+#plot each hill model using tcpl funstion tcplAddModel
+for(i in 1:params$sample_size){
+#Define what model to plot
+modl <- if_else(condition = !is.null(p1[[3]][[i]]$hill_modl), true = "hill", false = if_else(condition = !is.null(p1[[3]][[i]]$gnls_modl), true = "gnls", false = "cnst"))
+#Only show hill models
+tcplAddModel(pars = p1[[3]][[i]], modl = "hill")
+rm(modl)
+}
+#Add BMR
+abline(h=-bmr_thresh, lty = "dashed", col = "red")
+#Add BMDU
+{if(temp_bmds$ciu_POD != temp_bmds$highest_conc)abline(v=temp_bmds$ciu_POD, col = "yellow")}
+#Add BMDL
+{if(temp_bmds$cil_POD != temp_bmds$highest_conc)abline(v=temp_bmds$cil_POD, col = "purple")}
+#Add BMD
+{if(temp_bmds$median_POD != temp_bmds$highest_conc)abline(v=temp_bmds$median_POD, col = "blue")}
+#Add Hit confidence
+text(x = min(unique(p1_point$conc)+1), y = -4.5, paste0("Hit = ", temp_bmds$hit_confidence))
+
+p <- recordPlot()
+
+p_list[[chemicalNames[k]]] <- p
+
+print(paste("Done", chemicalNames[k]))
+
+rm(p, p1, p1_point, temp_simulated, temp_bmds)
+
+}
+
+rm(bmds_fitted, fitted_output_summary)
+gc()
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+```
+
+```{r alternative_save_the_resutls, include=FALSE}
+save_png <- function(i) {
+  png(
+    paste0(
+      "Output/",
+      chemicalNames[i], "/", chemicalNames[i], 
+      "_hill_fitted_", "z_score", "_", dir, "_dir", params$sample_size, "_samples.png"
+    ),
+      units = "px",
+      width = 325,
+      height = 215,
+      bg = "white"
+  )
+}
+
+save_png(i=1)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=2)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=3)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=4)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=5)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=6)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=7)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=8)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=9)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=10)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=11)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=12)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=13)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=14)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=15)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=16)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=17)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=18)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=19)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=20)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=21)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=22)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=23)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=24)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=25)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=26)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=27)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=28)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+save_png(i=29)
+p_list[[1]]
+dev.off()
+p_list[[1]] <- NULL
+
+rm(p_list)
+gc()
+
+source("Functions/Save_fitted_model_images.R", local = TRUE)
+
+rm(png_list, yleft, bottom)
+gc()
+```
+
+```{r alternative_print_image, echo=FALSE}
+knitr::include_graphics(
+  paste0(
+    "Output/Images/",
+    "all_chems_hill_fitted_", "z_score", "_", params$direction, "_dir_",
+    params$sample_size,
+    "_samples.png"
+  )
+)
+```

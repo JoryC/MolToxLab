@@ -1,5 +1,5 @@
 ---
-title: "Report for `r params$endpoint` using the `r params$method` method"
+title: "Report for `r params$endpoint` using the `r params$method` method (`r params$sample_size` samples)"
 author: "Jory Curry"
 date: "`r format(Sys.time(), '%d %B %Y')`"
 output: 
@@ -91,7 +91,7 @@ Since we do not know what the benchmark response is for each one of the chemical
 
 #### Negative Direction
 
-```{r 60calculating_benchmark_dose, include = FALSE}
+```{r 60calculating_benchmark_dose, include = FALSE, warning=FALSE, message=FALSE}
 system.time(
   bmd_dat_nobin_neg_spearman <-
     future_pmap(
@@ -127,7 +127,7 @@ gc()
 
 
 
-```{r 61.1simulated_curveps, include = FALSE}
+```{r 61.1simulated_curveps, include = FALSE, warning=FALSE}
 
 #spearman Negative Direction RCurveP - Entire code chunk is for 'Not binned' data
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
@@ -137,7 +137,7 @@ simulated_curves_spearman_summary <-
     resp_set = sum_bmd_dat_nobin_neg_spearman$result$resp_set,
     act_set = sum_bmd_dat_nobin_neg_spearman$result$act_set,
     act_summary = sum_bmd_dat_nobin_neg_spearman$act_summary,
-    reject_hit_conf_under = 0.5
+    reject_hit_conf_under = 0.01
   )
 
 bmds_spearman <- bmd_results(simulated_curves_spearman_summary)
@@ -148,56 +148,63 @@ curve_hits_spearman <- simulated_curves_spearman_summary %>%
 #confident_curves_spearman <- confident_hits(summary_dat = simulated_curves_spearman_summary, reject_hit_conf_under = 0.5)
 # If Error says "out of bounds", reduce conf filter
 
+#Data Wrangling for nice labels
+simulated_curves_spearman_summary <- simulated_curves_spearman_summary %>%
+  group_by(chemical) %>%
+  mutate(x_label_num = if_else(condition = conc == lowest_conc, true = 0, false = (10^conc)*lowest_dose_treatment_group)) %>%
+  mutate(x_label = factor(x_label_num, levels = c(0, lowest_dose_treatment_group, lowest_dose_treatment_group*10, lowest_dose_treatment_group*100, lowest_dose_treatment_group*1000, lowest_dose_treatment_group*10000, lowest_dose_treatment_group*100000, lowest_dose_treatment_group*1000000, lowest_dose_treatment_group*10000000, lowest_dose_treatment_group*100000000, lowest_dose_treatment_group*1000000000, lowest_dose_treatment_group*10000000000), ordered = TRUE))
+
+curve_hits_spearman <- curve_hits_spearman %>%
+  group_by(chemical) %>%
+  mutate(x_label_num = if_else(condition = conc == lowest_conc, true = 0, false = (10^conc)*lowest_dose_treatment_group)) %>%
+  mutate(x_label = factor(x_label_num, levels = c(0, lowest_dose_treatment_group, lowest_dose_treatment_group*10, lowest_dose_treatment_group*100, lowest_dose_treatment_group*1000, lowest_dose_treatment_group*10000, lowest_dose_treatment_group*100000, lowest_dose_treatment_group*1000000, lowest_dose_treatment_group*10000000, lowest_dose_treatment_group*100000000, lowest_dose_treatment_group*1000000000, lowest_dose_treatment_group*10000000000), ordered = TRUE))
+
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 
-p_spearman_simulated_no_processing <- ggplot(NULL, aes(conc, resp)) +
+p_spearman_simulated_no_processing <- ggplot(NULL, aes(x_label, resp)) +
   geom_point(
     data = simulated_curves_spearman_summary,
-    mapping = aes(x = conc, y  = resp, group = sample_id),
+    mapping = aes(x = x_label, y  = resp, group = sample_id),
     color = "gray75",
-    alpha = 0.2
-  ) +
-  geom_point(
-    data = curve_hits_spearman,
-    mapping = aes(x = conc, y = resp, group = sample_id),
-    color = "#a9a9a9",
     alpha = 0.7
   ) +
+  # geom_point(
+  #   data = curve_hits_spearman,
+  #   mapping = aes(x = x_label, y = resp, group = sample_id),
+  #   color = "#a9a9a9",
+  #   alpha = 0.7
+  # ) +
   geom_line(
     data = simulated_curves_spearman_summary,
-    mapping = aes(x = conc, y = resp, group = sample_id),
+    mapping = aes(x = x_label, y = resp, group = sample_id),
     color = "gray75",
-    alpha = 0.2
-  ) +
-  geom_line(
-    data = curve_hits_spearman,
-    mapping = aes(x = conc, y = resp, group = sample_id),
-    color = "#a9a9a9",
     alpha = 0.7
   ) +
-  # geom_line(data = confident_curves_spearman[["cil"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "purple") +
-  # geom_line(data = confident_curves_spearman[["ciu"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "yellow") +
-  # geom_line(data = confident_curves_spearman[["mean"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "green") +
-  # geom_line(data = confident_curves_spearman[["median"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "blue") +
-  geom_hline(
-    yintercept = -bmr_thresh_spearman,
-    linetype = "dashed",
-    color = "red"
-  ) +
-  geom_vline(data = bmds_spearman,
-             aes(xintercept = median_POD),
-             color = "blue") +
-  geom_vline(data = bmds_spearman, aes(xintercept = ciu_POD), color = "yellow") +
+  # geom_line(
+  #   data = curve_hits_spearman,
+  #   mapping = aes(x = x_label, y = resp, group = sample_id),
+  #   color = "#a9a9a9",
+  #   alpha = 0.7
+  # ) +
+  # geom_hline(
+  #   yintercept = -bmr_thresh_spearman,
+  #   linetype = "dashed",
+  #   color = "red"
+  # ) +
+  # geom_vline(data = bmds_spearman,
+  #            aes(xintercept = median_POD),
+  #            color = "blue") +
+  # geom_vline(data = bmds_spearman, aes(xintercept = ciu_POD), color = "yellow") +
   # geom_vline(data = bmds_spearman, aes(xintercept = mean_POD), color = "green") +
-  geom_vline(data = bmds_spearman, aes(xintercept = cil_POD), color = "purple") +
-  geom_text(
-    data = bmds_spearman,
-    mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc +
-                    1),
-    y = -85,
-    inherit.aes = FALSE,
-    size = 4
-  ) +
+  # geom_vline(data = bmds_spearman, aes(xintercept = cil_POD), color = "purple") +
+  # geom_text(
+  #   data = bmds_spearman,
+  #   mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc +
+  #                   1),
+  #   y = 85,
+  #   inherit.aes = FALSE,
+  #   size = 4
+  # ) +
   facet_wrap( ~ chemical, scales = "free") +
   ylim(-100, 50) +
   theme_minimal() +
@@ -205,80 +212,217 @@ p_spearman_simulated_no_processing <- ggplot(NULL, aes(conc, resp)) +
     panel.border = element_rect(colour = "grey50", fill = NA),
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank()
-  )
+  ) +
+  scale_y_continuous(limits = c(-100,100), breaks = seq(from = -100, to = 100, by = 25)) +
+  xlab("Dose (mg/L)") +
+  ylab(paste0("Normalized ", params$endpoint, "'s", " rho similarity score"))
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 
-p_spearman <- ggplot(NULL, aes(conc, resp)) +
-  geom_point(
-    data = simulated_curves_spearman_summary,
-    mapping = aes(x = conc, y  = corrected_resp, group = sample_id),
-    color = "gray75",
-    alpha = 0.2
-  ) +
-  geom_point(
-    data = curve_hits_spearman,
-    mapping = aes(x = conc, y = corrected_resp, group = sample_id),
-    color = "#a9a9a9",
-    alpha = 0.7
-  ) +
-  geom_line(
-    data = simulated_curves_spearman_summary,
-    mapping = aes(x = conc, y = corrected_resp, group = sample_id),
-    color = "gray75",
-    alpha = 0.2
-  ) +
-  geom_line(
-    data = curve_hits_spearman,
-    mapping = aes(x = conc, y = corrected_resp, group = sample_id),
-    color = "#a9a9a9",
-    alpha = 0.7
-  ) +
-  # geom_line(data = confident_curves_spearman[["cil"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "purple") +
-  # geom_line(data = confident_curves_spearman[["ciu"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "yellow") +
-  # geom_line(data = confident_curves_spearman[["mean"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "green") +
-  # geom_line(data = confident_curves_spearman[["median"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "blue") +
-  geom_hline(
-    yintercept = -bmr_thresh_spearman,
-    linetype = "dashed",
-    color = "red"
-  ) +
-  geom_vline(data = bmds_spearman,
-             aes(xintercept = median_POD),
-             color = "blue") +
-  geom_vline(data = bmds_spearman, aes(xintercept = ciu_POD), color = "yellow") +
-  # geom_vline(data = bmds_spearman, aes(xintercept = mean_POD), color = "green") +
-  geom_vline(data = bmds_spearman, aes(xintercept = cil_POD), color = "purple") +
-  geom_text(
-    data = bmds_spearman,
-    mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc +
-                    1),
-    y = -85,
-    inherit.aes = FALSE,
-    size = 4
-  ) +
-  facet_wrap( ~ chemical, scales = "free") +
-  ylim(-100, 50) +
-  theme_minimal() +
-  theme(
-    panel.border = element_rect(colour = "grey50", fill = NA),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank()
-  )
+# p_spearman <- ggplot(NULL, aes(conc, resp)) +
+#   geom_point(
+#     data = simulated_curves_spearman_summary,
+#     mapping = aes(x = conc, y  = corrected_resp, group = sample_id),
+#     color = "gray75",
+#     alpha = 0.2
+#   ) +
+#   geom_point(
+#     data = curve_hits_spearman,
+#     mapping = aes(x = conc, y = corrected_resp, group = sample_id),
+#     color = "#a9a9a9",
+#     alpha = 0.7
+#   ) +
+#   geom_line(
+#     data = simulated_curves_spearman_summary,
+#     mapping = aes(x = conc, y = corrected_resp, group = sample_id),
+#     color = "gray75",
+#     alpha = 0.2
+#   ) +
+#   geom_line(
+#     data = curve_hits_spearman,
+#     mapping = aes(x = conc, y = corrected_resp, group = sample_id),
+#     color = "#a9a9a9",
+#     alpha = 0.7
+#   ) +
+#   # geom_line(data = confident_curves_spearman[["cil"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "purple") +
+#   # geom_line(data = confident_curves_spearman[["ciu"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "yellow") +
+#   # geom_line(data = confident_curves_spearman[["mean"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "green") +
+#   # geom_line(data = confident_curves_spearman[["median"]], mapping = aes(x = conc, y = resp, group = sample_id), color = "blue") +
+#   geom_hline(
+#     yintercept = -bmr_thresh_spearman,
+#     linetype = "dashed",
+#     color = "red"
+#   ) +
+#   geom_vline(data = bmds_spearman,
+#              aes(xintercept = median_POD),
+#              color = "blue") +
+#   geom_vline(data = bmds_spearman, aes(xintercept = ciu_POD), color = "yellow") +
+#   # geom_vline(data = bmds_spearman, aes(xintercept = mean_POD), color = "green") +
+#   geom_vline(data = bmds_spearman, aes(xintercept = cil_POD), color = "purple") +
+#   geom_text(
+#     data = bmds_spearman,
+#     mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc +
+#                     1),
+#     y = -85,
+#     inherit.aes = FALSE,
+#     size = 4
+#   ) +
+#   facet_wrap( ~ chemical, scales = "free_x") +
+#   ylim(-100, 0) +
+#   theme_minimal() +
+#   theme(
+#     panel.border = element_rect(colour = "grey50", fill = NA),
+#     #panel.grid.major = element_blank(),
+#     panel.grid.minor = element_blank()
+#   ) +
+#   xlab("Dose (mg/L)") +
+#   ylab("(Normalized ", paste0(params$endpoint), "'s", " r similarity score", ")")
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 
 ```
+
+```{r processed_results_No_facet, echo=FALSE, warning=FALSE, message=FALSE}
+options(scipen2 = 3)
+print.numeric <- function(x, ...) {
+  scipen2 <- getOption("scipen2", default = 3)
+  ifelse(abs(log(x, 10L)) >= scipen2,
+               format(x, digits = 5, scientific = TRUE),
+               x)
+}
+chemicalNames <- unique(simulated_curves_spearman_summary$chemical)
+p_list <- list()
+for (k in 1:length(chemicalNames)) {
+  labels <- simulated_curves_spearman_summary %>%
+    filter(chemical == chemicalNames[k]) %>%
+    select(x_label_num) %>%
+    pull() %>%
+    unique() %>%
+    print.numeric()
+  temp_simulated <- simulated_curves_spearman_summary %>%
+    filter(chemical == chemicalNames[k])
+  temp_curve_hits <- curve_hits_spearman %>%
+    filter(chemical == chemicalNames[k])
+  temp_bmds <- bmds_spearman %>%
+    filter(chemical == chemicalNames[k])
+  
+  p <- ggplot() + 
+    geom_point(
+    data = temp_simulated,
+    mapping = aes(x = conc, y = corrected_resp, group = sample_id),
+    color = "gray75",
+    alpha = 0.2
+  ) +
+  geom_point(
+    data = temp_curve_hits,
+    mapping = aes(x = conc, y = corrected_resp, group = sample_id),
+    color = "#a9a9a9",
+    alpha = 0.7
+  ) +
+  geom_line(
+    data = temp_simulated,
+    mapping = aes(x = conc, y = corrected_resp, group = sample_id),
+    color = "gray75",
+    alpha = 0.2
+  ) +
+  geom_line(
+    data = temp_curve_hits,
+    mapping = aes(x = conc, y = corrected_resp, group = sample_id),
+    color = "#a9a9a9",
+    alpha = 0.9
+  ) +
+  geom_hline(
+    yintercept = -bmr_thresh_spearman,
+    linetype = "dashed",
+    color = "red"
+  ) +
+  # geom_vline(data = bmds,
+  #            aes(xintercept = POD_med),
+  #            color = "green") +
+    {if(temp_bmds$ciu_POD != temp_bmds$highest_conc)geom_vline(data = temp_bmds, aes(xintercept = ciu_POD), color = "black")} +
+  # geom_vline(data = bmds_pearson, aes(xintercept = mean_POD), color = "green") +
+  {if(temp_bmds$cil_POD != temp_bmds$highest_conc)geom_vline(data = temp_bmds, aes(xintercept = cil_POD), color = "black")} +
+     {if(temp_bmds$median_POD != temp_bmds$highest_conc)geom_vline(data = temp_bmds,
+             aes(xintercept = median_POD),
+             color = "blue")} +
+  geom_text(
+    data = temp_bmds,
+    mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc),
+    position = position_nudge(x = 1),
+    y = -85,
+    inherit.aes = FALSE,
+    size = 4
+  ) +
+  theme_minimal() +
+  theme(
+    panel.border = element_rect(colour = "grey50", fill = NA),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.title.x=element_blank(),
+    axis.title.y=element_blank()
+  ) +
+  scale_y_continuous(limits = c(-100,0), breaks = seq(from = -100, to = 0, by = 20)) +
+  scale_x_continuous(breaks = unique(temp_simulated$conc), labels = labels) +
+  # xlab("Dose (mg/L)") +
+  # ylab("Corrected Affected Rate") +
+  ggtitle(paste0(chemicalNames[k]))
+  
+  p_list[[chemicalNames[k]]] <- list(p, chemicalNames[k])
+}
+```
+
 
 ```{r 61.2Print_results, echo=FALSE, fig.height=10.8, fig.width=19.2}
-print(p_spearman)
+print(p_spearman_simulated_no_processing)
 ```
 
-```{r save_plots, include=FALSE}
+```{r alternative_save_the_resutls, include=FALSE}
+yleft <-
+  grid::textGrob(paste0("Normalized ", params$endpoint, "'s", " rho similarity score"),
+           rot = 90,
+           gp = grid::gpar(fontsize = 12))
+bottom <- grid::textGrob("Dose (mg/L)", gp = grid::gpar(fontsize = 12))
+p <- gridExtra::grid.arrange(
+  p_list[[1]][[1]],
+  p_list[[2]][[1]],
+  p_list[[3]][[1]],
+  p_list[[4]][[1]],
+  p_list[[5]][[1]],
+  p_list[[6]][[1]],
+  p_list[[7]][[1]],
+  p_list[[8]][[1]],
+  p_list[[9]][[1]],
+  p_list[[10]][[1]],
+  p_list[[11]][[1]],
+  p_list[[12]][[1]],
+  p_list[[13]][[1]],
+  p_list[[14]][[1]],
+  p_list[[15]][[1]],
+  p_list[[16]][[1]],
+  p_list[[17]][[1]],
+  p_list[[18]][[1]],
+  p_list[[19]][[1]],
+  p_list[[20]][[1]],
+  p_list[[21]][[1]],
+  p_list[[22]][[1]],
+  p_list[[23]][[1]],
+  p_list[[24]][[1]],
+  p_list[[25]][[1]],
+  p_list[[26]][[1]],
+  p_list[[27]][[1]],
+  p_list[[28]][[1]],
+  p_list[[29]][[1]],
+  ncol = 6,
+  nrow = 5,
+  left = yleft,
+  bottom = bottom
+)
+
+#save the image
 ggsave(
-  plot = p_spearman,
+  plot = p,
   filename = paste0(
-    "Output/", params$endpoint, "_", params$method, "_processed_curves_",
+    "Output/Images/", params$endpoint, "_", params$method, "_processed_curves_",
     params$sample_size,
     "_samples.png"
   ),
@@ -287,8 +431,25 @@ ggsave(
   width = 1920,
   height = 1080,
   bg = "white",
-  scale = 2
+  scale = 3
 )
+```
+
+```{r save_plots, include=FALSE}
+# ggsave(
+#   plot = p_spearman,
+#   filename = paste0(
+#     "Output/", params$endpoint, "_", params$method, "_processed_curves_",
+#     params$sample_size,
+#     "_samples.png"
+#   ),
+#   device = "png",
+#   units = "px",
+#   width = 1920,
+#   height = 1080,
+#   bg = "white",
+#   scale = 2
+# )
 
 ggsave(
   plot = p_spearman_simulated_no_processing,
@@ -306,50 +467,64 @@ ggsave(
 )
 ```
 
-```{r 87.2Distribution_of_PODs, echo = FALSE, , fig.height=10.8, fig.width=19.2}
-p_rcurvep_spearman_distribution_bmds <- curve_hits_spearman %>%
-  group_by(chemical) %>%
-  ggplot(data = ., aes(x = POD)) +
-  geom_histogram() +
-  facet_wrap( ~ chemical, scales = "free_x") +
-  geom_vline(aes(xintercept = median_POD), color = "blue") +
-  geom_vline(aes(xintercept = cil_POD), color = "purple") +
-  geom_vline(aes(xintercept = ciu_POD), color = "yellow") +
-  geom_vline(aes(xintercept = lowest_conc),
-             color = "black",
-             linetype = "dashed") +
-  geom_vline(aes(xintercept = highest_conc),
-             color = "black",
-             linetype = "solid") +
-  theme_classic() +
-  scale_x_continuous(expand = expansion(add = 1)) +
-  xlab("BMD") +
-  geom_text(
-    mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc +
-                    2),
-    y = 1000,
-    inherit.aes = FALSE,
-    size = 4
+```{r alternative_print_image, echo=FALSE}
+knitr::include_graphics(
+  paste0(
+    "Output/Images/",
+    params$endpoint,
+    "_",
+    params$method,
+    "_processed_curves_",
+    params$sample_size,
+    "_samples.png"
   )
+)
+```
 
-print(p_rcurvep_spearman_distribution_bmds)
+```{r 87.2Distribution_of_PODs, echo = FALSE, , fig.height=10.8, fig.width=19.2}
+# p_rcurvep_spearman_distribution_bmds <- curve_hits_spearman %>%
+#   group_by(chemical) %>%
+#   ggplot(data = ., aes(x = POD)) +
+#   geom_histogram() +
+#   facet_wrap( ~ chemical, scales = "free_x") +
+#   geom_vline(aes(xintercept = median_POD), color = "blue") +
+#   geom_vline(aes(xintercept = cil_POD), color = "purple") +
+#   geom_vline(aes(xintercept = ciu_POD), color = "yellow") +
+#   geom_vline(aes(xintercept = lowest_conc),
+#              color = "black",
+#              linetype = "dashed") +
+#   geom_vline(aes(xintercept = highest_conc),
+#              color = "black",
+#              linetype = "solid") +
+#   theme_classic() +
+#   scale_x_continuous(expand = expansion(add = 1)) +
+#   xlab("BMD") +
+#   geom_text(
+#     mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc +
+#                     2),
+#     y = 1000,
+#     inherit.aes = FALSE,
+#     size = 4
+#   )
+
+#print(p_rcurvep_spearman_distribution_bmds)
 ```
 
 ```{r save_plots_again, include=FALSE}
-ggsave(
-  plot = p_rcurvep_spearman_distribution_bmds,
-  filename = paste0(
-    "Output/p_", params$endpoint, "_", params$method,"_distribution_bmds_",
-    params$sample_size,
-    "_samples.svg"
-  ),
-  device = "svg",
-  units = "px",
-  width = 1920,
-  height = 1080,
-  bg = "white",
-  scale = 2
-)
+# ggsave(
+#   plot = p_rcurvep_spearman_distribution_bmds,
+#   filename = paste0(
+#     "Output/p_", params$endpoint, "_", params$method,"_distribution_bmds_",
+#     params$sample_size,
+#     "_samples.png"
+#   ),
+#   device = "png",
+#   units = "px",
+#   width = 1920,
+#   height = 1080,
+#   bg = "white",
+#   scale = 2
+# )
 ```
 
 ```{r 62calculating_benchmark_dose_3, echo=FALSE}
@@ -377,7 +552,7 @@ ggsave(
      lowest_conc,
      highest_conc,
      cil_POD,
-     POD_med,
+     median_POD,
      ciu_POD,
      hit_confidence
    ) %>%

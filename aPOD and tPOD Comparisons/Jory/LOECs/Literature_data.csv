@@ -1,0 +1,117 @@
+.id,chemical,min,max,median_POD,POD_med,mean_POD,low_conf,high_conf,n_genes,Assay,confidence,species
+Acute LC50,1-Decanol,0.0001,1,3.21,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Acute LC50,1-Decanol,0.0001,1,0.602,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Chronic POD,1-Decanol,0.0001,1,0.43,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Chronic POD,1-Decanol,0.0001,1,NA,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Acute LC50,1-Octanol,0.001,10,19.8,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Acute LC50,1-Octanol,0.001,10,12.2,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Chronic POD,1-Octanol,0.001,10,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Chronic POD,1-Octanol,0.001,10,0.75,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Acute LC50,TEG,0.1,1000,54800,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Acute LC50,TEG,0.1,1000,5000,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Chronic POD,TEG,0.1,1000,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Chronic POD,TEG,0.1,1000,NA,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Acute LC50,SDS,0.00001,0.1,3.6,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Acute LC50,SDS,0.00001,0.1,1.39,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Chronic POD,SDS,0.00001,0.1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Chronic POD,SDS,0.00001,0.1,1.357,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Acute LC50,4TOP,0.00001,0.1,0.462,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Acute LC50,4TOP,0.00001,0.1,NA,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Chronic POD,4TOP,0.00001,0.1,0.0046,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Chronic POD,4TOP,0.00001,0.1,0.012,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Acute LC50,4-TPP,0.0001,1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Acute LC50,4-TPP,0.0001,1,1.6,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Chronic POD,4-TPP,0.0001,1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Chronic POD,4-TPP,0.0001,1,0.057,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Acute LC50,24-DMP,0.0001,1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Acute LC50,24-DMP,0.0001,1,6.3,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Chronic POD,24-DMP,0.0001,1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Chronic POD,24-DMP,0.0001,1,0.131,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Acute LC50,4C3MP,0.0001,1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Acute LC50,4C3MP,0.0001,1,1.3,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Chronic POD,4C3MP,0.0001,1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Chronic POD,4C3MP,0.0001,1,NA,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Acute LC50,Prochloraz,0.0001,1,5.6,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Acute LC50,Prochloraz,0.0001,1,NA,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Chronic POD,Prochloraz,0.0001,1,0.03,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Chronic POD,Prochloraz,0.0001,1,0.063,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Acute LC50,17betaestradiol,0.00001,0.1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Acute LC50,17betaestradiol,0.00001,0.1,1.28,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Chronic POD,17betaestradiol,0.00001,0.1,0.0000048,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Chronic POD,17betaestradiol,0.00001,0.1,0.00000042,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Acute LC50,DMSO,0.001,10,20964,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Acute LC50,DMSO,0.001,10,34000,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Chronic POD,DMSO,0.001,10,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Chronic POD,DMSO,0.001,10,0.006,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Acute LC50,34-DCA,0.00001,1,8.5,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Acute LC50,34-DCA,0.00001,1,0.95,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Chronic POD,34-DCA,0.00001,1,0.002,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Chronic POD,34-DCA,0.00001,1,0.0011,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Acute LC50,Trenbolone,0.00001,0.1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Acute LC50,Trenbolone,0.00001,0.1,NA,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Chronic POD,Trenbolone,0.00001,0.1,0.00000919,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Chronic POD,Trenbolone,0.00001,0.1,0.0000015,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Acute LC50,Vinclozolin,0.0001,1,4.86,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Acute LC50,Vinclozolin,0.0001,1,13.6,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Chronic POD,Vinclozolin,0.0001,1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Chronic POD,Vinclozolin,0.0001,1,0.05,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Acute LC50,Fluoxetine,0.00001,0.1,0.25,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Acute LC50,Fluoxetine,0.00001,0.1,NA,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Chronic POD,Fluoxetine,0.00001,0.1,0.0032,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Chronic POD,Fluoxetine,0.00001,0.1,0.00054,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Acute LC50,Fenitrothion,0.0001,1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Acute LC50,Fenitrothion,0.0001,1,0.2,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Chronic POD,Fenitrothion,0.0001,1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Chronic POD,Fenitrothion,0.0001,1,0.046,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Acute LC50,Glyphosate,0.0001,1,53.75,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Acute LC50,Glyphosate,0.0001,1,36.3,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Chronic POD,Glyphosate,0.0001,1,13.9,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Chronic POD,Glyphosate,0.0001,1,0.1,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Acute LC50,Malathion,0.0001,1,0.105,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Acute LC50,Malathion,0.0001,1,0.1,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Chronic POD,Malathion,0.0001,1,1,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Chronic POD,Malathion,0.0001,1,0.021,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Acute LC50,Fadrozole,0.0001,1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Acute LC50,Fadrozole,0.0001,1,NA,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Chronic POD,Fadrozole,0.0001,1,0.1,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Chronic POD,Fadrozole,0.0001,1,0.0955,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Acute LC50,Flutamide,0.0001,1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Acute LC50,Flutamide,0.0001,1,1.92,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Chronic POD,Flutamide,0.0001,1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Chronic POD,Flutamide,0.0001,1,0.101,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Acute LC50,Clofibric-acid,0.001,10,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Acute LC50,Clofibric-acid,0.001,10,526.5,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Chronic POD,Clofibric-acid,0.001,10,70,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Chronic POD,Clofibric-acid,0.001,10,10.75,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Acute LC50,24-DNP,0.0001,10,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Acute LC50,24-DNP,0.0001,10,0.62,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Chronic POD,24-DNP,0.0001,10,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Chronic POD,24-DNP,0.0001,10,0.208,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Acute LC50,Aniline,0.001,10,32,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Acute LC50,Aniline,0.001,10,21.99,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Chronic POD,Aniline,0.001,10,5.6,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Chronic POD,Aniline,0.001,10,0.39,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Acute LC50,NN-Dimethylformamide,0.1,1000,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Acute LC50,NN-Dimethylformamide,0.1,1000,6300,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Chronic POD,NN-Dimethylformamide,0.1,1000,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Chronic POD,NN-Dimethylformamide,0.1,1000,0.1,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Acute LC50,EE2,0.0000001,0.001,1.7,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Acute LC50,EE2,0.0000001,0.001,0.001,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Chronic POD,EE2,0.0000001,0.001,0.00000005,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Chronic POD,EE2,0.0000001,0.001,0.00000004,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Acute LC50,DES,0.00001,0.1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Acute LC50,DES,0.00001,0.1,NA,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Chronic POD,DES,0.00001,0.1,0.00001,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Chronic POD,DES,0.00001,0.1,NA,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Acute LC50,BPA,0.0001,1,8.04,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Acute LC50,BPA,0.0001,1,4.6,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Chronic POD,BPA,0.0001,1,0.2,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Chronic POD,BPA,0.0001,1,0.05,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Acute LC50,BPAF,0.0001,1,1.95,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Acute LC50,BPAF,0.0001,1,NA,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Chronic POD,BPAF,0.0001,1,0.05,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Chronic POD,BPAF,0.0001,1,0.07,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Acute LC50,TGSH,0.0001,1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Acute LC50,TGSH,0.0001,1,NA,NA,NA,NA,NA,NA,Literature,1,Other Fish
+Chronic POD,TGSH,0.0001,1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish
+Chronic POD,TGSH,0.0001,1,NA,NA,NA,NA,NA,NA,Literature,1,Other Fish

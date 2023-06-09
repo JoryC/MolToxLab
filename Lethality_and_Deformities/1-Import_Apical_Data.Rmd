@@ -239,8 +239,9 @@ for(i in 1:length(apicaldata)) {
     summarise("Survival Rate" = mean(Survival.Rate, na.rm=TRUE), SD_SR = sd(Survival.Rate, na.rm=TRUE),
               "Deformity Rate" = mean(Deformity.Rate, na.rm=TRUE), SD_DR = sd(Deformity.Rate, na.rm=TRUE),
               "Hatch Rate" = mean(Hatch.Rate, na.rm=TRUE), SD_HR = sd(Hatch.Rate, na.rm=TRUE),
-              "Affected Rate" = mean(Affected.Rate, na.rm=TRUE), SD_AR = sd(Affected.Rate, na.rm=TRUE))
-  colnames(temp2) <- c("Dose_mg_L", "Dose", "Survival_Rate", "SR_SD", "Deformity_Rate", "DR_SD", "Hatch_Rate", "HR_SD", "Affected_Rate", "AR_SD")
+              "Affected Rate" = mean(Affected.Rate, na.rm=TRUE), SD_AR = sd(Affected.Rate, na.rm=TRUE),
+              "Raw Affected Rate" = mean(Raw.Affected.Rate, na.rm=TRUE), SD_Raw_AR = sd(Raw.Affected.Rate, na.rm=TRUE))
+  colnames(temp2) <- c("Dose_mg_L", "Dose", "Survival_Rate", "SR_SD", "Deformity_Rate", "DR_SD", "Hatch_Rate", "HR_SD", "Affected_Rate", "AR_SD", "Raw Affected Rate", "SD_Raw_AR")
   apicaldatasummary[[i]] <- as.data.frame(temp2)
   rm(temp2)
 }
@@ -449,7 +450,7 @@ p <- ggplot() +
   facet_wrap( ~ Chemical, scales = "free") +
   # ylim(c(-0.1, 1)) +
   labs(
-    caption = str_wrap("Black dots represent raw data. Red dots and error bars represent (estimated marginal) means ± 95% confidence interval per group. Means not sharing any letter are significantly different by the Tukey-test at the 5% level of significance.", width = 70)
+    caption = str_wrap("Black dots represent raw data. Red dots and error bars represent (estimated marginal) means ± 95% confidence interval per group. Means not sharing any letter are significantly different by the Tukey-test at the 5% level of significance.", width = 300)
   )
 ```
 
@@ -470,57 +471,115 @@ ggsave(
 knitr::include_graphics("./Output/Images/Affected_Rate_Group_Eff_Tukey.png")
 ```
 
-```{r Dunnett, echo=TRUE}
-####Dunnett's Test####
+```{r Dunnett, echo=TRUE, indlude=FALSE}
+# ####Dunnett's Test####
+# #PostHoc tests
+# set.seed(2345)
+# 
+# #Dunnett's Test
+# Dunnett_results <- apicaldata_ol_rm %>%
+#   group_by(Chemical) %>%
+#   nest() %>%
+#   mutate(model = map(data, ~ DunnettTest(
+#     x = .$Affected.Rate, g = .$Dose..mg.L.
+#   ), data = .)) #Performing the Dunnett's test and saving it is a variable
+# 
+# #Creating list of summaries
+# #Since the PostHocTest object cannot be coerced to a tidy tibble using broom::tidy()... we got creative
+# Dunnett_list <-
+#   list() #What we are trying to do is index the results and see what the significant results were... so we are using a list which can be later coerced into a tibble to easily index...
+# for (i in 1:length(unique(apicaldata_ol_rm$Chemical))) {
+#   Dunnett_list[[Dunnett_results$Chemical[i]]] <-
+#     Dunnett_results$model[[i]][["0"]] %>% #Take Dunnett's test results without any of the fancy summary information and shove it into a named list
+#     as.data.frame() %>% #Coerce to a data frame temporarily so what we can take the row names of the reults and turn them into a variable with rownames_to_column
+#     rownames_to_column(var = "dose")
+# }
+# Dunnett_comb <-
+#   plyr::ldply(Dunnett_list) #this function combines all of the lists together and gives them a variable name according to the chemical
+# Dunnett_comb$dose = substr(Dunnett_comb$dose,
+#                            start = 1,
+#                            stop = nchar(Dunnett_comb$dose) - 2) %>%
+#   as.numeric() #Here we are fixing the dose column... the dose column has the test dose related to the control... but we just want to see what the test dose is without it giving us redundant information about the comparison to the control for every observation...
+# Dunnett_comb <- as_tibble(Dunnett_comb) #Coerce to a tidy tibble
+# #Great, a nice tibble that we can export
+# 
+# #Now just to add one more column
+# Dunnett_comb <- Dunnett_comb %>%
+#   mutate(adj_p.value = p.adjust(pval, method = "fdr")) %>%
+#   mutate(is.significant = if_else(
+#     condition = adj_p.value < 0.05,
+#     true = TRUE,
+#     false = FALSE
+#   )) %>%
+#   rename(Dose = dose)
+# DT::datatable(Dunnett_comb)
+# 
+# #Write to a .csv
+# write_csv(Dunnett_comb, file = "Output/Dunnett_test_results.csv")
+# 
+# # #indexing what the significant results were...
+# # Dunnett_Sig_Results <-
+# #   Dunnett_comb[which(Dunnett_comb$adj_p.value <= 0.05), ]
+# # Dunnett_Sig_Results
+```
+
+```{r ANCOVA_Dunnetts_Results, echo=FALSE}
 #PostHoc tests
 set.seed(2345)
 
-#Dunnett's Test
-Dunnett_results <- apicaldata_ol_rm %>%
+#Performing Dunnett's test on a two-way ANOVA
+
+ANCOVA <- apicaldata_ol_rm %>%
+  mutate(Dose..mg.L. = as.factor(Dose..mg.L.),
+         Dose = factor(Dose, levels = c("Control", "Dose_5", "Dose_4", "Dose_3", "Dose_2", "Dose_1"), ordered = TRUE),
+         Replicate = as.factor(Replicate)) %>%
   group_by(Chemical) %>%
   nest() %>%
-  mutate(model = map(data, ~ DunnettTest(
-    x = .$Affected.Rate, g = .$Dose..mg.L.
-  ), data = .)) #Performing the Dunnett's test and saving it is a variable
+  mutate(model = map(data, ~ aov(
+    Affected.Rate ~ Dose + Replicate,
+    data = .
+  ))) %>% #Where 'Replicate' is the dose group replicate... group A B or C for one of 3 petri dishes in the dose group... This tells us if there were human error in making sure each replicate got the same dose
+  dplyr::select(model)
 
-#Creating list of summaries
-#Since the PostHocTest object cannot be coerced to a tidy tibble using broom::tidy()... we got creative
-Dunnett_list <-
-  list() #What we are trying to do is index the results and see what the significant results were... so we are using a list which can be later coerced into a tibble to easily index...
-for (i in 1:length(unique(apicaldata_ol_rm$Chemical))) {
-  Dunnett_list[[Dunnett_results$Chemical[i]]] <-
-    Dunnett_results$model[[i]][["0"]] %>% #Take Dunnett's test results without any of the fancy summary information and shove it into a named list
-    as.data.frame() %>% #Coerce to a data frame temporarily so what we can take the row names of the reults and turn them into a variable with rownames_to_column
-    rownames_to_column(var = "dose")
-}
-Dunnett_comb <-
-  plyr::ldply(Dunnett_list) #this function combines all of the lists together and gives them a variable name according to the chemical
-Dunnett_comb$dose = substr(Dunnett_comb$dose,
-                           start = 1,
-                           stop = nchar(Dunnett_comb$dose) - 2) %>%
-  as.numeric() #Here we are fixing the dose column... the dose column has the test dose related to the control... but we just want to see what the test dose is without it giving us redundant information about the comparison to the control for every observation...
-Dunnett_comb <- as_tibble(Dunnett_comb) #Coerce to a tidy tibble
-#Great, a nice tibble that we can export
+fit_dunnett <- ANCOVA %>%
+  dplyr::mutate(Dunnett = map(model, ~ glht(.x, linfct = mcp(Dose="Dunnett")))) %>%
+  dplyr::mutate(tidy_Dunnett = map(Dunnett, ~ broom::tidy(.x))) %>%
+  dplyr::mutate(tidy_Dunnett_1 = map(tidy_Dunnett, ~ mutate(.x, Chemical = Chemical)))
 
-#Now just to add one more column
-Dunnett_comb <- Dunnett_comb %>%
-  mutate(adj_p.value = p.adjust(pval, method = "fdr")) %>%
-  mutate(is.significant = if_else(
-    condition = adj_p.value < 0.05,
-    true = TRUE,
-    false = FALSE
-  )) %>%
-  rename(Dose = dose)
-DT::datatable(Dunnett_comb)
+Dunnett_comb <- plyr::ldply(fit_dunnett$tidy_Dunnett_1) %>%
+  dplyr::mutate(Dose = str_split(contrast, pattern = " - ", simplify = TRUE)[,1]) %>%
+  dplyr::select(Chemical, Dose, estimate, std.error, statistic, adj.p.value) %>%
+  dplyr::mutate(adj.p.value = p.adjust(adj.p.value, method = "fdr")) # p-values not already adjusted
 
-#Write to a .csv
-write_csv(Dunnett_comb, file = "Output/Dunnett_test_results.csv")
+#Emmeans for multiple comparisons
+control <- c("Control")
+option3_1 <- fit_dunnett %>%
+    mutate(option3 = map(model, ~ multcomp::cld(emmeans::emmeans(object = .x, specs = pairwise~Dose), details = TRUE, Letters = letters, alpha = 0.05)))
 
-# #indexing what the significant results were...
-# Dunnett_Sig_Results <-
-#   Dunnett_comb[which(Dunnett_comb$adj_p.value <= 0.05), ]
-# Dunnett_Sig_Results
+# #Emmmeans data frame
+option3 <- option3_1 %>%
+    dplyr::select(option3) %>%
+    mutate(data = map(option3, pluck(.x = "emmeans"))) %>%
+    mutate(data2 = map(data, ~ as_tibble(x = .x))) %>%
+    dplyr::select(data2) %>%
+    unnest(cols = c(data2))
+# 
+# 
+model <- fit_dunnett$Dunnett
+model_means_cld <- option3 %>%
+  group_by(Chemical) %>%
+  dplyr::mutate(Group = forcats::fct_reorder(Dose, emmean, .na_rm = TRUE)) %>%
+  dplyr::mutate(cont_group = .group) %>%
+  dplyr::mutate(
+    Dose = factor(Dose, levels = c("Control", "Dose_5", "Dose_4", "Dose_3", "Dose_2", "Dose_1"), ordered = TRUE),
+    Group = factor(Dose, levels = c("Control", "Dose_5", "Dose_4", "Dose_3", "Dose_2", "Dose_1"), ordered = TRUE)
+  ) %>%
+  dplyr::mutate(adj_factor = emmean/4)
+
+write_csv(Dunnett_comb, "Output/ANCOVA_Dunnetts_Results.csv")
+write_csv(model_means_cld, "Output/ANCOVA_Dunnetts_Compact_Letter_Display_EmMeans.csv")
 ```
+
 
 ```{r Plot_1, echo=TRUE, warning=FALSE, message=FALSE}
 #Survival Rate
@@ -598,11 +657,16 @@ for(i in 1:length(apicaldatasummary)) {
 
 ```{r Plot_4, echo=TRUE, warning=FALSE, message=FALSE}
 #Affected Rate
+Dunnett_comb <- plyr::ldply(fit_dunnett$tidy_Dunnett_1) %>%
+  dplyr::mutate(Dose = str_split(contrast, pattern = " - ", simplify = TRUE)[,1]) %>%
+  dplyr::select(Chemical, Dose, estimate, std.error, statistic, adj.p.value) %>%
+  dplyr::mutate(adj.p.value = p.adjust(adj.p.value, method = "fdr")) # p-values not already adjusted
 #Saving Images
 Dunnett_comb <- Dunnett_comb %>%
-  rename(Dose_mg_L = Dose)
+  rename(adj_p.value = adj.p.value,
+         .id = Chemical)
 
-apicaldatasummary_2 <- full_join(apicaldatasummary_tibble, Dunnett_comb, by = c("Dose_mg_L", ".id")) %>%
+apicaldatasummary_2 <- full_join(apicaldatasummary_tibble, Dunnett_comb, by = c("Dose", ".id")) %>%
   group_by(.id) %>%
   split(f = .$.id)
 
@@ -615,7 +679,7 @@ for(i in 1:length(apicaldatasummary_2)) {
       stat = "identity",
       color = "black",
       fill = "white",
-      position = position_dodge()
+      position = position_dodge(width = 1)
     ) +
     geom_errorbar(
       aes(ymin = Affected_Rate - AR_SD, ymax = Affected_Rate + AR_SD),
@@ -686,11 +750,14 @@ y_values_4_geom_text <- apicaldata_ol_rm %>%
   summarise(max_y = max(Affected.Rate, na.rm = TRUE),
             min_y = min(Affected.Rate, na.rm = TRUE),
             median_y = median(Affected.Rate, na.rm = TRUE)) %>%
-  rename(Dose_mg_L = Dose..mg.L.)
+  rename(Dose_mg_L = Dose..mg.L.) %>%
+  ungroup() %>%
+  mutate(Dose_mg_L = factor(Dose_mg_L, ordered = TRUE))
 
 gg_Dunnett <- Dunnett_comb %>%
   rename(Chemical = .id) %>%
-  inner_join(y_values_4_geom_text, by = c("Chemical", "Dose_mg_L"))
+  inner_join(y_values_4_geom_text, by = c("Chemical", "Dose")) %>%
+  mutate(Dose_mg_L = factor(Dose_mg_L, ordered = TRUE))
 
 gg_ANOVA <- ancova_AR_summary %>%
   na.omit() %>%
@@ -705,14 +772,16 @@ gg_data <- apicaldata_ol_rm %>%
   group_by(Chemical) %>%
   mutate(Affected.Rate_show = as.numeric(
     between(
-      x = Affected.Rate,
-      left = quantile(Affected.Rate, na.rm = TRUE)[2] - 1.5 * IQR(Affected.Rate, na.rm = TRUE),
-      right = quantile(Affected.Rate, na.rm = TRUE)[4] + 1.5 * IQR(Affected.Rate, na.rm = TRUE)
+      x = Raw.Affected.Rate,
+      left = quantile(Raw.Affected.Rate, na.rm = TRUE)[2] - 1.5 * IQR(Raw.Affected.Rate, na.rm = TRUE),
+      right = quantile(Raw.Affected.Rate, na.rm = TRUE)[4] + 1.5 * IQR(Raw.Affected.Rate, na.rm = TRUE)
     )
   )) %>%
+  ungroup() %>%
   mutate(
-    Affected.Rate_ol_rm = if_else(Affected.Rate_show == 1, true = Affected.Rate, false = NA),
-    Dose = factor(Dose, levels = c("Control", "Dose_6", "Dose_5", "Dose_4", "Dose_3", "Dose_2", "Dose_1"), ordered = TRUE)
+    Affected.Rate_ol_rm = if_else(Affected.Rate_show == 1, true = Raw.Affected.Rate, false = NA),
+    Dose = factor(Dose, levels = c("Control", "Dose_6", "Dose_5", "Dose_4", "Dose_3", "Dose_2", "Dose_1"), ordered = TRUE),
+    Dose..mg.L. = factor(Dose..mg.L., ordered = TRUE)
   ) %>%
   dplyr::rename(Group = Replicate,
                 Dose_mg_L = Dose..mg.L.) %>%
@@ -721,13 +790,16 @@ gg_data <- apicaldata_ol_rm %>%
     Group,
     Dose,
     Dose_mg_L,
-    Affected.Rate,
+    Raw.Affected.Rate,
     Affected.Rate_show,
     Affected.Rate_ol_rm,
     term,
     adj.p.value,
     is.significant
   )
+
+apicaldatasummary_tibble <- apicaldatasummary %>%
+  plyr::ldply()
 
 apicaldatasummary_tibble <- apicaldatasummary_tibble %>%
   mutate(Dose = factor(
@@ -742,7 +814,8 @@ apicaldatasummary_tibble <- apicaldatasummary_tibble %>%
       "Dose_1"
     ),
     ordered = TRUE
-  )) %>%
+  ),
+  Dose_mg_L = factor(Dose_mg_L, ordered = TRUE)) %>%
   rename(Chemical = .id) %>%
   group_by(Chemical)
 ```
@@ -751,13 +824,13 @@ apicaldatasummary_tibble <- apicaldatasummary_tibble %>%
 p <- ggplot() +
   #y axis
   scale_y_continuous(
-    name = "Relative Affected Rate",
+    name = "Percent Affected",
     breaks = pretty_breaks(),
-    expand = expansion(mult = (c(0.2, 0.2)))
+    expand = expansion(mult = (c(0, 0.2)))
   ) +
   #x axis
   scale_x_discrete(
-    name = "Dose",
+    name = "Dose (mg/L)",
     expand = expansion(mult = (c(0.2, 0.2)))
   ) +
   #layout
@@ -765,30 +838,22 @@ p <- ggplot() +
   #black data points
   geom_point(
     data = gg_data,
-    aes(y = Affected.Rate, x = Dose, group = Dose, color = is.significant),
-    position = position_nudge(x = -0.5),
-    show.legend = FALSE
-  ) +
-  scale_color_manual(values = c("TRUE" = "black", "FALSE" = "grey")) +
-  #black boxplot
-  geom_boxplot(
-    data = gg_data,
-    aes(y = Affected.Rate, x = Dose, group = Dose),
-    width = 0.2,
-    outlier.shape = NA,
-    position = position_nudge(x = -0.2)
-  ) +
+    aes(y = Raw.Affected.Rate*100, x = Dose_mg_L, group = Dose_mg_L),
+    position = position_nudge(x = -0.2)) +
+      scale_color_manual(values = c(
+        "TRUE" = "black", "FALSE" = "grey"
+      )) +
    #red mean value
   geom_point(
     data = apicaldatasummary_tibble,
-    aes(y = Affected_Rate, x = Dose),
+    aes(y = `Raw Affected Rate`*100, x = Dose_mg_L),
     size = 2,
     color = "red"
   ) +
   #red mean errorbar
   geom_errorbar(
     data = apicaldatasummary_tibble,
-    aes(ymin = Affected_Rate-AR_SD, ymax = Affected_Rate+AR_SD, x = Dose),
+    aes(ymin = `Raw Affected Rate`*100-SD_Raw_AR*100, ymax = `Raw Affected Rate`*100+SD_Raw_AR*100, x = Dose_mg_L),
     width = 0.05,
     color = "red"
   ) +
@@ -802,34 +867,35 @@ p <- ggplot() +
         false = if_else(
           condition = adj_p.value <= 0.1 &
             adj_p.value > 0.05,
-          true = "",
+          true = ".",
           if_else(
             condition = adj_p.value <= 0.05 &
               adj_p.value > 0.01,
-            true = "*",
+            true = "^",
             false = if_else(
               condition = adj_p.value <= 0.01 &
                 adj_p.value > 0.001,
-              true = "**",
+              true = "^^",
               false = if_else(adj_p.value <= 0.001 &
-                                adj_p.value >= 0, true = "***", false = "")
+                                adj_p.value >= 0, true = "*", false = "")
             )
           )
         )
       ),
-      group = Dose,
-      y = median_y,
-      x = Dose,
+      group = Dose_mg_L,
+      y = 100,
+      x = Dose_mg_L,
     ),
     position = position_nudge(x = 0.1),
     hjust = 0,
     color = "red",
     size = 6
   ) +
-  facet_wrap( ~ Chemical, scales = "free") +
+  facet_wrap( ~ Chemical, scales = "free_x") +
   labs(
-    caption = str_wrap("Black dots represent animals what were significantly impacted from exposure to the toxic substance. Grey dots represent animals that were not significantly impacted from exposure to the substance. The endpoint of interest is the affected rate which includes animal mortality and deformities. Red points represent the mean Affected Rate and the the red error bars are the standard deviation. Red asterix represent statistical significance of the post-hoc Dunnett's test ('***' - adj_p.value < 0.001, '**' - adj_p.value < 0.01 & > 0.001, '*' - adj_p.value < 0.05 & > 0.01).", width = 100)) +
-  theme(axis.text.x=element_text(angle=55,hjust=1))
+    caption = str_wrap("Black dots represent the percent affected embryos from each Petri dish (n=3 Petri dish per dose). Red points represent the mean percent affected for each dose group. The red error bars are the standard deviation for each dose group. 
+                       Red asterix represent statistical significance of the post-hoc Dunnett's test and false discovery rate adjustment (* - p < 0.001).", width = 235))
+  #theme(axis.text.x=element_text(angle=55,hjust=1))
 
 ```
 

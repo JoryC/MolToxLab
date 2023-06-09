@@ -1,0 +1,163 @@
+.id,chemical,ID,min,max,POD,POD_value_mg_L,POD_low_conf,POD_high_conf,confidence,confident_logical,species,origin
+Behaviour,1-Decanol,Behaviour,0.0001,1,BMD,0.00707154671053811,0.00286143753802042,0.657703477557481,0.232,FALSE,Zebrafish,Experimental
+Acute LC50,1-Decanol,Acute LC50,0.0001,1,LC50,3.21,NA,NA,1,TRUE,Zebrafish,Literature
+Acute LC50,1-Decanol,Acute LC50,0.0001,1,LC50,0.602,NA,NA,1,TRUE,Other Fish,Literature
+LOEC,1-Decanol,Behaviour,0.0001,1,LOEC,0.0001,NA,NA,1,TRUE,Zebrafish,Experimental
+Chronic POD,1-Decanol,Chronic POD,0.0001,1,NOEC/LOEC/EC10,0.43,NA,NA,1,TRUE,Zebrafish,Literature
+Behaviour,1-Octanol,Behaviour,0.001,10,BMD,0.415066903911792,0.0483994383685992,3.3489817598224,0.151,FALSE,Zebrafish,Experimental
+Acute LC50,1-Octanol,Acute LC50,0.001,10,LC50,19.8,NA,NA,1,TRUE,Zebrafish,Literature
+Acute LC50,1-Octanol,Acute LC50,0.001,10,LC50,12.2,NA,NA,1,TRUE,Other Fish,Literature
+LOEC,1-Octanol,Behaviour,0.001,10,LOEC,0.01,NA,NA,1,TRUE,Zebrafish,Experimental
+Chronic POD,1-Octanol,Chronic POD,0.001,10,NOEC/LOEC/EC10,0.75,NA,NA,1,TRUE,Other Fish,Literature
+Behaviour,17betaestradiol,Behaviour,0.00001,0.1,BMD,0.0827957398533571,7.75091566284115E-05,0.0827957398533571,0.119,FALSE,Zebrafish,Experimental
+Metabolic Rate,17betaestradiol,Metabolic,0.00001,0.1,BMD,0.00292419538379582,0.00089758440217157,0.00554867177534372,1,TRUE,Zebrafish,Experimental
+Acute LC50,17betaestradiol,Acute LC50,0.00001,0.1,LC50,1.28,NA,NA,1,TRUE,Other Fish,Literature
+LOEC,17betaestradiol,Metabolic,0.00001,0.1,LOEC,0.01,NA,NA,1,TRUE,Zebrafish,Experimental
+Chronic POD,17betaestradiol,Chronic POD,0.00001,0.1,NOEC/LOEC/EC10,0.0000048,NA,NA,1,TRUE,Zebrafish,Literature
+Chronic POD,17betaestradiol,Chronic POD,0.00001,0.1,NOEC/LOEC/EC10,0.00000042,NA,NA,1,TRUE,Other Fish,Literature
+Behaviour,24-DMP,Behaviour,0.0001,1,BMD,0.367128011327315,0.00064193276834521,0.828931014920246,0.22,FALSE,Zebrafish,Experimental
+Metabolic Rate,24-DMP,Metabolic,0.0001,1,BMD,0.276130072129005,0.00268106281351171,0.986489568226708,0.283,FALSE,Zebrafish,Experimental
+Acute LC50,24-DMP,Acute LC50,0.0001,1,LC50,6.3,NA,NA,1,TRUE,Other Fish,Literature
+Chronic POD,24-DMP,Chronic POD,0.0001,1,NOEC/LOEC/EC10,0.131,NA,NA,1,TRUE,Other Fish,Literature
+Behaviour,24-DNP,Behaviour,0.0001,10,BMD,0.817081041765709,0.817081041765709,0.817081041765709,0.111,FALSE,Zebrafish,Experimental
+Metabolic Rate,24-DNP,Metabolic,0.0001,10,BMD,0.51244745790279,0.0464328130236987,0.596518529253297,0.218,FALSE,Zebrafish,Experimental
+Overt Toxicity,24-DNP,Overt Toxicity,0.0001,10,BMD,1.23688299343565,1.07264725461114,3.1085668870099,0.998,TRUE,Zebrafish,Experimental
+Acute LC50,24-DNP,Acute LC50,0.0001,10,LC50,0.62,NA,NA,1,TRUE,Other Fish,Literature
+LOEC,24-DNP,Behaviour,0.0001,10,LOEC,0.01,NA,NA,1,TRUE,Zebrafish,Experimental
+LOEC,24-DNP,Overt Toxicity,0.0001,10,LOEC,10,NA,NA,1,TRUE,Zebrafish,Experimental
+Chronic POD,24-DNP,Chronic POD,0.0001,10,NOEC/LOEC/EC10,0.208,NA,NA,1,TRUE,Other Fish,Literature
+Behaviour,34-DCA,Behaviour,0.00001,1,BMD,0.00050075303301667,0.00050075303301667,0.00050075303301667,0.023,FALSE,Zebrafish,Experimental
+Metabolic Rate,34-DCA,Metabolic,0.00001,1,BMD,0.0803625872857175,0.0803625872857175,0.0803625872857175,0.118,FALSE,Zebrafish,Experimental
+Overt Toxicity,34-DCA,Overt Toxicity,0.00001,1,BMD,0.156879842525655,0.156879842525655,0.156879842525655,1,TRUE,Zebrafish,Experimental
+Acute LC50,34-DCA,Acute LC50,0.00001,1,LC50,8.5,NA,NA,1,TRUE,Zebrafish,Literature
+Acute LC50,34-DCA,Acute LC50,0.00001,1,LC50,0.95,NA,NA,1,TRUE,Other Fish,Literature
+LOEC,34-DCA,Behaviour,0.00001,1,LOEC,0.1,NA,NA,1,TRUE,Zebrafish,Experimental
+LOEC,34-DCA,Overt Toxicity,0.00001,1,LOEC,1,NA,NA,1,TRUE,Zebrafish,Experimental
+Chronic POD,34-DCA,Chronic POD,0.00001,1,NOEC/LOEC/EC10,0.002,NA,NA,1,TRUE,Zebrafish,Literature
+Chronic POD,34-DCA,Chronic POD,0.00001,1,NOEC/LOEC/EC10,0.0011,NA,NA,1,TRUE,Other Fish,Literature
+Behaviour,4-TPP,Behaviour,0.0001,1,BMD,0.391195854189563,0.00575731589596394,0.925772412716089,0.559,TRUE,Zebrafish,Experimental
+Metabolic Rate,4-TPP,Metabolic,0.0001,1,BMD,0.025010255248721,0.0109932524546948,0.126615272572997,0.999,TRUE,Zebrafish,Experimental
+Overt Toxicity,4-TPP,Overt Toxicity,0.0001,1,BMD,0.142928529155284,0.142928529155284,0.142928529155284,1,TRUE,Zebrafish,Experimental
+Acute LC50,4-TPP,Acute LC50,0.0001,1,LC50,1.6,NA,NA,1,TRUE,Other Fish,Literature
+LOEC,4-TPP,Behaviour,0.0001,1,LOEC,1,NA,NA,1,TRUE,Zebrafish,Experimental
+LOEC,4-TPP,Metabolic,0.0001,1,LOEC,1,NA,NA,1,TRUE,Zebrafish,Experimental
+LOEC,4-TPP,Overt Toxicity,0.0001,1,LOEC,1,NA,NA,1,TRUE,Zebrafish,Experimental
+Chronic POD,4-TPP,Chronic POD,0.0001,1,NOEC/LOEC/EC10,0.057,NA,NA,1,TRUE,Other Fish,Literature
+Behaviour,4C3MP,Behaviour,0.0001,1,BMD,0.365919234752132,0.00454229251659652,0.600145863368672,0.237,FALSE,Zebrafish,Experimental
+Metabolic Rate,4C3MP,Metabolic,0.0001,1,BMD,0.884406119722938,0.154175999594046,0.924639579077348,0.172,FALSE,Zebrafish,Experimental
+Acute LC50,4C3MP,Acute LC50,0.0001,1,LC50,1.3,NA,NA,1,TRUE,Other Fish,Literature
+LOEC,4C3MP,Behaviour,0.0001,1,LOEC,1,NA,NA,1,TRUE,Zebrafish,Experimental
+Metabolic Rate,4TOP,Metabolic,0.00001,0.1,BMD,0.0509187124699132,0.00099368902432531,0.0876507315331486,0.638,TRUE,Zebrafish,Experimental
+Acute LC50,4TOP,Acute LC50,0.00001,0.1,LC50,0.462,NA,NA,1,TRUE,Zebrafish,Literature
+LOEC,4TOP,Behaviour,0.00001,0.1,LOEC,0.001,NA,NA,1,TRUE,Zebrafish,Experimental
+LOEC,4TOP,Metabolic,0.00001,0.1,LOEC,0.1,NA,NA,1,TRUE,Zebrafish,Experimental
+Chronic POD,4TOP,Chronic POD,0.00001,0.1,NOEC/LOEC/EC10,0.0046,NA,NA,1,TRUE,Zebrafish,Literature
+Chronic POD,4TOP,Chronic POD,0.00001,0.1,NOEC/LOEC/EC10,0.012,NA,NA,1,TRUE,Other Fish,Literature
+Metabolic Rate,Aniline,Metabolic,0.001,10,BMD,2.77607092484185,0.293942622466743,3.89004204169346,0.372,FALSE,Zebrafish,Experimental
+Acute LC50,Aniline,Acute LC50,0.001,10,LC50,32,NA,NA,1,TRUE,Zebrafish,Literature
+Acute LC50,Aniline,Acute LC50,0.001,10,LC50,21.99,NA,NA,1,TRUE,Other Fish,Literature
+LOEC,Aniline,Behaviour,0.001,10,LOEC,0.01,NA,NA,1,TRUE,Zebrafish,Experimental
+Chronic POD,Aniline,Chronic POD,0.001,10,NOEC/LOEC/EC10,5.6,NA,NA,1,TRUE,Zebrafish,Literature
+Chronic POD,Aniline,Chronic POD,0.001,10,NOEC/LOEC/EC10,0.39,NA,NA,1,TRUE,Other Fish,Literature
+Behaviour,BPA,Behaviour,0.0001,1,BMD,0.607787386080155,0.607787386080155,0.909078449999025,0.232,FALSE,Zebrafish,Experimental
+Metabolic Rate,BPA,Metabolic,0.0001,1,BMD,0.928693354653989,0.928693354653989,0.928693354653989,0.093,FALSE,Zebrafish,Experimental
+Acute LC50,BPA,Acute LC50,0.0001,1,LC50,8.04,NA,NA,1,TRUE,Zebrafish,Literature
+Acute LC50,BPA,Acute LC50,0.0001,1,LC50,4.6,NA,NA,1,TRUE,Other Fish,Literature
+Chronic POD,BPA,Chronic POD,0.0001,1,NOEC/LOEC/EC10,0.2,NA,NA,1,TRUE,Zebrafish,Literature
+Chronic POD,BPA,Chronic POD,0.0001,1,NOEC/LOEC/EC10,0.05,NA,NA,1,TRUE,Other Fish,Literature
+Behaviour,BPAF,Behaviour,0.0001,1,BMD,0.00849592053824255,9.86678437739827E-05,0.3970220442877,0.186,FALSE,Zebrafish,Experimental
+Acute LC50,BPAF,Acute LC50,0.0001,1,LC50,1.95,NA,NA,1,TRUE,Zebrafish,Literature
+Chronic POD,BPAF,Chronic POD,0.0001,1,NOEC/LOEC/EC10,0.05,NA,NA,1,TRUE,Zebrafish,Literature
+Chronic POD,BPAF,Chronic POD,0.0001,1,NOEC/LOEC/EC10,0.07,NA,NA,1,TRUE,Other Fish,Literature
+Behaviour,Clofibric-acid,Behaviour,0.001,10,BMD,3.22390651912259,0.0302580504976988,6.66383245469536,0.333,FALSE,Zebrafish,Experimental
+Metabolic Rate,Clofibric-acid,Metabolic,0.001,10,BMD,8.60602319943393,5.85006716374749,8.81147718930479,0.337,FALSE,Zebrafish,Experimental
+Acute LC50,Clofibric-acid,Acute LC50,0.001,10,LC50,526.5,NA,NA,1,TRUE,Other Fish,Literature
+LOEC,Clofibric-acid,Behaviour,0.001,10,LOEC,0.001,NA,NA,1,TRUE,Zebrafish,Experimental
+LOEC,Clofibric-acid,Metabolic,0.001,10,LOEC,10,NA,NA,1,TRUE,Zebrafish,Experimental
+Chronic POD,Clofibric-acid,Chronic POD,0.001,10,NOEC/LOEC/EC10,70,NA,NA,1,TRUE,Zebrafish,Literature
+Chronic POD,Clofibric-acid,Chronic POD,0.001,10,NOEC/LOEC/EC10,10.75,NA,NA,1,TRUE,Other Fish,Literature
+Behaviour,DES,Behaviour,0.00001,0.1,BMD,0.0637404887800956,7.90600918401362E-05,0.0637404887800956,0.119,FALSE,Zebrafish,Experimental
+Metabolic Rate,DES,Metabolic,0.00001,0.1,BMD,0.00061438894595746,3.47203989818714E-06,0.033153123276033,0.579,TRUE,Zebrafish,Experimental
+Overt Toxicity,DES,Overt Toxicity,0.00001,0.1,BMD,0.00107292833615878,5.086319480851E-05,0.0409908230456327,0.671,TRUE,Zebrafish,Experimental
+LOEC,DES,Behaviour,0.00001,0.1,LOEC,0.1,NA,NA,1,TRUE,Zebrafish,Experimental
+Chronic POD,DES,Chronic POD,0.00001,0.1,NOEC/LOEC/EC10,0.00001,NA,NA,1,TRUE,Zebrafish,Literature
+Behaviour,DMSO,Behaviour,0.001,10,BMD,6.4093550683813,0.0449950147044837,6.4093550683813,0.1,FALSE,Zebrafish,Experimental
+Metabolic Rate,DMSO,Metabolic,0.001,10,BMD,0.0352545322612073,0.00655416040125892,0.0848682366961677,0.022,FALSE,Zebrafish,Experimental
+Acute LC50,DMSO,Acute LC50,0.001,10,LC50,20964,NA,NA,1,TRUE,Zebrafish,Literature
+Acute LC50,DMSO,Acute LC50,0.001,10,LC50,34000,NA,NA,1,TRUE,Other Fish,Literature
+LOEC,DMSO,Behaviour,0.001,10,LOEC,10,NA,NA,1,TRUE,Zebrafish,Experimental
+Chronic POD,DMSO,Chronic POD,0.001,10,NOEC/LOEC/EC10,0.006,NA,NA,1,TRUE,Other Fish,Literature
+Behaviour,EE2,Behaviour,0.0000001,0.001,BMD,0.00047399943307267,6.44549147089149E-06,0.00047399943307267,0.109,FALSE,Zebrafish,Experimental
+Overt Toxicity,EE2,Overt Toxicity,0.0000001,0.001,BMD,0.00050297750612144,0.00010989494363837,0.001,0.182,FALSE,Zebrafish,Experimental
+Acute LC50,EE2,Acute LC50,0.0000001,0.001,LC50,1.7,NA,NA,1,TRUE,Zebrafish,Literature
+LOEC,EE2,Behaviour,0.0000001,0.001,LOEC,0.000001,NA,NA,1,TRUE,Zebrafish,Experimental
+Chronic POD,EE2,Chronic POD,0.0000001,0.001,NOEC/LOEC/EC10,0.00000005,NA,NA,1,TRUE,Zebrafish,Literature
+Chronic POD,EE2,Chronic POD,0.0000001,0.001,NOEC/LOEC/EC10,0.00000004,NA,NA,1,TRUE,Other Fish,Literature
+Behaviour,Fadrozole,Behaviour,0.0001,1,BMD,0.258646080334071,0.00423309290067572,0.484700294364936,0.245,FALSE,Zebrafish,Experimental
+Metabolic Rate,Fadrozole,Metabolic,0.0001,1,BMD,0.284346568024011,7.39722564521352E-05,0.284346568024011,0.126,FALSE,Zebrafish,Experimental
+LOEC,Fadrozole,Behaviour,0.0001,1,LOEC,1,NA,NA,1,TRUE,Zebrafish,Experimental
+Chronic POD,Fadrozole,Chronic POD,0.0001,1,NOEC/LOEC/EC10,0.1,NA,NA,1,TRUE,Zebrafish,Literature
+Chronic POD,Fadrozole,Chronic POD,0.0001,1,NOEC/LOEC/EC10,0.0955,NA,NA,1,TRUE,Other Fish,Literature
+Metabolic Rate,Fenitrothion,Metabolic,0.0001,1,BMD,0.00821479393346251,0.00088083624508792,0.415880396063487,0.314,FALSE,Zebrafish,Experimental
+Acute LC50,Fenitrothion,Acute LC50,0.0001,1,LC50,0.2,NA,NA,1,TRUE,Other Fish,Literature
+LOEC,Fenitrothion,Behaviour,0.0001,1,LOEC,0.001,NA,NA,1,TRUE,Zebrafish,Experimental
+Chronic POD,Fenitrothion,Chronic POD,0.0001,1,NOEC/LOEC/EC10,0.046,NA,NA,1,TRUE,Other Fish,Literature
+Behaviour,Fluoxetine,Behaviour,0.00001,0.1,BMD,0.0382574055786114,0.0111881809155565,0.1,0.914,TRUE,Zebrafish,Experimental
+Metabolic Rate,Fluoxetine,Metabolic,0.00001,0.1,BMD,0.0675596182524359,0.00713582073525877,0.0832940218776687,0.444,FALSE,Zebrafish,Experimental
+Acute LC50,Fluoxetine,Acute LC50,0.00001,0.1,LC50,0.25,NA,NA,1,TRUE,Zebrafish,Literature
+LOEC,Fluoxetine,Behaviour,0.00001,0.1,LOEC,0.0001,NA,NA,1,TRUE,Zebrafish,Experimental
+LOEC,Fluoxetine,Metabolic,0.00001,0.1,LOEC,0.1,NA,NA,1,TRUE,Zebrafish,Experimental
+Chronic POD,Fluoxetine,Chronic POD,0.00001,0.1,NOEC/LOEC/EC10,0.0032,NA,NA,1,TRUE,Zebrafish,Literature
+Chronic POD,Fluoxetine,Chronic POD,0.00001,0.1,NOEC/LOEC/EC10,0.00054,NA,NA,1,TRUE,Other Fish,Literature
+Behaviour,Flutamide,Behaviour,0.0001,1,BMD,0.436229732478961,0.061587002608234,0.519501263476581,0.316,FALSE,Zebrafish,Experimental
+Metabolic Rate,Flutamide,Metabolic,0.0001,1,BMD,0.00370182282583755,0.00028625192667979,0.282350106590471,0.874,TRUE,Zebrafish,Experimental
+Acute LC50,Flutamide,Acute LC50,0.0001,1,LC50,1.92,NA,NA,1,TRUE,Other Fish,Literature
+LOEC,Flutamide,Behaviour,0.0001,1,LOEC,0.001,NA,NA,1,TRUE,Zebrafish,Experimental
+Chronic POD,Flutamide,Chronic POD,0.0001,1,NOEC/LOEC/EC10,0.101,NA,NA,1,TRUE,Other Fish,Literature
+Behaviour,Glyphosate,Behaviour,0.0001,1,BMD,0.463836760535539,0.00466849137660619,0.767232169192006,0.237,FALSE,Zebrafish,Experimental
+Metabolic Rate,Glyphosate,Metabolic,0.0001,1,BMD,0.0993435860570052,0.00484112543480919,0.288584604360694,0.173,FALSE,Zebrafish,Experimental
+Acute LC50,Glyphosate,Acute LC50,0.0001,1,LC50,53.75,NA,NA,1,TRUE,Zebrafish,Literature
+Acute LC50,Glyphosate,Acute LC50,0.0001,1,LC50,36.3,NA,NA,1,TRUE,Other Fish,Literature
+LOEC,Glyphosate,Behaviour,0.0001,1,LOEC,0.1,NA,NA,1,TRUE,Zebrafish,Experimental
+Chronic POD,Glyphosate,Chronic POD,0.0001,1,NOEC/LOEC/EC10,13.9,NA,NA,1,TRUE,Zebrafish,Literature
+Chronic POD,Glyphosate,Chronic POD,0.0001,1,NOEC/LOEC/EC10,0.1,NA,NA,1,TRUE,Other Fish,Literature
+Behaviour,Malathion,Behaviour,0.0001,1,BMD,0.304923470843838,0.304923470843838,0.304923470843838,0.114,FALSE,Zebrafish,Experimental
+Metabolic Rate,Malathion,Metabolic,0.0001,1,BMD,0.92818244277984,0.92818244277984,0.92818244277984,0.106,FALSE,Zebrafish,Experimental
+Overt Toxicity,Malathion,Overt Toxicity,0.0001,1,BMD,0.791049376954302,0.0791049376954302,0.791049376954302,0.346,FALSE,Zebrafish,Experimental
+Acute LC50,Malathion,Acute LC50,0.0001,1,LC50,0.105,NA,NA,1,TRUE,Zebrafish,Literature
+LOEC,Malathion,Behaviour,0.0001,1,LOEC,0.001,NA,NA,1,TRUE,Zebrafish,Experimental
+Chronic POD,Malathion,Chronic POD,0.0001,1,NOEC/LOEC/EC10,1,NA,NA,1,TRUE,Zebrafish,Literature
+Chronic POD,Malathion,Chronic POD,0.0001,1,NOEC/LOEC/EC10,0.021,NA,NA,1,TRUE,Other Fish,Literature
+Behaviour,NN-Dimethylformamide,Behaviour,0.1,1000,BMD,314.170529084848,3.36751906714335,878.968072518823,0.229,FALSE,Zebrafish,Experimental
+Metabolic Rate,NN-Dimethylformamide,Metabolic,0.1,1000,BMD,0.163369989348342,0.018057806664079,187.619084639725,0.252,FALSE,Zebrafish,Experimental
+Acute LC50,NN-Dimethylformamide,Acute LC50,0.1,1000,LC50,6300,NA,NA,1,TRUE,Other Fish,Literature
+LOEC,NN-Dimethylformamide,Behaviour,0.1,1000,LOEC,1000,NA,NA,1,TRUE,Zebrafish,Experimental
+Chronic POD,NN-Dimethylformamide,Chronic POD,0.1,1000,NOEC/LOEC/EC10,0.1,NA,NA,1,TRUE,Other Fish,Literature
+Behaviour,Prochloraz,Behaviour,0.0001,1,BMD,0.365040784157072,0.025710685769084,0.381210089726597,0.358,FALSE,Zebrafish,Experimental
+Metabolic Rate,Prochloraz,Metabolic,0.0001,1,BMD,0.761556487972011,0.761556487972011,0.761556487972011,0.107,FALSE,Zebrafish,Experimental
+Acute LC50,Prochloraz,Acute LC50,0.0001,1,LC50,5.6,NA,NA,1,TRUE,Zebrafish,Literature
+LOEC,Prochloraz,Behaviour,0.0001,1,LOEC,1,NA,NA,1,TRUE,Zebrafish,Experimental
+Chronic POD,Prochloraz,Chronic POD,0.0001,1,NOEC/LOEC/EC10,0.03,NA,NA,1,TRUE,Zebrafish,Literature
+Chronic POD,Prochloraz,Chronic POD,0.0001,1,NOEC/LOEC/EC10,0.063,NA,NA,1,TRUE,Other Fish,Literature
+Behaviour,SDS,Behaviour,0.00001,0.1,BMD,0.00645462959132253,5.42631156579137E-06,0.0348144034323757,0.137,FALSE,Zebrafish,Experimental
+Acute LC50,SDS,Acute LC50,0.00001,0.1,LC50,3.6,NA,NA,1,TRUE,Zebrafish,Literature
+Acute LC50,SDS,Acute LC50,0.00001,0.1,LC50,1.39,NA,NA,1,TRUE,Other Fish,Literature
+Chronic POD,SDS,Chronic POD,0.00001,0.1,NOEC/LOEC/EC10,1.357,NA,NA,1,TRUE,Other Fish,Literature
+Metabolic Rate,TEG,Metabolic,0.1,1000,BMD,342.476632198464,0.0453718560796472,342.476632198464,0.112,FALSE,Zebrafish,Experimental
+Acute LC50,TEG,Acute LC50,0.1,1000,LC50,54800,NA,NA,1,TRUE,Zebrafish,Literature
+Acute LC50,TEG,Acute LC50,0.1,1000,LC50,5000,NA,NA,1,TRUE,Other Fish,Literature
+Behaviour,TGSH,Behaviour,0.0001,1,BMD,0.456835133151302,0.00029851025671244,0.456835133151302,0.137,FALSE,Zebrafish,Experimental
+LOEC,TGSH,Behaviour,0.0001,1,LOEC,1,NA,NA,1,TRUE,Zebrafish,Experimental
+Behaviour,Trenbolone,Behaviour,0.00001,0.1,BMD,0.0633003802844531,0.00383025650031222,0.0669040022795083,0.429,FALSE,Zebrafish,Experimental
+Metabolic Rate,Trenbolone,Metabolic,0.00001,0.1,BMD,8.28076548525995E-06,3.81824075062366E-06,0.00074586225690472,0.075,FALSE,Zebrafish,Experimental
+Overt Toxicity,Trenbolone,Overt Toxicity,0.00001,0.1,BMD,0.00033887172678387,4.40328528605307E-06,0.00033887172678387,0.115,FALSE,Zebrafish,Experimental
+LOEC,Trenbolone,Behaviour,0.00001,0.1,LOEC,0.001,NA,NA,1,TRUE,Zebrafish,Experimental
+Chronic POD,Trenbolone,Chronic POD,0.00001,0.1,NOEC/LOEC/EC10,0.00000919,NA,NA,1,TRUE,Zebrafish,Literature
+Chronic POD,Trenbolone,Chronic POD,0.00001,0.1,NOEC/LOEC/EC10,0.0000015,NA,NA,1,TRUE,Other Fish,Literature
+Behaviour,Vinclozolin,Behaviour,0.0001,1,BMD,0.272220003348074,0.00054080745529845,0.736046862782508,0.362,FALSE,Zebrafish,Experimental
+Metabolic Rate,Vinclozolin,Metabolic,0.0001,1,BMD,0.517035109703171,0.137544185007871,1,0.319,FALSE,Zebrafish,Experimental
+Overt Toxicity,Vinclozolin,Overt Toxicity,0.0001,1,BMD,0.66019484840819,6.60194848408189E-05,0.66019484840819,0.316,FALSE,Zebrafish,Experimental
+Acute LC50,Vinclozolin,Acute LC50,0.0001,1,LC50,4.86,NA,NA,1,TRUE,Zebrafish,Literature
+Acute LC50,Vinclozolin,Acute LC50,0.0001,1,LC50,13.6,NA,NA,1,TRUE,Other Fish,Literature
+LOEC,Vinclozolin,Behaviour,0.0001,1,LOEC,1,NA,NA,1,TRUE,Zebrafish,Experimental
+Chronic POD,Vinclozolin,Chronic POD,0.0001,1,NOEC/LOEC/EC10,0.05,NA,NA,1,TRUE,Other Fish,Literature

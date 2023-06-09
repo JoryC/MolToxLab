@@ -11,7 +11,7 @@ endpoint_R <- c("pearson", "spearman")
 endpoint <- endpoint_R[as.numeric(args[6])] #index which endpoint to use for this iteration of the loop after running the script with `runCompile_BMR_Results.sh`
 k=endpoint
 
-value <- c("totaldist") # Can add more endpoints to this like lardist, smldist, etc.
+value <- c("totaldist") # Can add other endpoints to this like lardist, smldist, etc.
 sample_size <- 1000 #Change this to whatever sample size you want. Test with 10 or 100, get results with 1000 samples
 method <- c("rcurvep")
 

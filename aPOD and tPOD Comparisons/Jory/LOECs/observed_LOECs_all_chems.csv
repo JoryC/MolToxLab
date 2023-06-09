@@ -1,0 +1,88 @@
+.id_legacy,.id,chemical,min,max,median_POD,POD_med,mean_POD,low_conf,high_conf,n_genes,Assay,confidence,species
+LOEC,Overt Toxicity,1-Decanol,0.0001,1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish
+LOEC,Behaviour,1-Decanol,0.0001,1,0.0001,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish
+LOEC,Metabolic Rate,1-Decanol,0.0001,1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish
+LOEC,Overt Toxicity,1-Octanol,0.001,10,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish
+LOEC,Behaviour,1-Octanol,0.001,10,0.01,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish
+LOEC,Metabolic Rate,1-Octanol,0.001,10,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish
+LOEC,Overt Toxicity,17betaestradiol,0.00001,0.1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish
+LOEC,Behaviour,17betaestradiol,0.00001,0.1,NA,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish
+LOEC,Metabolic Rate,17betaestradiol,0.00001,0.1,0.01,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish
+LOEC,Overt Toxicity,24-DMP,0.0001,1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish
+LOEC,Behaviour,24-DMP,0.0001,1,NA,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish
+LOEC,Metabolic Rate,24-DMP,0.0001,1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish
+LOEC,Overt Toxicity,24-DNP,0.0001,10,10,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish
+LOEC,Behaviour,24-DNP,0.0001,10,0.01,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish
+LOEC,Metabolic Rate,24-DNP,0.0001,10,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish
+LOEC,Overt Toxicity,34-DCA,0.00001,1,1,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish
+LOEC,Behaviour,34-DCA,0.00001,1,0.1,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish
+LOEC,Metabolic Rate,34-DCA,0.00001,1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish
+LOEC,Overt Toxicity,4-TPP,0.0001,1,1,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish
+LOEC,Behaviour,4-TPP,0.0001,1,1,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish
+LOEC,Metabolic Rate,4-TPP,0.0001,1,1,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish
+LOEC,Overt Toxicity,4C3MP,0.0001,1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish
+LOEC,Behaviour,4C3MP,0.0001,1,1,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish
+LOEC,Metabolic Rate,4C3MP,0.0001,1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish
+LOEC,Overt Toxicity,4TOP,0.00001,0.1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish
+LOEC,Behaviour,4TOP,0.00001,0.1,0.001,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish
+LOEC,Metabolic Rate,4TOP,0.00001,0.1,0.1,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish
+LOEC,Overt Toxicity,Aniline,0.001,10,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish
+LOEC,Behaviour,Aniline,0.001,10,0.01,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish
+LOEC,Metabolic Rate,Aniline,0.001,10,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish
+LOEC,Overt Toxicity,BPA,0.0001,1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish
+LOEC,Behaviour,BPA,0.0001,1,NA,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish
+LOEC,Metabolic Rate,BPA,0.0001,1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish
+LOEC,Overt Toxicity,BPAF,0.0001,1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish
+LOEC,Behaviour,BPAF,0.0001,1,NA,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish
+LOEC,Metabolic Rate,BPAF,0.0001,1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish
+LOEC,Overt Toxicity,Clofibric-acid,0.001,10,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish
+LOEC,Behaviour,Clofibric-acid,0.001,10,0.001,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish
+LOEC,Metabolic Rate,Clofibric-acid,0.001,10,10,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish
+LOEC,Overt Toxicity,DES,0.00001,0.1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish
+LOEC,Behaviour,DES,0.00001,0.1,0.1,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish
+LOEC,Metabolic Rate,DES,0.00001,0.1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish
+LOEC,Overt Toxicity,DMSO,0.001,10,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish
+LOEC,Behaviour,DMSO,0.001,10,10,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish
+LOEC,Metabolic Rate,DMSO,0.001,10,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish
+LOEC,Overt Toxicity,EE2,0.0000001,0.001,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish
+LOEC,Behaviour,EE2,0.0000001,0.001,0.000001,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish
+LOEC,Metabolic Rate,EE2,0.0000001,0.001,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish
+LOEC,Overt Toxicity,Fadrozole,0.0001,1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish
+LOEC,Behaviour,Fadrozole,0.0001,1,1,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish
+LOEC,Metabolic Rate,Fadrozole,0.0001,1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish
+LOEC,Overt Toxicity,Fenitrothion,0.0001,1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish
+LOEC,Behaviour,Fenitrothion,0.0001,1,0.001,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish
+LOEC,Metabolic Rate,Fenitrothion,0.0001,1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish
+LOEC,Overt Toxicity,Fluoxetine,0.00001,0.1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish
+LOEC,Behaviour,Fluoxetine,0.00001,0.1,0.0001,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish
+LOEC,Metabolic Rate,Fluoxetine,0.00001,0.1,0.1,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish
+LOEC,Overt Toxicity,Flutamide,0.0001,1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish
+LOEC,Behaviour,Flutamide,0.0001,1,0.001,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish
+LOEC,Metabolic Rate,Flutamide,0.0001,1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish
+LOEC,Overt Toxicity,Glyphosate,0.0001,1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish
+LOEC,Behaviour,Glyphosate,0.0001,1,0.1,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish
+LOEC,Metabolic Rate,Glyphosate,0.0001,1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish
+LOEC,Overt Toxicity,Malathion,0.0001,1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish
+LOEC,Behaviour,Malathion,0.0001,1,0.001,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish
+LOEC,Metabolic Rate,Malathion,0.0001,1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish
+LOEC,Overt Toxicity,NN-Dimethylformamide,0.1,1000,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish
+LOEC,Behaviour,NN-Dimethylformamide,0.1,1000,1000,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish
+LOEC,Metabolic Rate,NN-Dimethylformamide,0.1,1000,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish
+LOEC,Overt Toxicity,Prochloraz,0.0001,1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish
+LOEC,Behaviour,Prochloraz,0.0001,1,1,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish
+LOEC,Metabolic Rate,Prochloraz,0.0001,1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish
+LOEC,Overt Toxicity,SDS,0.00001,0.1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish
+LOEC,Behaviour,SDS,0.00001,0.1,NA,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish
+LOEC,Metabolic Rate,SDS,0.00001,0.1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish
+LOEC,Overt Toxicity,TEG,0.1,1000,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish
+LOEC,Behaviour,TEG,0.1,1000,NA,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish
+LOEC,Metabolic Rate,TEG,0.1,1000,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish
+LOEC,Overt Toxicity,TGSH,0.0001,1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish
+LOEC,Behaviour,TGSH,0.0001,1,1,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish
+LOEC,Metabolic Rate,TGSH,0.0001,1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish
+LOEC,Overt Toxicity,Trenbolone,0.00001,0.1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish
+LOEC,Behaviour,Trenbolone,0.00001,0.1,0.001,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish
+LOEC,Metabolic Rate,Trenbolone,0.00001,0.1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish
+LOEC,Overt Toxicity,Vinclozolin,0.0001,1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish
+LOEC,Behaviour,Vinclozolin,0.0001,1,1,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish
+LOEC,Metabolic Rate,Vinclozolin,0.0001,1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish

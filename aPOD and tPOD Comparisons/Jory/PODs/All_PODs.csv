@@ -1,0 +1,639 @@
+.id,chemical,min,max,median_POD,POD_med,mean_POD,low_conf,high_conf,n_genes,Assay,confidence,species,.id_legacy
+10th pct,1-Decanol,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+10th pct,1-Octanol,0.001,10,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+10th pct,17betaestradiol,1e-5,0.1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+10th pct,24-DMP,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+10th pct,24-DNP,0.001,10,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+10th pct,34-DCA,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+10th pct,4-TPP,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+10th pct,4C3MP,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+10th pct,4TOP,1e-5,0.1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+10th pct,Aniline,0.001,10,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+10th pct,BPA,1e-4,1,0.010539101421007,NA,NA,0.00615538,0.345630052591927,40,Transcriptomic,1,Zebrafish,NA
+10th pct,BPAF,1e-4,1,0.00229133,NA,NA,0.00161762,0.00409252,397,Transcriptomic,1,Zebrafish,NA
+10th pct,Clofibric-acid,0.001,10,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+10th pct,DES,1e-5,0.1,0.0314965837139522,NA,NA,0.00150952,0.0368421995590654,146,Transcriptomic,1,Zebrafish,NA
+10th pct,DMSO,0.001,10,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+10th pct,EE2,1e-7,0.001,2.49e-5,NA,NA,9.82858e-6,3.05938e-4,273,Transcriptomic,1,Zebrafish,NA
+10th pct,Fadrozole,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+10th pct,Fenitrothion,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+10th pct,Fluoxetine,1e-5,0.1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+10th pct,Flutamide,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+10th pct,Glyphosate,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+10th pct,Malathion,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+10th pct,NN-Dimethylformamide,0.1,1000,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+10th pct,Prochloraz,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+10th pct,SDS,1e-5,0.1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+10th pct,TEG,0.1,1000,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+10th pct,TGSH,1e-4,1,0.309303434846277,NA,NA,0.283756949857606,0.33376292467543,485,Transcriptomic,1,Zebrafish,NA
+10th pct,Trenbolone,1e-5,0.1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+10th pct,Vinclozolin,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+1st Mode,1-Decanol,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+1st Mode,1-Octanol,0.001,10,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+1st Mode,17betaestradiol,1e-5,0.1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+1st Mode,24-DMP,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+1st Mode,24-DNP,0.001,10,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+1st Mode,34-DCA,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+1st Mode,4-TPP,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+1st Mode,4C3MP,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+1st Mode,4TOP,1e-5,0.1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+1st Mode,Aniline,0.001,10,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+1st Mode,BPA,1e-4,1,0.00976240381952766,NA,NA,0.00101869951683012,0.54329859110328,40,Transcriptomic,1,Zebrafish,NA
+1st Mode,BPAF,1e-4,1,0.00128807863243476,NA,NA,0.00105628935269021,0.00919554490753454,397,Transcriptomic,1,Zebrafish,NA
+1st Mode,Clofibric-acid,0.001,10,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+1st Mode,DES,1e-5,0.1,0.0502819420035881,NA,NA,1.1165065913167e-4,0.0535543000249013,146,Transcriptomic,1,Zebrafish,NA
+1st Mode,DMSO,0.001,10,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+1st Mode,EE2,1e-7,0.001,8.7e-6,NA,NA,6.17e-6,4.7342805219682e-4,273,Transcriptomic,1,Zebrafish,NA
+1st Mode,Fadrozole,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+1st Mode,Fenitrothion,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+1st Mode,Fluoxetine,1e-5,0.1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+1st Mode,Flutamide,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+1st Mode,Glyphosate,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+1st Mode,Malathion,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+1st Mode,NN-Dimethylformamide,0.1,1000,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+1st Mode,Prochloraz,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+1st Mode,SDS,1e-5,0.1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+1st Mode,TEG,0.1,1000,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+1st Mode,TGSH,1e-4,1,0.484458825388872,NA,NA,0.469238532668399,0.494562615390056,485,Transcriptomic,1,Zebrafish,NA
+1st Mode,Trenbolone,1e-5,0.1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+1st Mode,Vinclozolin,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+20th gene,1-Decanol,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+20th gene,1-Octanol,0.001,10,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+20th gene,17betaestradiol,1e-5,0.1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+20th gene,24-DMP,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+20th gene,24-DNP,0.001,10,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+20th gene,34-DCA,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+20th gene,4-TPP,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+20th gene,4C3MP,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+20th gene,4TOP,1e-5,0.1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+20th gene,Aniline,0.001,10,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+20th gene,BPA,1e-4,1,0.477476,NA,NA,0.396638,0.562118,40,Transcriptomic,1,Zebrafish,NA
+20th gene,BPAF,1e-4,1,0.00103987,NA,NA,9.76852e-4,0.00161762,397,Transcriptomic,1,Zebrafish,NA
+20th gene,Clofibric-acid,0.001,10,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+20th gene,DES,1e-5,0.1,0.0359441,NA,NA,0.0298255,0.0379274,146,Transcriptomic,1,Zebrafish,NA
+20th gene,DMSO,0.001,10,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+20th gene,EE2,1e-7,0.001,9.82858e-6,NA,NA,6.13555e-6,6.41283e-5,273,Transcriptomic,1,Zebrafish,NA
+20th gene,Fadrozole,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+20th gene,Fenitrothion,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+20th gene,Fluoxetine,1e-5,0.1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+20th gene,Flutamide,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+20th gene,Glyphosate,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+20th gene,Malathion,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+20th gene,NN-Dimethylformamide,0.1,1000,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+20th gene,Prochloraz,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+20th gene,SDS,1e-5,0.1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+20th gene,TEG,0.1,1000,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+20th gene,TGSH,1e-4,1,0.043493,NA,NA,0.014793,0.251509,485,Transcriptomic,1,Zebrafish,NA
+20th gene,Trenbolone,1e-5,0.1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+20th gene,Vinclozolin,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+GO Term,1-Decanol,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+GO Term,1-Octanol,0.001,10,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+GO Term,17betaestradiol,1e-5,0.1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+GO Term,24-DMP,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+GO Term,24-DNP,0.001,10,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+GO Term,34-DCA,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+GO Term,4-TPP,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+GO Term,4C3MP,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+GO Term,4TOP,1e-5,0.1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+GO Term,Aniline,0.001,10,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+GO Term,BPA,1e-4,1,0.417667,NA,NA,0.396638,0.762544,40,Transcriptomic,1,Zebrafish,NA
+GO Term,BPAF,1e-4,1,0.00166637,NA,NA,0.0013656,0.00224999,397,Transcriptomic,1,Zebrafish,NA
+GO Term,Clofibric-acid,0.001,10,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+GO Term,DES,1e-5,0.1,0.0307771,NA,NA,0.0298255,0.0538198,146,Transcriptomic,1,Zebrafish,NA
+GO Term,DMSO,0.001,10,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+GO Term,EE2,1e-7,0.001,6.33e-5,NA,NA,4.54742e-6,4.85578e-4,273,Transcriptomic,1,Zebrafish,NA
+GO Term,Fadrozole,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+GO Term,Fenitrothion,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+GO Term,Fluoxetine,1e-5,0.1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+GO Term,Flutamide,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+GO Term,Glyphosate,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+GO Term,Malathion,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+GO Term,NN-Dimethylformamide,0.1,1000,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+GO Term,Prochloraz,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+GO Term,SDS,1e-5,0.1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+GO Term,TEG,0.1,1000,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+GO Term,TGSH,1e-4,1,0.0976323,NA,NA,0.0101889,0.706945,485,Transcriptomic,1,Zebrafish,NA
+GO Term,Trenbolone,1e-5,0.1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+GO Term,Vinclozolin,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+Reactome,1-Decanol,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+Reactome,1-Octanol,0.001,10,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+Reactome,17betaestradiol,1e-5,0.1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+Reactome,24-DMP,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+Reactome,24-DNP,0.001,10,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+Reactome,34-DCA,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+Reactome,4-TPP,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+Reactome,4C3MP,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+Reactome,4TOP,1e-5,0.1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+Reactome,Aniline,0.001,10,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+Reactome,BPA,1e-4,1,0.0105824,NA,NA,0.00101952,0.755821,40,Transcriptomic,1,Zebrafish,NA
+Reactome,BPAF,1e-4,1,6.64554e-4,NA,NA,4.93732e-4,0.00920634,397,Transcriptomic,1,Zebrafish,NA
+Reactome,Clofibric-acid,0.001,10,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+Reactome,DES,1e-5,0.1,0.0427958386304089,NA,NA,0.0307771,0.083383,146,Transcriptomic,1,Zebrafish,NA
+Reactome,DMSO,0.001,10,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+Reactome,EE2,1e-7,0.001,2.99907e-4,NA,NA,9.88065e-7,4.26884e-4,273,Transcriptomic,1,Zebrafish,NA
+Reactome,Fadrozole,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+Reactome,Fenitrothion,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+Reactome,Fluoxetine,1e-5,0.1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+Reactome,Flutamide,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+Reactome,Glyphosate,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+Reactome,Malathion,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+Reactome,NN-Dimethylformamide,0.1,1000,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+Reactome,Prochloraz,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+Reactome,SDS,1e-5,0.1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+Reactome,TEG,0.1,1000,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+Reactome,TGSH,1e-4,1,0.354295,NA,NA,0.338365,0.624139,485,Transcriptomic,1,Zebrafish,NA
+Reactome,Trenbolone,1e-5,0.1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+Reactome,Vinclozolin,1e-4,1,NA,NA,NA,NA,NA,NA,Transcriptomic,0,Zebrafish,NA
+affected_rate_pos_dir,1-Decanol,1e-4,1,1,1,1,1,1,NA,Lethality & Deformity,0,Zebrafish,NA
+affected_rate_pos_dir,1-Octanol,0.001,10,10,10,10,10,10,NA,Lethality & Deformity,0,Zebrafish,NA
+affected_rate_pos_dir,17betaestradiol,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Lethality & Deformity,0,Zebrafish,NA
+affected_rate_pos_dir,24-DMP,1e-4,1,1,1,1,1,1,NA,Lethality & Deformity,0,Zebrafish,NA
+affected_rate_pos_dir,24-DNP,1e-4,10,1.43844988828766,1.43844988828766,0.594277754492605,0.00562341325190349,1.43844988828766,NA,Lethality & Deformity,1,Zebrafish,NA
+affected_rate_pos_dir,34-DCA,1e-5,1,0.156879842525655,0.156879842525655,0.156879842525655,0.156879842525655,0.156879842525655,NA,Lethality & Deformity,1,Zebrafish,NA
+affected_rate_pos_dir,4-TPP,1e-4,1,0.142928529155284,0.142928529155284,0.142928529155284,0.142928529155284,0.142928529155284,NA,Lethality & Deformity,1,Zebrafish,NA
+affected_rate_pos_dir,4C3MP,1e-4,1,1,1,1,1,1,NA,Lethality & Deformity,0,Zebrafish,NA
+affected_rate_pos_dir,4TOP,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Lethality & Deformity,0,Zebrafish,NA
+affected_rate_pos_dir,Aniline,0.001,10,10,10,10,10,10,NA,Lethality & Deformity,0,Zebrafish,NA
+affected_rate_pos_dir,BPA,1e-4,1,1,1,1,1,1,NA,Lethality & Deformity,0,Zebrafish,NA
+affected_rate_pos_dir,BPAF,1e-4,1,1,1,1,1,1,NA,Lethality & Deformity,0,Zebrafish,NA
+affected_rate_pos_dir,Clofibric-acid,0.001,10,10,10,10,10,10,NA,Lethality & Deformity,0,Zebrafish,NA
+affected_rate_pos_dir,DES,1e-5,0.1,2.9729398324913e-4,0.1,1.0053479087598e-4,7.91049376954302e-6,3.6458412370707e-4,NA,Lethality & Deformity,0.231,Zebrafish,NA
+affected_rate_pos_dir,DMSO,0.001,10,10,10,10,10,10,NA,Lethality & Deformity,0,Zebrafish,NA
+affected_rate_pos_dir,EE2,1e-7,0.001,6.6019484840818e-4,0.001,2.8597870391218e-4,4.40328528605307e-5,6.6019484840818e-4,NA,Lethality & Deformity,0.356,Zebrafish,NA
+affected_rate_pos_dir,Fadrozole,1e-4,1,1,1,1,1,1,NA,Lethality & Deformity,0,Zebrafish,NA
+affected_rate_pos_dir,Fenitrothion,1e-4,1,1,1,1,1,1,NA,Lethality & Deformity,0,Zebrafish,NA
+affected_rate_pos_dir,Fluoxetine,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Lethality & Deformity,0,Zebrafish,NA
+affected_rate_pos_dir,Flutamide,1e-4,1,1,1,1,1,1,NA,Lethality & Deformity,0,Zebrafish,NA
+affected_rate_pos_dir,Glyphosate,1e-4,1,1,1,1,1,1,NA,Lethality & Deformity,0,Zebrafish,NA
+affected_rate_pos_dir,Malathion,1e-4,1,0.791049376954302,1,0.360714109587674,0.0791049376954302,0.791049376954302,NA,Lethality & Deformity,0.346,Zebrafish,NA
+affected_rate_pos_dir,NN-Dimethylformamide,0.1,1000,1000,1000,1000,1000,1000,NA,Lethality & Deformity,0,Zebrafish,NA
+affected_rate_pos_dir,Prochloraz,1e-4,1,1,1,1,1,1,NA,Lethality & Deformity,0,Zebrafish,NA
+affected_rate_pos_dir,SDS,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Lethality & Deformity,0,Zebrafish,NA
+affected_rate_pos_dir,TEG,0.1,1000,1000,1000,1000,1000,1000,NA,Lethality & Deformity,0,Zebrafish,NA
+affected_rate_pos_dir,TGSH,1e-4,1,1,1,1,1,1,NA,Lethality & Deformity,0,Zebrafish,NA
+affected_rate_pos_dir,Trenbolone,1e-5,0.1,3.3887172678387e-4,0.1,1.0119601296399e-4,4.40328528605307e-6,3.3887172678387e-4,NA,Lethality & Deformity,0.115,Zebrafish,NA
+affected_rate_pos_dir,Vinclozolin,1e-4,1,0.66019484840819,1,0.111563012383726,6.60194848408189e-5,0.66019484840819,NA,Lethality & Deformity,0.316,Zebrafish,NA
+fitted_affected_rate_pos_dir,1-Decanol,1e-4,1,1,1,1,1,1,NA,Lethality & Deformity,0,Zebrafish,NA
+fitted_affected_rate_pos_dir,1-Octanol,0.001,10,10,10,10,10,10,NA,Lethality & Deformity,0,Zebrafish,NA
+fitted_affected_rate_pos_dir,17betaestradiol,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Lethality & Deformity,0,Zebrafish,NA
+fitted_affected_rate_pos_dir,24-DMP,1e-4,1,1,1,1,1,1,NA,Lethality & Deformity,0,Zebrafish,NA
+fitted_affected_rate_pos_dir,24-DNP,1e-4,10,1.23688299343565,1.23707554751806,1.41223393087361,1.07264725461114,3.1085668870099,NA,Lethality & Deformity,0.998,Zebrafish,NA
+fitted_affected_rate_pos_dir,34-DCA,1e-5,1,0.244320978064685,0.244808671483008,0.285881478509161,0.13027478372579,0.65621581853766,NA,Lethality & Deformity,0.997,Zebrafish,NA
+fitted_affected_rate_pos_dir,4-TPP,1e-4,1,0.250189323354525,0.250272524228227,0.317091805490919,0.141013523243022,0.632802286866246,NA,Lethality & Deformity,0.975,Zebrafish,NA
+fitted_affected_rate_pos_dir,4C3MP,1e-4,1,1,1,1,1,1,NA,Lethality & Deformity,0,Zebrafish,NA
+fitted_affected_rate_pos_dir,4TOP,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Lethality & Deformity,0,Zebrafish,NA
+fitted_affected_rate_pos_dir,Aniline,0.001,10,10,10,10,10,10,NA,Lethality & Deformity,0,Zebrafish,NA
+fitted_affected_rate_pos_dir,BPA,1e-4,1,1,1,1,1,1,NA,Lethality & Deformity,0,Zebrafish,NA
+fitted_affected_rate_pos_dir,BPAF,1e-4,1,1,1,1,1,1,NA,Lethality & Deformity,0,Zebrafish,NA
+fitted_affected_rate_pos_dir,Clofibric-acid,0.001,10,10,10,10,10,10,NA,Lethality & Deformity,0,Zebrafish,NA
+fitted_affected_rate_pos_dir,DES,1e-5,0.1,0.00107292833615878,0.00334184892274777,9.5948522075366e-4,5.086319480851e-5,0.0409908230456327,NA,Lethality & Deformity,0.671,Zebrafish,NA
+fitted_affected_rate_pos_dir,DMSO,0.001,10,10,10,10,10,10,NA,Lethality & Deformity,0,Zebrafish,NA
+fitted_affected_rate_pos_dir,EE2,1e-7,0.001,5.0297750612144e-4,0.001,4.0799480468913e-4,1.0989494363837e-4,0.001,NA,Lethality & Deformity,0.182,Zebrafish,NA
+fitted_affected_rate_pos_dir,Fadrozole,1e-4,1,1,1,1,1,1,NA,Lethality & Deformity,0,Zebrafish,NA
+fitted_affected_rate_pos_dir,Fenitrothion,1e-4,1,1,1,1,1,1,NA,Lethality & Deformity,0,Zebrafish,NA
+fitted_affected_rate_pos_dir,Fluoxetine,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Lethality & Deformity,0,Zebrafish,NA
+fitted_affected_rate_pos_dir,Flutamide,1e-4,1,1,1,1,1,1,NA,Lethality & Deformity,0,Zebrafish,NA
+fitted_affected_rate_pos_dir,Glyphosate,1e-4,1,1,1,1,1,1,NA,Lethality & Deformity,0,Zebrafish,NA
+fitted_affected_rate_pos_dir,Malathion,1e-4,1,1,1,0.779103505087604,0.275822568256547,1,NA,Lethality & Deformity,0.171,Zebrafish,NA
+fitted_affected_rate_pos_dir,NN-Dimethylformamide,0.1,1000,1000,1000,1000,1000,1000,NA,Lethality & Deformity,0,Zebrafish,NA
+fitted_affected_rate_pos_dir,Prochloraz,1e-4,1,1,1,1,1,1,NA,Lethality & Deformity,0,Zebrafish,NA
+fitted_affected_rate_pos_dir,SDS,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Lethality & Deformity,0,Zebrafish,NA
+fitted_affected_rate_pos_dir,TEG,0.1,1000,1000,1000,1000,1000,1000,NA,Lethality & Deformity,0,Zebrafish,NA
+fitted_affected_rate_pos_dir,TGSH,1e-4,1,1,1,1,1,1,NA,Lethality & Deformity,0,Zebrafish,NA
+fitted_affected_rate_pos_dir,Trenbolone,1e-5,0.1,0.00119653318365256,0.1,0.00186290160705028,1.8815346143858e-4,0.0154474294387825,NA,Lethality & Deformity,0.131,Zebrafish,NA
+fitted_affected_rate_pos_dir,Vinclozolin,1e-4,1,1,1,1,1,1,NA,Lethality & Deformity,0,Zebrafish,NA
+fitted_z_score_neg_dir,1-Decanol,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_neg_dir,1-Octanol,0.001,10,10,10,10,10,10,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_neg_dir,17betaestradiol,1e-5,0.1,0.00292419538379582,0.00292494670597548,0.00249038375437244,8.9758440217157e-4,0.00554867177534372,NA,Metabolic,1,Zebrafish,NA
+fitted_z_score_neg_dir,24-DMP,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_neg_dir,24-DNP,1e-4,10,10,10,10,10,10,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_neg_dir,34-DCA,1e-5,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_neg_dir,4-TPP,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_neg_dir,4C3MP,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_neg_dir,4TOP,1e-5,0.1,0.0579011407540693,0.0579127593069257,0.0564300246640919,0.0459787757236046,0.0669035413651912,NA,Metabolic,1,Zebrafish,NA
+fitted_z_score_neg_dir,Aniline,0.001,10,10,10,10,10,10,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_neg_dir,BPA,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_neg_dir,BPAF,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_neg_dir,Clofibric-acid,0.001,10,10,10,5.53205047542337,1.62241128987935,10,NA,Metabolic,0.146,Zebrafish,NA
+fitted_z_score_neg_dir,DES,1e-5,0.1,8.70782926661918e-5,0.1,1.208654842266e-4,1.04795581403198e-5,0.0283178115508427,NA,Metabolic,0.344,Zebrafish,NA
+fitted_z_score_neg_dir,DMSO,0.001,10,10,10,10,10,10,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_neg_dir,EE2,1e-7,0.001,0.001,0.001,0.001,0.001,0.001,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_neg_dir,Fadrozole,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_neg_dir,Fenitrothion,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_neg_dir,Fluoxetine,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_neg_dir,Flutamide,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_neg_dir,Glyphosate,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_neg_dir,Malathion,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_neg_dir,NN-Dimethylformamide,0.1,1000,0.163369989348342,1000,0.726099081419173,0.018057806664079,187.619084639725,NA,Metabolic,0.252,Zebrafish,NA
+fitted_z_score_neg_dir,Prochloraz,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_neg_dir,SDS,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_neg_dir,TEG,0.1,1000,1000,1000,1000,1000,1000,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_neg_dir,TGSH,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_neg_dir,Trenbolone,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_neg_dir,Vinclozolin,1e-4,1,0.517035109703171,1,0.465079543242529,0.137544185007871,1,NA,Metabolic,0.319,Zebrafish,NA
+fitted_z_score_pos_dir,1-Decanol,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_pos_dir,1-Octanol,0.001,10,10,10,10,10,10,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_pos_dir,17betaestradiol,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_pos_dir,24-DMP,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_pos_dir,24-DNP,1e-4,10,10,10,10,10,10,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_pos_dir,34-DCA,1e-5,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_pos_dir,4-TPP,1e-4,1,0.025010255248721,0.0250225851534334,0.0290446868141778,0.0109932524546948,0.126615272572997,NA,Metabolic,0.999,Zebrafish,NA
+fitted_z_score_pos_dir,4C3MP,1e-4,1,0.884406119722938,1,0.693395918947233,0.154175999594046,0.924639579077348,NA,Metabolic,0.172,Zebrafish,NA
+fitted_z_score_pos_dir,4TOP,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_pos_dir,Aniline,0.001,10,10,10,6.14099922242523,1.46441942096435,10,NA,Metabolic,0.152,Zebrafish,NA
+fitted_z_score_pos_dir,BPA,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_pos_dir,BPAF,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_pos_dir,Clofibric-acid,0.001,10,10,10,10,10,10,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_pos_dir,DES,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_pos_dir,DMSO,0.001,10,10,10,10,10,10,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_pos_dir,EE2,1e-7,0.001,0.001,0.001,0.001,0.001,0.001,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_pos_dir,Fadrozole,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_pos_dir,Fenitrothion,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_pos_dir,Fluoxetine,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_pos_dir,Flutamide,1e-4,1,0.00370182282583755,0.00598885965267959,0.00503686166401035,2.8625192667979e-4,0.282350106590471,NA,Metabolic,0.874,Zebrafish,NA
+fitted_z_score_pos_dir,Glyphosate,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_pos_dir,Malathion,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_pos_dir,NN-Dimethylformamide,0.1,1000,1000,1000,1000,1000,1000,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_pos_dir,Prochloraz,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_pos_dir,SDS,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_pos_dir,TEG,0.1,1000,1000,1000,1000,1000,1000,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_pos_dir,TGSH,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+fitted_z_score_pos_dir,Trenbolone,1e-5,0.1,0.0329492647583885,0.1,0.0126897200568323,2.00526762965454e-5,0.1,NA,Metabolic,0.079,Zebrafish,NA
+fitted_z_score_pos_dir,Vinclozolin,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+pearson_fitted,1-Decanol,1e-4,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_fitted,1-Octanol,0.001,10,10,10,10,10,10,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_fitted,17betaestradiol,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_fitted,24-DMP,1e-4,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_fitted,24-DNP,1e-4,10,10,10,10,10,10,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_fitted,34-DCA,1e-5,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_fitted,4-TPP,1e-4,1,0.983628871866631,1,0.970454183862137,0.870039806517322,1,NA,Swim Behaviour,0.33,Zebrafish,NA
+pearson_fitted,4C3MP,1e-4,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_fitted,4TOP,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_fitted,Aniline,0.001,10,10,10,10,10,10,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_fitted,BPA,1e-4,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_fitted,BPAF,1e-4,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_fitted,Clofibric-acid,0.001,10,10,10,10,10,10,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_fitted,DES,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_fitted,DMSO,0.001,10,10,10,10,10,10,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_fitted,EE2,1e-7,0.001,0.001,0.001,0.001,0.001,0.001,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_fitted,Fadrozole,1e-4,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_fitted,Fenitrothion,1e-4,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_fitted,Fluoxetine,1e-5,0.1,0.0295775730089561,0.1,0.0288513652276901,0.00762434246795576,0.1,NA,Swim Behaviour,0.498,Zebrafish,NA
+pearson_fitted,Flutamide,1e-4,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_fitted,Glyphosate,1e-4,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_fitted,Malathion,1e-4,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_fitted,NN-Dimethylformamide,0.1,1000,1000,1000,1000,1000,1000,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_fitted,Prochloraz,1e-4,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_fitted,SDS,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_fitted,TEG,0.1,1000,1000,1000,1000,1000,1000,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_fitted,TGSH,1e-4,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_fitted,Trenbolone,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_fitted,Vinclozolin,1e-4,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_rcurvep,1-Decanol,1e-4,1,0.00707154671053811,1,0.0168646407424527,0.00286143753802042,0.657703477557481,NA,Swim Behaviour,0.232,Zebrafish,NA
+pearson_rcurvep,1-Octanol,0.001,10,0.415066903911792,10,0.547724781352377,0.0483994383685992,3.3489817598224,NA,Swim Behaviour,0.151,Zebrafish,NA
+pearson_rcurvep,17betaestradiol,1e-5,0.1,0.0925824224998568,0.1,0.0355457993480527,3.8338449398312e-4,0.0925824224998568,NA,Swim Behaviour,0.108,Zebrafish,NA
+pearson_rcurvep,24-DMP,1e-4,1,0.462459957810528,1,0.255061552366218,0.0940406711475466,0.462459957810528,NA,Swim Behaviour,0.107,Zebrafish,NA
+pearson_rcurvep,24-DNP,1e-4,10,10,10,10,10,10,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_rcurvep,34-DCA,1e-5,1,6.8539313701222e-4,1,1.730947812555e-4,6.34858685832332e-6,6.8539313701222e-4,NA,Swim Behaviour,0.01,Zebrafish,NA
+pearson_rcurvep,4-TPP,1e-4,1,0.534765523233723,0.974522403979182,0.284737830161374,0.00480493711693137,0.974522403979182,NA,Swim Behaviour,0.564,Zebrafish,NA
+pearson_rcurvep,4C3MP,1e-4,1,0.365919234752132,1,0.235234921395593,0.00454229251659652,0.600145863368672,NA,Swim Behaviour,0.237,Zebrafish,NA
+pearson_rcurvep,4TOP,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_rcurvep,Aniline,0.001,10,10,10,10,10,10,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_rcurvep,BPA,1e-4,1,0.607787386080155,1,0.710558079771719,0.607787386080155,0.909078449999025,NA,Swim Behaviour,0.232,Zebrafish,NA
+pearson_rcurvep,BPAF,1e-4,1,0.00849592053824255,1,0.0130449051005393,9.86678437739827e-5,0.3970220442877,NA,Swim Behaviour,0.186,Zebrafish,NA
+pearson_rcurvep,Clofibric-acid,0.001,10,3.26946287505133,10,0.948044993333311,0.0312010919049063,5.06905232471554,NA,Swim Behaviour,0.242,Zebrafish,NA
+pearson_rcurvep,DES,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_rcurvep,DMSO,0.001,10,6.4093550683813,10,2.74397545447121,0.0449950147044837,6.4093550683813,NA,Swim Behaviour,0.1,Zebrafish,NA
+pearson_rcurvep,EE2,1e-7,0.001,4.7399943307267e-4,0.001,2.9390092392487e-4,6.44549147089149e-6,4.7399943307267e-4,NA,Swim Behaviour,0.109,Zebrafish,NA
+pearson_rcurvep,Fadrozole,1e-4,1,0.258646080334071,1,0.114806275828003,0.00423309290067572,0.484700294364936,NA,Swim Behaviour,0.245,Zebrafish,NA
+pearson_rcurvep,Fenitrothion,1e-4,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_rcurvep,Fluoxetine,1e-5,0.1,0.0497017737819281,0.1,0.0164605602872023,6.5431398604048e-4,0.0925254671801878,NA,Swim Behaviour,0.444,Zebrafish,NA
+pearson_rcurvep,Flutamide,1e-4,1,0.496801161609645,1,0.369064369316571,0.0470742540597376,0.799747498095923,NA,Swim Behaviour,0.316,Zebrafish,NA
+pearson_rcurvep,Glyphosate,1e-4,1,0.463836760535539,1,0.138961126360119,0.00466849137660619,0.767232169192006,NA,Swim Behaviour,0.237,Zebrafish,NA
+pearson_rcurvep,Malathion,1e-4,1,0.304923470843838,1,0.242436615899396,0.304923470843838,0.304923470843838,NA,Swim Behaviour,0.114,Zebrafish,NA
+pearson_rcurvep,NN-Dimethylformamide,0.1,1000,314.170529084848,1000,146.45572403707,3.36751906714335,878.968072518823,NA,Swim Behaviour,0.229,Zebrafish,NA
+pearson_rcurvep,Prochloraz,1e-4,1,0.380642229101425,1,0.163571461807444,0.00862282000666627,0.390908358461127,NA,Swim Behaviour,0.365,Zebrafish,NA
+pearson_rcurvep,SDS,1e-5,0.1,0.030807295126366,0.1,0.0106438196579909,4.6895432357256e-4,0.0879982462035393,NA,Swim Behaviour,0.24,Zebrafish,NA
+pearson_rcurvep,TEG,0.1,1000,1000,1000,1000,1000,1000,NA,Swim Behaviour,0,Zebrafish,NA
+pearson_rcurvep,TGSH,1e-4,1,0.456835133151302,1,0.0706140541756524,2.9851025671244e-4,0.456835133151302,NA,Swim Behaviour,0.137,Zebrafish,NA
+pearson_rcurvep,Trenbolone,1e-5,0.1,0.0633003802844531,0.1,0.0384396876861096,0.00383025650031222,0.0669040022795083,NA,Swim Behaviour,0.429,Zebrafish,NA
+pearson_rcurvep,Vinclozolin,1e-4,1,0.291910935553454,1,0.080009502195863,6.499146488222e-4,0.706890417746014,NA,Swim Behaviour,0.36,Zebrafish,NA
+spearman_fitted,1-Decanol,1e-4,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_fitted,1-Octanol,0.001,10,10,10,10,10,10,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_fitted,17betaestradiol,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_fitted,24-DMP,1e-4,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_fitted,24-DNP,1e-4,10,10,10,10,10,10,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_fitted,34-DCA,1e-5,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_fitted,4-TPP,1e-4,1,0.948120631038724,1,0.905634116952672,0.747782423992657,0.965519482934086,NA,Swim Behaviour,0.33,Zebrafish,NA
+spearman_fitted,4C3MP,1e-4,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_fitted,4TOP,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_fitted,Aniline,0.001,10,10,10,10,10,10,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_fitted,BPA,1e-4,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_fitted,BPAF,1e-4,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_fitted,Clofibric-acid,0.001,10,10,10,10,10,10,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_fitted,DES,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_fitted,DMSO,0.001,10,10,10,10,10,10,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_fitted,EE2,1e-7,0.001,0.001,0.001,0.001,0.001,0.001,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_fitted,Fadrozole,1e-4,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_fitted,Fenitrothion,1e-4,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_fitted,Fluoxetine,1e-5,0.1,0.0382574055786114,0.0418139134074213,0.0345448019768388,0.0111881809155565,0.1,NA,Swim Behaviour,0.914,Zebrafish,NA
+spearman_fitted,Flutamide,1e-4,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_fitted,Glyphosate,1e-4,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_fitted,Malathion,1e-4,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_fitted,NN-Dimethylformamide,0.1,1000,1000,1000,1000,1000,1000,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_fitted,Prochloraz,1e-4,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_fitted,SDS,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_fitted,TEG,0.1,1000,1000,1000,1000,1000,1000,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_fitted,TGSH,1e-4,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_fitted,Trenbolone,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_fitted,Vinclozolin,1e-4,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_rcurvep,1-Decanol,1e-4,1,0.0322404697420353,1,0.0398957447100195,8.9463233710667e-4,0.640449631203169,NA,Swim Behaviour,0.425,Zebrafish,NA
+spearman_rcurvep,1-Octanol,0.001,10,0.816403165394741,10,0.649855582722548,0.0462651247916304,5.28091932600241,NA,Swim Behaviour,0.261,Zebrafish,NA
+spearman_rcurvep,17betaestradiol,1e-5,0.1,0.0827957398533571,0.1,0.0131469436750001,7.75091566284115e-5,0.0827957398533571,NA,Swim Behaviour,0.119,Zebrafish,NA
+spearman_rcurvep,24-DMP,1e-4,1,0.367128011327315,1,0.23754118670164,6.4193276834521e-4,0.828931014920246,NA,Swim Behaviour,0.22,Zebrafish,NA
+spearman_rcurvep,24-DNP,1e-4,10,0.817081041765709,10,0.817081041765709,0.817081041765709,0.817081041765709,NA,Swim Behaviour,0.111,Zebrafish,NA
+spearman_rcurvep,34-DCA,1e-5,1,5.0075303301667e-4,1,5.0075303301667e-4,5.0075303301667e-4,5.0075303301667e-4,NA,Swim Behaviour,0.023,Zebrafish,NA
+spearman_rcurvep,4-TPP,1e-4,1,0.391195854189563,0.925772412716089,0.166206756017869,0.00575731589596394,0.925772412716089,NA,Swim Behaviour,0.559,Zebrafish,NA
+spearman_rcurvep,4C3MP,1e-4,1,0.470877548073313,1,0.16036413110586,9.472833971089e-4,0.795534175550425,NA,Swim Behaviour,0.339,Zebrafish,NA
+spearman_rcurvep,4TOP,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_rcurvep,Aniline,0.001,10,10,10,10,10,10,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_rcurvep,BPA,1e-4,1,0.661835082078288,1,0.661835082078288,0.661835082078288,0.661835082078288,NA,Swim Behaviour,0.119,Zebrafish,NA
+spearman_rcurvep,BPAF,1e-4,1,0.360399134502547,1,0.125616699575393,5.02430033258e-4,0.684196111912329,NA,Swim Behaviour,0.233,Zebrafish,NA
+spearman_rcurvep,Clofibric-acid,0.001,10,3.22390651912259,10,1.0197360211014,0.0302580504976988,6.66383245469536,NA,Swim Behaviour,0.333,Zebrafish,NA
+spearman_rcurvep,DES,1e-5,0.1,0.0637404887800956,0.1,0.0198565857208307,7.90600918401362e-5,0.0637404887800956,NA,Swim Behaviour,0.119,Zebrafish,NA
+spearman_rcurvep,DMSO,0.001,10,10,10,10,10,10,NA,Swim Behaviour,0.009,Zebrafish,NA
+spearman_rcurvep,EE2,1e-7,0.001,0.001,0.001,0.001,0.001,0.001,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_rcurvep,Fadrozole,1e-4,1,0.264325115572513,1,0.13834751082125,0.00730721760529742,0.631813151968571,NA,Swim Behaviour,0.346,Zebrafish,NA
+spearman_rcurvep,Fenitrothion,1e-4,1,1,1,1,1,1,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_rcurvep,Fluoxetine,1e-5,0.1,0.0489517722656388,0.0910342128697055,0.0188065434148016,8.9416840035456e-4,0.0910342128697055,NA,Swim Behaviour,0.553,Zebrafish,NA
+spearman_rcurvep,Flutamide,1e-4,1,0.436229732478961,1,0.305254414153681,0.061587002608234,0.519501263476581,NA,Swim Behaviour,0.316,Zebrafish,NA
+spearman_rcurvep,Glyphosate,1e-4,1,0.533135441541744,1,0.174981838118962,0.00418013354977918,0.949725158355327,NA,Swim Behaviour,0.36,Zebrafish,NA
+spearman_rcurvep,Malathion,1e-4,1,0.322952121501155,1,0.194593487236158,8.43569237276569e-5,0.322952121501155,NA,Swim Behaviour,0.114,Zebrafish,NA
+spearman_rcurvep,NN-Dimethylformamide,0.1,1000,326.729676702729,1000,80.7895274055695,3.18013331270103,930.810363402627,NA,Swim Behaviour,0.246,Zebrafish,NA
+spearman_rcurvep,Prochloraz,1e-4,1,0.365040784157072,1,0.262359720152646,0.025710685769084,0.381210089726597,NA,Swim Behaviour,0.358,Zebrafish,NA
+spearman_rcurvep,SDS,1e-5,0.1,0.00645462959132253,0.1,0.00354613464444343,5.42631156579137e-6,0.0348144034323757,NA,Swim Behaviour,0.137,Zebrafish,NA
+spearman_rcurvep,TEG,0.1,1000,1000,1000,1000,1000,1000,NA,Swim Behaviour,0,Zebrafish,NA
+spearman_rcurvep,TGSH,1e-4,1,0.487025628721046,1,0.14103912608006,5.3990853110962e-4,0.487025628721046,NA,Swim Behaviour,0.127,Zebrafish,NA
+spearman_rcurvep,Trenbolone,1e-5,0.1,0.0667221696802538,0.1,0.0515190110703321,0.00495306310317338,0.0860797854535169,NA,Swim Behaviour,0.429,Zebrafish,NA
+spearman_rcurvep,Vinclozolin,1e-4,1,0.272220003348074,1,0.0620261288392069,5.4080745529845e-4,0.736046862782508,NA,Swim Behaviour,0.362,Zebrafish,NA
+z_score_neg_dir,1-Decanol,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+z_score_neg_dir,1-Octanol,0.001,10,10,10,10,10,10,NA,Metabolic,0,Zebrafish,NA
+z_score_neg_dir,17betaestradiol,1e-5,0.1,0.00521010298328245,0.00521010298328245,0.00297468471634994,4.8124318285497e-4,0.037586212689078,NA,Metabolic,0.9,Zebrafish,NA
+z_score_neg_dir,24-DMP,1e-4,1,0.276130072129005,1,0.15922126611696,0.00268106281351171,0.986489568226708,NA,Metabolic,0.283,Zebrafish,NA
+z_score_neg_dir,24-DNP,1e-4,10,0.51244745790279,10,0.418870920456092,0.0464328130236987,0.596518529253297,NA,Metabolic,0.218,Zebrafish,NA
+z_score_neg_dir,34-DCA,1e-5,1,0.0803625872857175,1,0.0803625872857175,0.0803625872857175,0.0803625872857175,NA,Metabolic,0.118,Zebrafish,NA
+z_score_neg_dir,4-TPP,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+z_score_neg_dir,4C3MP,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+z_score_neg_dir,4TOP,1e-5,0.1,0.0509187124699132,0.0751766260690173,0.0202149098136831,9.9368902432531e-4,0.0876507315331486,NA,Metabolic,0.638,Zebrafish,NA
+z_score_neg_dir,Aniline,0.001,10,10,10,10,10,10,NA,Metabolic,0,Zebrafish,NA
+z_score_neg_dir,BPA,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+z_score_neg_dir,BPAF,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+z_score_neg_dir,Clofibric-acid,0.001,10,8.60602319943393,10,7.59742182355681,5.85006716374749,8.81147718930479,NA,Metabolic,0.337,Zebrafish,NA
+z_score_neg_dir,DES,1e-5,0.1,6.1438894595746e-4,0.0633016316446778,6.49533505318e-4,3.47203989818714e-6,0.0764680667821386,NA,Metabolic,0.579,Zebrafish,NA
+z_score_neg_dir,DMSO,0.001,10,10,10,10,10,10,NA,Metabolic,0,Zebrafish,NA
+z_score_neg_dir,EE2,1e-7,0.001,0.001,0.001,0.001,0.001,0.001,NA,Metabolic,0,Zebrafish,NA
+z_score_neg_dir,Fadrozole,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+z_score_neg_dir,Fenitrothion,1e-4,1,0.80692361078347,1,0.656715401352401,0.0986464398451106,0.863992574971062,NA,Metabolic,0.314,Zebrafish,NA
+z_score_neg_dir,Fluoxetine,1e-5,0.1,0.0675596182524359,0.1,0.0519586186208917,0.00713582073525877,0.0832940218776687,NA,Metabolic,0.444,Zebrafish,NA
+z_score_neg_dir,Flutamide,1e-4,1,0.679543316357046,1,0.679543316357046,0.679543316357046,0.679543316357046,NA,Metabolic,0.096,Zebrafish,NA
+z_score_neg_dir,Glyphosate,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+z_score_neg_dir,Malathion,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+z_score_neg_dir,NN-Dimethylformamide,0.1,1000,57.386752262813,1000,26.3159739748131,0.0487996899751734,499.619653194543,NA,Metabolic,0.37,Zebrafish,NA
+z_score_neg_dir,Prochloraz,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+z_score_neg_dir,SDS,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Metabolic,0,Zebrafish,NA
+z_score_neg_dir,TEG,0.1,1000,1000,1000,1000,1000,1000,NA,Metabolic,0,Zebrafish,NA
+z_score_neg_dir,TGSH,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+z_score_neg_dir,Trenbolone,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Metabolic,0,Zebrafish,NA
+z_score_neg_dir,Vinclozolin,1e-4,1,0.523459015282096,1,0.296358146071082,0.00452385273624617,0.685523096054226,NA,Metabolic,0.456,Zebrafish,NA
+z_score_pos_dir,1-Decanol,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+z_score_pos_dir,1-Octanol,0.001,10,10,10,10,10,10,NA,Metabolic,0,Zebrafish,NA
+z_score_pos_dir,17betaestradiol,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Metabolic,0,Zebrafish,NA
+z_score_pos_dir,24-DMP,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+z_score_pos_dir,24-DNP,1e-4,10,10,10,10,10,10,NA,Metabolic,0,Zebrafish,NA
+z_score_pos_dir,34-DCA,1e-5,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+z_score_pos_dir,4-TPP,1e-4,1,0.219570666672326,0.237960883489998,0.0382893486052155,3.2385959200132e-4,0.708749414221201,NA,Metabolic,0.896,Zebrafish,NA
+z_score_pos_dir,4C3MP,1e-4,1,0.902137146337241,1,0.402418915160858,0.0079143540749381,0.91247049161653,NA,Metabolic,0.332,Zebrafish,NA
+z_score_pos_dir,4TOP,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Metabolic,0,Zebrafish,NA
+z_score_pos_dir,Aniline,0.001,10,2.77607092484185,10,2.40227870642937,0.293942622466743,3.89004204169346,NA,Metabolic,0.372,Zebrafish,NA
+z_score_pos_dir,BPA,1e-4,1,0.928693354653989,1,0.928693354653989,0.928693354653989,0.928693354653989,NA,Metabolic,0.093,Zebrafish,NA
+z_score_pos_dir,BPAF,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+z_score_pos_dir,Clofibric-acid,0.001,10,10,10,10,10,10,NA,Metabolic,0,Zebrafish,NA
+z_score_pos_dir,DES,1e-5,0.1,0.0206871507906525,0.1,0.00454873436568604,8.2671740314006e-6,0.033153123276033,NA,Metabolic,0.264,Zebrafish,NA
+z_score_pos_dir,DMSO,0.001,10,0.0352545322612073,10,0.0301747403599652,0.00655416040125892,0.0848682366961677,NA,Metabolic,0.022,Zebrafish,NA
+z_score_pos_dir,EE2,1e-7,0.001,0.001,0.001,0.001,0.001,0.001,NA,Metabolic,0,Zebrafish,NA
+z_score_pos_dir,Fadrozole,1e-4,1,0.284346568024011,1,0.0353294769245033,7.39722564521352e-5,0.284346568024011,NA,Metabolic,0.126,Zebrafish,NA
+z_score_pos_dir,Fenitrothion,1e-4,1,0.00821479393346251,1,0.036685313590017,8.8083624508792e-4,0.415880396063487,NA,Metabolic,0.158,Zebrafish,NA
+z_score_pos_dir,Fluoxetine,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Metabolic,0,Zebrafish,NA
+z_score_pos_dir,Flutamide,1e-4,1,0.00557620352977399,0.00841084577354501,0.00192660387807906,2.8553952379926e-5,0.0398460454753993,NA,Metabolic,0.627,Zebrafish,NA
+z_score_pos_dir,Glyphosate,1e-4,1,0.0993435860570052,1,0.0557064884080147,0.00484112543480919,0.288584604360694,NA,Metabolic,0.173,Zebrafish,NA
+z_score_pos_dir,Malathion,1e-4,1,0.92818244277984,1,0.92818244277984,0.92818244277984,0.92818244277984,NA,Metabolic,0.106,Zebrafish,NA
+z_score_pos_dir,NN-Dimethylformamide,0.1,1000,1000,1000,1000,1000,1000,NA,Metabolic,0,Zebrafish,NA
+z_score_pos_dir,Prochloraz,1e-4,1,0.761556487972011,1,0.761556487972011,0.761556487972011,0.761556487972011,NA,Metabolic,0.107,Zebrafish,NA
+z_score_pos_dir,SDS,1e-5,0.1,0.1,0.1,0.1,0.1,0.1,NA,Metabolic,0,Zebrafish,NA
+z_score_pos_dir,TEG,0.1,1000,342.476632198464,1000,109.309343131674,0.0453718560796472,342.476632198464,NA,Metabolic,0.112,Zebrafish,NA
+z_score_pos_dir,TGSH,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+z_score_pos_dir,Trenbolone,1e-5,0.1,8.28076548525995e-6,0.1,1.32380030412643e-5,3.81824075062366e-6,7.4586225690472e-4,NA,Metabolic,0.075,Zebrafish,NA
+z_score_pos_dir,Vinclozolin,1e-4,1,1,1,1,1,1,NA,Metabolic,0,Zebrafish,NA
+Acute LC50,1-Decanol,1e-4,1,3.21,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Acute LC50,1-Decanol,1e-4,1,0.602,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Chronic POD,1-Decanol,1e-4,1,0.43,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Chronic POD,1-Decanol,1e-4,1,NA,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Acute LC50,1-Octanol,0.001,10,19.8,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Acute LC50,1-Octanol,0.001,10,12.2,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Chronic POD,1-Octanol,0.001,10,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Chronic POD,1-Octanol,0.001,10,0.75,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Acute LC50,TEG,0.1,1000,54800,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Acute LC50,TEG,0.1,1000,5000,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Chronic POD,TEG,0.1,1000,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Chronic POD,TEG,0.1,1000,NA,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Acute LC50,SDS,1e-5,0.1,3.6,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Acute LC50,SDS,1e-5,0.1,1.39,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Chronic POD,SDS,1e-5,0.1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Chronic POD,SDS,1e-5,0.1,1.357,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Acute LC50,4TOP,1e-5,0.1,0.462,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Acute LC50,4TOP,1e-5,0.1,NA,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Chronic POD,4TOP,1e-5,0.1,0.0046,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Chronic POD,4TOP,1e-5,0.1,0.012,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Acute LC50,4-TPP,1e-4,1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Acute LC50,4-TPP,1e-4,1,1.6,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Chronic POD,4-TPP,1e-4,1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Chronic POD,4-TPP,1e-4,1,0.057,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Acute LC50,24-DMP,1e-4,1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Acute LC50,24-DMP,1e-4,1,6.3,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Chronic POD,24-DMP,1e-4,1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Chronic POD,24-DMP,1e-4,1,0.131,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Acute LC50,4C3MP,1e-4,1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Acute LC50,4C3MP,1e-4,1,1.3,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Chronic POD,4C3MP,1e-4,1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Chronic POD,4C3MP,1e-4,1,NA,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Acute LC50,Prochloraz,1e-4,1,5.6,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Acute LC50,Prochloraz,1e-4,1,NA,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Chronic POD,Prochloraz,1e-4,1,0.03,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Chronic POD,Prochloraz,1e-4,1,0.063,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Acute LC50,17betaestradiol,1e-5,0.1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Acute LC50,17betaestradiol,1e-5,0.1,1.28,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Chronic POD,17betaestradiol,1e-5,0.1,4.8e-6,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Chronic POD,17betaestradiol,1e-5,0.1,4.2e-7,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Acute LC50,DMSO,0.001,10,20964,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Acute LC50,DMSO,0.001,10,34000,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Chronic POD,DMSO,0.001,10,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Chronic POD,DMSO,0.001,10,0.006,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Acute LC50,34-DCA,1e-5,1,8.5,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Acute LC50,34-DCA,1e-5,1,0.95,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Chronic POD,34-DCA,1e-5,1,0.002,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Chronic POD,34-DCA,1e-5,1,0.0011,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Acute LC50,Trenbolone,1e-6,0.01,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Acute LC50,Trenbolone,1e-6,0.01,NA,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Chronic POD,Trenbolone,1e-6,0.01,9.19e-6,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Chronic POD,Trenbolone,1e-6,0.01,1.5e-6,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Acute LC50,Vinclozolin,1e-4,1,4.86,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Acute LC50,Vinclozolin,1e-4,1,13.6,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Chronic POD,Vinclozolin,1e-4,1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Chronic POD,Vinclozolin,1e-4,1,0.05,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Acute LC50,Fluoxetine,1e-5,0.1,0.25,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Acute LC50,Fluoxetine,1e-5,0.1,NA,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Chronic POD,Fluoxetine,1e-5,0.1,0.0032,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Chronic POD,Fluoxetine,1e-5,0.1,5.4e-4,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Acute LC50,Fenitrothion,1e-4,1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Acute LC50,Fenitrothion,1e-4,1,0.2,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Chronic POD,Fenitrothion,1e-4,1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Chronic POD,Fenitrothion,1e-4,1,0.046,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Acute LC50,Glyphosate,1e-4,1,53.75,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Acute LC50,Glyphosate,1e-4,1,36.3,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Chronic POD,Glyphosate,1e-4,1,13.9,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Chronic POD,Glyphosate,1e-4,1,0.1,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Acute LC50,Malathion,1e-5,0.1,0.105,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Acute LC50,Malathion,1e-5,0.1,0.1,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Chronic POD,Malathion,1e-5,0.1,1,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Chronic POD,Malathion,1e-5,0.1,0.021,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Acute LC50,Fadrozole,1e-4,1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Acute LC50,Fadrozole,1e-4,1,NA,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Chronic POD,Fadrozole,1e-4,1,0.1,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Chronic POD,Fadrozole,1e-4,1,0.0955,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Acute LC50,Flutamide,1e-4,1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Acute LC50,Flutamide,1e-4,1,1.92,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Chronic POD,Flutamide,1e-4,1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Chronic POD,Flutamide,1e-4,1,0.101,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Acute LC50,Clofibric-acid,0.001,10,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Acute LC50,Clofibric-acid,0.001,10,526.5,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Chronic POD,Clofibric-acid,0.001,10,70,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Chronic POD,Clofibric-acid,0.001,10,10.75,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Acute LC50,24-DNP,1e-4,10,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Acute LC50,24-DNP,1e-4,10,0.62,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Chronic POD,24-DNP,1e-4,10,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Chronic POD,24-DNP,1e-4,10,0.208,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Acute LC50,Aniline,0.001,10,32,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Acute LC50,Aniline,0.001,10,21.99,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Chronic POD,Aniline,0.001,10,5.6,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Chronic POD,Aniline,0.001,10,0.39,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Acute LC50,NN-Dimethylformamide,0.1,1000,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Acute LC50,NN-Dimethylformamide,0.1,1000,6300,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Chronic POD,NN-Dimethylformamide,0.1,1000,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Chronic POD,NN-Dimethylformamide,0.1,1000,0.1,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Acute LC50,EE2,1e-7,0.001,1.7,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Acute LC50,EE2,1e-7,0.001,0.001,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Chronic POD,EE2,1e-7,0.001,5e-8,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Chronic POD,EE2,1e-7,0.001,4e-8,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Acute LC50,DES,1e-5,0.1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Acute LC50,DES,1e-5,0.1,NA,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Chronic POD,DES,1e-5,0.1,1e-5,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Chronic POD,DES,1e-5,0.1,NA,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Acute LC50,BPA,1e-4,1,8.04,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Acute LC50,BPA,1e-4,1,4.6,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Chronic POD,BPA,1e-4,1,0.2,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Chronic POD,BPA,1e-4,1,0.05,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Acute LC50,BPAF,1e-4,1,1.95,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Acute LC50,BPAF,1e-4,1,NA,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Chronic POD,BPAF,1e-4,1,0.05,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Chronic POD,BPAF,1e-4,1,0.07,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Acute LC50,TGSH,1e-4,1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Acute LC50,TGSH,1e-4,1,NA,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Chronic POD,TGSH,1e-4,1,NA,NA,NA,NA,NA,NA,Literature,1,Zebrafish,NA
+Chronic POD,TGSH,1e-4,1,NA,NA,NA,NA,NA,NA,Literature,1,Other Fish,NA
+Overt Toxicity,1-Decanol,1e-4,1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish,LOEC
+Behaviour,1-Decanol,1e-4,1,1e-4,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish,LOEC
+Metabolic Rate,1-Decanol,1e-4,1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish,LOEC
+Overt Toxicity,1-Octanol,0.001,10,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish,LOEC
+Behaviour,1-Octanol,0.001,10,0.01,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish,LOEC
+Metabolic Rate,1-Octanol,0.001,10,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish,LOEC
+Overt Toxicity,17betaestradiol,1e-5,0.1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish,LOEC
+Behaviour,17betaestradiol,1e-5,0.1,NA,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish,LOEC
+Metabolic Rate,17betaestradiol,1e-5,0.1,0.01,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish,LOEC
+Overt Toxicity,24-DMP,1e-4,1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish,LOEC
+Behaviour,24-DMP,1e-4,1,NA,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish,LOEC
+Metabolic Rate,24-DMP,1e-4,1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish,LOEC
+Overt Toxicity,24-DNP,1e-4,10,10,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish,LOEC
+Behaviour,24-DNP,1e-4,10,0.01,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish,LOEC
+Metabolic Rate,24-DNP,1e-4,10,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish,LOEC
+Overt Toxicity,34-DCA,1e-5,1,1,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish,LOEC
+Behaviour,34-DCA,1e-5,1,0.1,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish,LOEC
+Metabolic Rate,34-DCA,1e-5,1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish,LOEC
+Overt Toxicity,4-TPP,1e-4,1,1,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish,LOEC
+Behaviour,4-TPP,1e-4,1,1,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish,LOEC
+Metabolic Rate,4-TPP,1e-4,1,1,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish,LOEC
+Overt Toxicity,4C3MP,1e-4,1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish,LOEC
+Behaviour,4C3MP,1e-4,1,1,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish,LOEC
+Metabolic Rate,4C3MP,1e-4,1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish,LOEC
+Overt Toxicity,4TOP,1e-5,0.1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish,LOEC
+Behaviour,4TOP,1e-5,0.1,0.001,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish,LOEC
+Metabolic Rate,4TOP,1e-5,0.1,0.1,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish,LOEC
+Overt Toxicity,Aniline,0.001,10,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish,LOEC
+Behaviour,Aniline,0.001,10,0.01,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish,LOEC
+Metabolic Rate,Aniline,0.001,10,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish,LOEC
+Overt Toxicity,BPA,1e-4,1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish,LOEC
+Behaviour,BPA,1e-4,1,NA,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish,LOEC
+Metabolic Rate,BPA,1e-4,1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish,LOEC
+Overt Toxicity,BPAF,1e-4,1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish,LOEC
+Behaviour,BPAF,1e-4,1,NA,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish,LOEC
+Metabolic Rate,BPAF,1e-4,1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish,LOEC
+Overt Toxicity,Clofibric-acid,0.001,10,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish,LOEC
+Behaviour,Clofibric-acid,0.001,10,0.001,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish,LOEC
+Metabolic Rate,Clofibric-acid,0.001,10,10,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish,LOEC
+Overt Toxicity,DES,1e-5,0.1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish,LOEC
+Behaviour,DES,1e-5,0.1,0.1,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish,LOEC
+Metabolic Rate,DES,1e-5,0.1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish,LOEC
+Overt Toxicity,DMSO,0.001,10,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish,LOEC
+Behaviour,DMSO,0.001,10,10,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish,LOEC
+Metabolic Rate,DMSO,0.001,10,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish,LOEC
+Overt Toxicity,EE2,1e-7,0.001,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish,LOEC
+Behaviour,EE2,1e-7,0.001,1e-6,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish,LOEC
+Metabolic Rate,EE2,1e-7,0.001,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish,LOEC
+Overt Toxicity,Fadrozole,1e-4,1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish,LOEC
+Behaviour,Fadrozole,1e-4,1,1,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish,LOEC
+Metabolic Rate,Fadrozole,1e-4,1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish,LOEC
+Overt Toxicity,Fenitrothion,1e-4,1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish,LOEC
+Behaviour,Fenitrothion,1e-4,1,0.001,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish,LOEC
+Metabolic Rate,Fenitrothion,1e-4,1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish,LOEC
+Overt Toxicity,Fluoxetine,1e-5,0.1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish,LOEC
+Behaviour,Fluoxetine,1e-5,0.1,1e-4,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish,LOEC
+Metabolic Rate,Fluoxetine,1e-5,0.1,0.1,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish,LOEC
+Overt Toxicity,Flutamide,1e-4,1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish,LOEC
+Behaviour,Flutamide,1e-4,1,0.001,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish,LOEC
+Metabolic Rate,Flutamide,1e-4,1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish,LOEC
+Overt Toxicity,Glyphosate,1e-4,1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish,LOEC
+Behaviour,Glyphosate,1e-4,1,0.1,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish,LOEC
+Metabolic Rate,Glyphosate,1e-4,1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish,LOEC
+Overt Toxicity,Malathion,1e-4,1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish,LOEC
+Behaviour,Malathion,1e-4,1,0.001,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish,LOEC
+Metabolic Rate,Malathion,1e-4,1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish,LOEC
+Overt Toxicity,NN-Dimethylformamide,0.1,1000,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish,LOEC
+Behaviour,NN-Dimethylformamide,0.1,1000,1000,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish,LOEC
+Metabolic Rate,NN-Dimethylformamide,0.1,1000,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish,LOEC
+Overt Toxicity,Prochloraz,1e-4,1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish,LOEC
+Behaviour,Prochloraz,1e-4,1,1,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish,LOEC
+Metabolic Rate,Prochloraz,1e-4,1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish,LOEC
+Overt Toxicity,SDS,1e-5,0.1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish,LOEC
+Behaviour,SDS,1e-5,0.1,NA,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish,LOEC
+Metabolic Rate,SDS,1e-5,0.1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish,LOEC
+Overt Toxicity,TEG,0.1,1000,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish,LOEC
+Behaviour,TEG,0.1,1000,NA,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish,LOEC
+Metabolic Rate,TEG,0.1,1000,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish,LOEC
+Overt Toxicity,TGSH,1e-4,1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish,LOEC
+Behaviour,TGSH,1e-4,1,1,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish,LOEC
+Metabolic Rate,TGSH,1e-4,1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish,LOEC
+Overt Toxicity,Trenbolone,1e-5,0.1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish,LOEC
+Behaviour,Trenbolone,1e-5,0.1,0.001,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish,LOEC
+Metabolic Rate,Trenbolone,1e-5,0.1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish,LOEC
+Overt Toxicity,Vinclozolin,1e-4,1,NA,NA,NA,NA,NA,NA,Lethality & Deformity,1,Zebrafish,LOEC
+Behaviour,Vinclozolin,1e-4,1,1,NA,NA,NA,NA,NA,Swim Behaviour,1,Zebrafish,LOEC
+Metabolic Rate,Vinclozolin,1e-4,1,NA,NA,NA,NA,NA,NA,Metabolic,1,Zebrafish,LOEC

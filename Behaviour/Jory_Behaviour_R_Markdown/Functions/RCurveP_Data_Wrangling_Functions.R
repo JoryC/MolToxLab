@@ -15,6 +15,7 @@ median2 <- function(x){
   }
 }
 
+
 summarise_rcurvep_results <-
   function(resp_set,
            act_set,
@@ -45,7 +46,7 @@ summarise_rcurvep_results <-
       inner_join(bmd_summary) %>%
       ungroup() %>%
       group_by(chemical) %>%
-      mutate(resp_correct = if_else(correction == 1, true = corrected_resp, false = resp),
+      mutate(resp = if_else(correction == 1, true = corrected_resp, false = resp),
              lowest_conc = highest_conc-(number_of_dose_groups_per_chem-1)) %>%
       #dplyr::select(-corrected_resp) %>%
       mutate(median_POD = if_else(
@@ -133,18 +134,26 @@ summarise_rcurvep_results <-
 
 summarise_fitted_results <- function (resp_set,
                                       act_set,
+                                      fit_set,
                                       act_summary,
                                       reject_hit_conf_under = 0.5) {
   temp <- resp_set %>%
     inner_join(act_set) %>%
+    inner_join(fit_set) %>%
     group_by(chemical, conc, sample_id) %>%
     summarise(
+      resp = resp,
       fitted_resp = fitted_resp,
       POD = POD,
       lowest_conc = lowest_conc,
       highest_conc = highest_conc,
       endpoint = endpoint,
-      hit = hit
+      hit = hit,
+      hill_fit = hill_fit,
+      hill_aic = hill_aic,
+      hill_tp = hill_tp,
+      hill_ga = hill_ga,
+      hill_gw = hill_gw
     ) %>%
     inner_join(act_summary) %>%
     dplyr::select(
@@ -152,7 +161,13 @@ summarise_fitted_results <- function (resp_set,
       chemical,
       sample_id,
       conc,
+      resp,
       fitted_resp,
+      hill_fit,
+      hill_aic,
+      hill_tp,
+      hill_ga,
+      hill_gw,
       lowest_conc,
       highest_conc,
       POD,
@@ -166,7 +181,13 @@ summarise_fitted_results <- function (resp_set,
   result <- temp %>%
     group_by(chemical, conc, sample_id) %>%
     summarise(
+      resp = unique(resp),
       fitted_resp = unique(fitted_resp),
+      hill_fit = unique(hill_fit),
+      hill_aic = unique(hill_aic),
+      hill_tp = unique(hill_tp),
+      hill_ga = unique(hill_ga),
+      hill_gw = unique(hill_gw),
       lowest_conc = unique(lowest_conc),
       highest_conc = unique(highest_conc),
       POD = unique(POD),

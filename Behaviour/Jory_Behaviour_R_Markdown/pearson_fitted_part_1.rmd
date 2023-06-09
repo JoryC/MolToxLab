@@ -1,0 +1,400 @@
+---
+title: "Report for `r params$endpoint` using the `r params$method` method (`r params$sample_size` samples)"
+author: "Jory Curry"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  html_document:
+    code_folding: show
+    df_print: paged
+    toc: true
+    toc_depth: 5
+    toc_float: true
+    theme: readable
+params:
+  value: "value"
+  sample_size: "sample_size"
+  endpoint: "pearson"
+  method: "fitted"
+---
+
+```{r 1setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE)
+options(scipen = 9)
+```
+
+```{r 2libraries, include=FALSE}
+library(knitr)
+library(kableExtra)
+library(gridExtra)
+library(rlang)
+library(Rcurvep)
+library(DescTools)
+library(data.table)
+library(car)
+library(lazyeval)
+library(DT)
+library(here)
+library(future) 
+library(future.apply) # from original future author
+library(furrr) # use future.apply but similar to purrr package
+library(tidyverse)
+future::plan(multisession, workers = availableCores()) # windows, Mac needs multicore
+source("Functions/cal_auc_simi_endpoints.R")
+source("Functions/behavioural_endpoint_calc.R")
+source("Functions/RCurveP_Data_Wrangling_Functions.R")
+```
+
+
+
+# Toxicology Behavioural Analysis Report
+
+## Version Control
+```{r 3version_control, comment="", class.source ='fold-hide'}
+# - My Machine Info:
+#   - R version 4.2.1 (2022-06-23)
+#   - Platform: x86_64-pc-linux-gnu (64-bit)         5.11.0-34-generic / Ubuntu 22.04.1 LTS
+#   - Desktop: GNOME 3.36.5
+#   - Hardware: CPU - Intel Core i5-9400F 6 core 4.1GHz / RAM - 15924MiB
+```
+
+
+```{r 8directory, include=FALSE}
+dir <- paste0(getwd(), "/Data/All")
+```
+
+```{r 9directory_files_filenames, include=FALSE}
+fileNames <- list.files("Data/Raw") #Get the name of each .csv file
+chemicalNames <- str_split(string = fileNames, pattern = ".csv", simplify = TRUE)[,1] #Identify the chemicals included in the files
+metaData <- read.csv(file = "Data/MetaData.csv") #Import the Meta Data that includes information about the data in the folders
+#CAS is the Chemical Abstract Service, MOA is the Mode of Action. This table includes useful information about the exposure concentrations for each chemical dose in mg/L. We'll use this later to create our final data frame
+#HighDose <- setNames(metaData[,6], chemicalNames) #subsetting metadata
+doseData <- metaData %>%
+  select(plate_id, Dose1:Control) %>%
+  gather(key = Dose, value = "Dose_mg_L", Dose1:Control)
+number_of_dose_groups_per_chem <- 6 # Set this to the number of dose groups you have (including control)
+lowest_dose_treatment_group <- doseData %>%
+    filter(Dose != "Control") %>%
+    dplyr::summarize(lowest_dose_treatment_group = min(Dose_mg_L))
+lowest_dose_treatment_group <- lowest_dose_treatment_group[1,][[1]]
+simi_norm_tib_4rcurvep_pearson <- readRDS(file = paste0("Data/", "simi_norm_tib_4rcurvep_pearson.rds"))
+input_pearson_tib <- readRDS(file = paste0("Data/", "input_pearson_tib.rds"))
+bmr_thresh_pearson <- readRDS(file = paste0("Data/", params$endpoint, "_rcurvep", "BMR.rds"))
+```
+
+
+## Similarity Scores/Correlation coefficients
+
+### Benchmark Dose
+
+Since we do not know what the benchmark response is for each one of the chemicals, a method will be used that can estimate a benchmark response (empirically) when given a large enough set of data. The RcurveP package includes an automated process to select an appropriate BMR based off of the data. From Hsieh et al. 2019 manuscript: "The pooled variance of potency of all chemicals per [threshold value (i.e. 5 through 99)] was calculated. The BMR was considered as the [threshold value] at which the potency variance was sufficiently reduced and was the lowest threshold that potency variance was stabilized". AKA, "the lowest threshold (which gives the highest potency), at which a decrease of variance in potency estimation is stabilized"
+
+#### Negative Direction
+
+```{r 60calculating_benchmark_dose, include = FALSE}
+#Run Hill model and linear model fit
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#Pearson negative direction
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+# Use the NORMALIZED data
+temp_pearson <- input_pearson_tib$data[[1]] %>%
+  select(endpoint, chemical, conc, resp) %>%
+  group_by(chemical)
+
+pearson_fitted_expr <- expression(value(future({
+  run_fit(
+    create_dataset(temp_pearson),
+    modls = c("hill", "cnst"),
+    keep_sets = c("fit_set", "resp_set"),
+    n_samples = params$sample_size,
+    hill_pdir = -1,
+    #Note: Hill dir introduced NAs
+    seed = 42069
+  )
+}, seed = 42069)))
+
+pearson_fitted <- eval(pearson_fitted_expr)
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+```
+
+```{r 61.1simulated_curveps, include = FALSE}
+
+#Wrangling
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#number_of_dose_groups_per_chem <- 6 # Set this to the number of dose groups you have
+#Pearson
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+# Rcurvep has a problem where if the hill model can't be fitted using a specific direction for any of the simulated responses, it just sets them all to NA. This is an issue because it makes plotting the failed models impossible. SO going to resample the responses for those chemicals that get flagged as NA so i can re-model them myself for images even though they go in the incorrect direction and/or too noisy.
+#Index what chemicals are NAs only
+test <- pearson_fitted$result$resp_set %>%
+  group_by(chemical) %>%
+  summarise(is_NaN = mean(resp, na.rm=TRUE))
+  
+NaNs <- as.vector(test[is.nan(test$is_NaN),][,1])
+
+filter_1 <- pearson_fitted$result$resp_set %>%
+  group_by(chemical) %>%
+  filter(!chemical %in% NaNs[[1]])
+
+filter_2 <- create_dataset(temp_pearson, n_samples = params$sample_size) %>%
+  group_by(chemical) %>%
+  filter(chemical %in% NaNs[[1]]) %>%
+  mutate(direction = NA,
+         fitted_resp = NA,
+         sample_id = as.character(sample_id)) %>%
+  mutate(resp = if_else(condition = resp < (-bmr_thresh_pearson), true = 0, false = resp))
+
+replaced_NAs <- rbind(filter_1, filter_2)
+
+pearson_fitted$result$resp_set <- replaced_NAs
+  
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+
+pearson_fitted_output <-
+  summarize_fit_output(d = pearson_fitted, thr_resp = bmr_thresh_pearson)
+
+pearson_fitted_output_summary <-
+  summarise_fitted_results(
+    resp_set = pearson_fitted_output$result$resp_set,
+    act_set = pearson_fitted_output$result$act_set,
+    act_summary = pearson_fitted_output$act_summary,
+    fit_set = pearson_fitted_output$result$fit_set,
+    reject_hit_conf_under = 0
+  )
+# Weird bug in the RCurveP_Data_Wrangling_Functions.R source 'summarise_fitted_results' function where the hit_confidence vriable needs to be divided by an addional 100 ??? - 2022/10/27
+
+fitted_hits_pearson <- pearson_fitted_output_summary %>%
+  filter(hit == 1)
+
+#confident_fitted_hits_pearson <- confident_hits(summary_dat = fitted_hits_pearson, reject_hit_conf_under = 0)
+#If error message says 'out of bounds', there are likely no confident hits at all
+
+bmds_fitted_pearson <- pearson_fitted_output_summary %>%
+  group_by(chemical) %>%
+  summarise(
+    median_POD = unique(median_POD),
+    POD_med = unique(POD_med),
+    cil_POD = unique(cil_POD),
+    mean_POD = unique(mean_POD),
+    ciu_POD = unique(ciu_POD),
+    hit_confidence = unique(hit_confidence),
+    lowest_conc = unique(lowest_conc),
+    highest_conc = unique(highest_conc)
+  )
+
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+
+#Data Wrangling for nice labels
+pearson_fitted_output_summary <- pearson_fitted_output_summary %>%
+  group_by(chemical) %>%
+  mutate(x_label_num = if_else(condition = conc == lowest_conc, true = 0, false = (10^conc)*lowest_dose_treatment_group)) %>%
+  mutate(x_label = factor(x_label_num, levels = c(0, lowest_dose_treatment_group, lowest_dose_treatment_group*10, lowest_dose_treatment_group*100, lowest_dose_treatment_group*1000, lowest_dose_treatment_group*10000, lowest_dose_treatment_group*100000, lowest_dose_treatment_group*1000000, lowest_dose_treatment_group*10000000, lowest_dose_treatment_group*100000000, lowest_dose_treatment_group*1000000000, lowest_dose_treatment_group*10000000000), ordered = TRUE))
+
+fitted_hits_pearson <- fitted_hits_pearson %>%
+  group_by(chemical) %>%
+  mutate(x_label_num = if_else(condition = conc == lowest_conc, true = 0, false = (10^conc)*lowest_dose_treatment_group)) %>%
+  mutate(x_label = factor(x_label_num, levels = c(0, lowest_dose_treatment_group, lowest_dose_treatment_group*10, lowest_dose_treatment_group*100, lowest_dose_treatment_group*1000, lowest_dose_treatment_group*10000, lowest_dose_treatment_group*100000, lowest_dose_treatment_group*1000000, lowest_dose_treatment_group*10000000, lowest_dose_treatment_group*100000000, lowest_dose_treatment_group*1000000000, lowest_dose_treatment_group*10000000000), ordered = TRUE))
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+
+
+#Plotting
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#Pearson
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+# p_pearson_fitted <- ggplot(NULL, aes(conc, resp)) +
+#   geom_point(data = pearson_fitted_output_summary, 
+#              mapping = aes(x = conc, y = fitted_resp, group = sample_id),
+#              color = "gray75",
+#              alpha = 0.4) +
+#   geom_smooth(
+#     data = pearson_fitted_output_summary,
+#     mapping = aes(x = conc, y = fitted_resp, group = sample_id),
+#     color = "gray75",
+#     alpha = 0.4,
+#     se = FALSE
+#   ) +
+#   # geom_point(data = pearson_fitted_output_summary, mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "#a9a9a9", alpha = 0.7) +
+#   geom_smooth(
+#     data = fitted_hits_pearson,
+#     mapping = aes(x = conc, y = fitted_resp, group = sample_id),
+#     color = "#a9a9a9",
+#     alpha = 0.7,
+#     se = FALSE
+#   ) +
+#   # geom_line(data = confident_fitted_hits_pearson[["cil"]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "purple") +
+#   # geom_line(data = confident_fitted_hits_pearson[["ciu"]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "yellow") +
+#   # geom_line(data = confident_fitted_hits_pearson[["median"]], mapping = aes(x = conc, y = fitted_resp, group = sample_id), color = "blue") +
+#   geom_hline(
+#     yintercept = -bmr_thresh_pearson,
+#     linetype = "dashed",
+#     color = "red"
+#   ) +
+#   geom_vline(data = bmds_fitted_pearson,
+#              aes(xintercept = median_POD),
+#              color = "blue") +
+#   geom_vline(data = bmds_fitted_pearson, aes(xintercept = ciu_POD), color = "yellow") +
+#   geom_vline(data = bmds_fitted_pearson, aes(xintercept = cil_POD), color = "purple") +
+#   # geom_vline(data = bmds_fitted_pearson, aes(xintercept = POD_cil), color = "purple") +
+#   geom_text(
+#     data = pearson_fitted_output_summary,
+#     mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc +
+#                     1),
+#     y = -85,
+#     inherit.aes = FALSE,
+#     size = 4
+#   ) +
+#   facet_wrap( ~ chemical, scales = "free_x") +
+#   ylim(-100, 50) +
+#   theme_minimal() +
+#   theme(
+#     panel.border = element_rect(colour = "grey50", fill = NA),
+#     panel.grid.major = element_blank(),
+#     panel.grid.minor = element_blank()
+#   )
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+```
+
+<!-- # ```{r 61.2Print_results, echo=FALSE, fig.height=10.8, fig.width=19.2} -->
+<!-- # print(p_pearson_fitted) -->
+<!-- # ``` -->
+<!-- #  -->
+<!-- # ```{r save_plots, include=FALSE} -->
+<!-- # ggsave( -->
+<!-- #   plot = p_pearson_fitted, -->
+<!-- #   filename = paste0( -->
+<!-- #     "Output/", params$endpoint, "_", params$method, "_hill_curves_", -->
+<!-- #     params$sample_size, -->
+<!-- #     "_samples.svg" -->
+<!-- #   ), -->
+<!-- #   device = "svg", -->
+<!-- #   units = "px", -->
+<!-- #   width = 1920, -->
+<!-- #   height = 1080, -->
+<!-- #   bg = "white", -->
+<!-- #   scale = 2 -->
+<!-- # ) -->
+<!-- # ``` -->
+<!-- #  -->
+<!-- # ```{r 87.2Distribution_of_PODs, echo = FALSE, , fig.height=10.8, fig.width=19.2} -->
+<!-- # p_fitted_pearson_distribution_bmds <- fitted_hits_pearson %>% -->
+<!-- #   group_by(chemical) %>% -->
+<!-- #   ggplot(data = ., aes(x = POD)) + -->
+<!-- #   geom_histogram() + -->
+<!-- #   facet_wrap( ~ chemical, scales = "free_x") + -->
+<!-- #   geom_vline(aes(xintercept = median_POD), color = "blue") + -->
+<!-- #   geom_vline(aes(xintercept = cil_POD), color = "purple") + -->
+<!-- #   geom_vline(aes(xintercept = ciu_POD), color = "yellow") + -->
+<!-- #   geom_vline(aes(xintercept = lowest_conc), -->
+<!-- #              color = "black", -->
+<!-- #              linetype = "dashed") + -->
+<!-- #   geom_vline(aes(xintercept = highest_conc), -->
+<!-- #              color = "black", -->
+<!-- #              linetype = "solid") + -->
+<!-- #   theme_classic() + -->
+<!-- #   scale_x_continuous(expand = expansion(add = 1)) + -->
+<!-- #   xlab("BMD") + -->
+<!-- #   geom_text( -->
+<!-- #     mapping = aes(label = paste("Hit =", hit_confidence), x = lowest_conc + -->
+<!-- #                     2), -->
+<!-- #     y = 1000, -->
+<!-- #     inherit.aes = FALSE, -->
+<!-- #     size = 4 -->
+<!-- #   ) -->
+<!-- #  -->
+<!-- # print(p_fitted_pearson_distribution_bmds) -->
+<!-- # ``` -->
+<!-- #  -->
+<!-- # ```{r save_plots_again, include=FALSE} -->
+<!-- # ggsave( -->
+<!-- #   plot = p_fitted_pearson_distribution_bmds, -->
+<!-- #   filename = paste0( -->
+<!-- #     "Output/p_", params$endpoint, "_", params$method,"_distribution_bmds_", -->
+<!-- #     params$sample_size, -->
+<!-- #     "_samples.svg" -->
+<!-- #   ), -->
+<!-- #   device = "svg", -->
+<!-- #   units = "px", -->
+<!-- #   width = 1920, -->
+<!-- #   height = 1080, -->
+<!-- #   bg = "white", -->
+<!-- #   scale = 2 -->
+<!-- # ) -->
+<!-- # ``` -->
+
+```{r 62calculating_benchmark_dose_3, echo=FALSE}
+ temp <- list(bmds_fitted_pearson)
+ names(temp) <- c(paste0(params$endpoint, "_", params$method))
+ all_summarized_bmd_dat <- plyr::ldply(temp)
+ all_summarized_bmd_dat <- all_summarized_bmd_dat %>%
+   arrange(chemical)
+
+ all_summarized_bmd_dat %>%
+   mutate(lowest_conc = lowest_conc + 1) %>%
+   mutate(
+     lowest_conc = (10 ^ lowest_conc)*lowest_dose_treatment_group,
+     highest_conc = sprintf((10 ^ highest_conc)*lowest_dose_treatment_group, fmt = '%.7f'),
+     cil_POD = (10 ^ cil_POD)*lowest_dose_treatment_group,
+     POD_med = (10 ^ POD_med)*lowest_dose_treatment_group,
+     ciu_POD = (10 ^ ciu_POD)*lowest_dose_treatment_group,
+     median_POD = (10 ^ median_POD)*lowest_dose_treatment_group,
+     mean_POD = (10 ^ mean_POD)*lowest_dose_treatment_group
+   ) %>%
+   mutate(POD_med = if_else(is.na(POD_med), true = median_POD, false = POD_med)) %>%
+   select(
+     chemical,
+     .id,
+     lowest_conc,
+     highest_conc,
+     cil_POD,
+     POD_med,
+     ciu_POD,
+     hit_confidence
+   ) %>%
+   kable(
+     col.names = c(
+       "Chemical",
+       "endpoint",
+       "Low Dose (mg/L)",
+       "High Dose (mg/L)",
+       "BMD - low confidence interval (0.05)",
+       "BMD",
+       "BMD - high confidence interval (0.95)",
+       "Hit Confidence"
+     ),
+     caption = "Table 9. Summary of all the benchmark doses (BMDs) of every chemical"
+   ) %>%
+   kable_styling() %>%
+   row_spec(
+     which(
+       all_summarized_bmd_dat$median_POD < all_summarized_bmd_dat$highest_conc
+     ),
+     bold = TRUE,
+     background = "gray"
+   ) %>%
+   scroll_box()
+```
+
+From table 8 it can be seen that this method was not very effective on the current data set likely due to the very low doses used in the chemical exposure study and/or a lack of neurotoxic effects for some chemicals.\
+\
+   
+```{r write_results, include=FALSE}
+data <- all_summarized_bmd_dat %>%
+   mutate(lowest_conc = lowest_conc + 1) %>%
+   mutate(
+     lowest_conc = (10 ^ lowest_conc)*lowest_dose_treatment_group,
+     highest_conc = sprintf((10 ^ highest_conc)*lowest_dose_treatment_group, fmt = '%.7f'),
+     cil_POD = (10 ^ cil_POD)*lowest_dose_treatment_group,
+     POD_med = (10 ^ POD_med)*lowest_dose_treatment_group,
+     ciu_POD = (10 ^ ciu_POD)*lowest_dose_treatment_group,
+     median_POD = (10 ^ median_POD)*lowest_dose_treatment_group,
+     mean_POD = (10 ^ mean_POD)*lowest_dose_treatment_group
+   ) %>%
+   mutate(POD_med = if_else(is.na(POD_med), true = median_POD, false = POD_med))
+
+write_csv(x = data, file = paste0("Output/", "BMDs/", params$endpoint, "_", params$method, "_simi_score_BMDs_", params$sample_size, "_samples.csv"))
+saveRDS(pearson_fitted_output_summary, file = paste0("Data/", params$endpoint, "_fitted_output_summary_", params$sample_size, "_samples.RDS"))
+saveRDS(bmds_fitted_pearson, file = paste0("Data/", params$endpoint, "_fitted_bmds_", params$sample_size, "_samples.RDS"))
+```

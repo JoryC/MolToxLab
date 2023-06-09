@@ -12,7 +12,7 @@ output:
     theme: readable
 params:
   direction: "pos"
-  sample_size: 10
+  sample_size: 1000
   n_dose_groups: 6
   endpoint: "Affected.Rate"
 ---

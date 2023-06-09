@@ -1,0 +1,493 @@
+---
+title: "Exploring Raw Behavioural Data"
+author: "Jory Curry"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  html_document:
+    code_folding: show
+    df_print: paged
+    toc: true
+    toc_depth: 5
+    toc_float: true
+    theme: readable
+params:
+  value: totaldist
+---
+```{r 2libraries, include=FALSE}
+library(knitr)
+library(kableExtra)
+library(gridExtra)
+library(rlang)
+library(Rcurvep)
+library(DescTools)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(readr)
+library(stringr)
+library(tibble)
+library(data.table)
+library(car)
+library(lazyeval)
+library(DT)
+library(PMCMRplus)
+source("Functions/cal_auc_simi_endpoints.R")
+source("Functions/behavioural_endpoint_calc.R")
+source("Functions/RCurveP_Data_Wrangling_Functions.R")
+```
+
+#### Bar Graphs
+
+```{r 8directory, include=FALSE}
+dir <- paste0(getwd(), "/Data/All")
+```
+
+```{r 9directory_files_filenames, include=FALSE}
+fileNames <- list.files("Data/Raw") #Get the name of each .csv file
+chemicalNames <- str_split(string = fileNames, pattern = ".csv", simplify = TRUE)[,1] #Identify the chemicals included in the files
+metaData <- read.csv(file = "Data/MetaData.csv") #Import the Meta Data that includes information about the data in the folders
+#CAS is the Chemical Abstract Service, MOA is the Mode of Action. This table includes useful information about the exposure concentrations for each chemical dose in mg/L. We'll use this later to create our final data frame
+#HighDose <- setNames(metaData[,6], chemicalNames) #subsetting metadata
+```
+
+```{r fishBehavDat, include=FALSE}
+behavdata_ol_rm <- read_csv(file = "Data/behavdata_ol_rm.csv")
+fishBehavDat <- behavdata_ol_rm #Fish behaviour data with outliers removed for the rest of the analysis!
+```
+
+```{r 37binning_fishBehavDatLD, include=FALSE}
+fishBehavDatBinLD <- fishBehavDat %>%
+  dplyr::mutate(Cycle = if_else(
+    condition = time_end >= 1 &
+      time_end <= 20,
+    true = "Acclimation",
+    false = if_else(
+      condition = time_end >= 21 &
+        time_end <= 25,
+      true = "Dark",
+      false = if_else(
+        condition = time_end >= 26 &
+          time_end <= 30,
+        true = "Light",
+        false = if_else(
+          condition = time_end >= 31 &
+            time_end <= 35,
+          true = "Dark",
+          false = if_else(
+            condition = time_end >= 36 &
+              time_end <= 40,
+            true = "Light",
+            false = if_else(
+              condition = time_end >= 41 &
+                time_end <= 45,
+              true = "Dark",
+              false = "Light"
+            )
+          )
+        )
+      )
+    )
+  ))
+```
+
+```{r 1.ANOVA_results, echo=TRUE}
+#One-way ANOVA dependent - totaldist, independent - Dose!
+ANOVA <- fishBehavDatBinLD %>%
+  filter(Cycle %in% c("Dark", "Light")) %>%
+  group_by(plate_id, Cycle) %>%
+  mutate(Dose_mg_L = as.factor(Dose_mg_L),
+         Dose = factor(Dose, levels = c("Control", "Dose_5", "Dose_4", "Dose_3", "Dose_2", "Dose_1"), ordered = TRUE),
+         Group = as.factor(Group)) %>%
+  nest() %>%
+  dplyr::mutate(model = map(data, ~ aov(
+    totaldist ~ Dose_mg_L,
+    data = .
+  ))) %>% #Where 'Group' is the dose group replicate... group A B or C for one of 3 petri dishes in the dose group... Tukey's results showed us that there is a significant interaction between the subgroups and the repsonse variable
+  dplyr::select(model)
+
+ANOVACheck <- ANOVA %>%
+  mutate(model_tidy = map(model, broom::tidy)) %>%
+  unnest(model_tidy)
+
+ANOVACheck$p.value <- p.adjust(ANOVACheck$p.value, method = "fdr")
+  
+ANOVACheck <- ANOVACheck %>%
+  mutate(is.significant = if_else(
+    condition = p.value <= 0.05,
+    true = TRUE,
+    false = FALSE
+  ))
+DT::datatable(ANOVACheck) #Final Data Frame for the One-way ANOVA... will write later
+```
+
+```{r 1.ANCOVA_results, echo=TRUE}
+#Testing if time is a covariate
+
+#ANCOVA
+ANCOVA <- fishBehavDatBinLD %>%
+  filter(Cycle %in% c("Dark", "Light")) %>%
+  group_by(plate_id, Cycle) %>%
+  mutate(Dose_mg_L = as.factor(Dose_mg_L),
+         Dose = factor(Dose, levels = c("Control", "Dose_5", "Dose_4", "Dose_3", "Dose_2", "Dose_1"), ordered = TRUE),
+         Group = as.factor(Group)) %>%
+  nest() %>%
+  dplyr::mutate(model = map(data, ~ aov(
+    totaldist ~ Dose_mg_L + time_end,
+    data = .
+  ))) %>% #Where 'Group' is the dose group replicate... group A B or C for one of 3 petri dishes in the dose group... Tukey's results showed us that there is a significant interaction between the subgroups and the repsonse variable
+  dplyr::select(model)
+
+ANCOVACheck <- ANCOVA %>%
+  mutate(model_tidy = map(model, broom::tidy)) %>%
+  unnest(model_tidy)
+
+ANCOVACheck <- ANCOVACheck %>%
+  ungroup() %>%
+  mutate(adj_p.value = p.adjust(p.value, method = "fdr")) %>%
+  mutate(is.significant = if_else(
+    condition = adj_p.value <= 0.05,
+    true = TRUE,
+    false = FALSE
+  ))
+DT::datatable(ANCOVACheck) #Final Data Frame for the ANOVA... will write later
+```
+
+```{r 1.Two-wayANOVA_results, echo=TRUE}
+#two-way factorial ANOVA -- Dependent variable: totaldist, independent variables: Dose and subgroups
+ANOVA_2F <- fishBehavDatBinLD %>%
+  filter(Cycle %in% c("Dark", "Light")) %>%
+  group_by(plate_id, Cycle) %>%
+  mutate(Dose_mg_L = as.factor(Dose_mg_L),
+         Dose = factor(Dose, levels = c("Control", "Dose_5", "Dose_4", "Dose_3", "Dose_2", "Dose_1"), ordered = TRUE),
+         Group = as.factor(Group)) %>%
+  nest() %>%
+  dplyr::mutate(model = map(data, ~ aov(
+    totaldist ~ Dose_mg_L * Group,
+    data = .
+  ))) %>% #Where 'Group' is the dose group replicate... group A B or C for one of 3 petri dishes in the dose group... Tukey's results showed us that there is a significant interaction between the subgroups and the repsonse variable
+  dplyr::select(model)
+
+ANOVACheck_2F <- ANOVA_2F %>%
+  mutate(model_tidy = map(model, broom::tidy)) %>%
+  unnest(model_tidy)
+
+ANOVACheck_2F <- ANOVACheck_2F %>%
+  ungroup() %>%
+  mutate(adj_p.value = p.adjust(p.value, method = "fdr")) %>%
+  mutate(is.significant = if_else(
+    condition = adj_p.value <= 0.05,
+    true = TRUE,
+    false = FALSE
+  ))
+DT::datatable(ANOVACheck_2F) #Final Data Frame for the ANOVA... will write later
+```
+
+```{r 1.Two-wayANOVA_results, echo=TRUE}
+#two-way ANOVA
+# Testing if noise can be accounted for by the time !!! 
+# We saw from preliminary data that fish take a bit of time to get acclimated to the machine and the responsiveness diminishes over time. So accounting for this observation in a two-way ANOVA model and totally ignoring any subgroup effects for now.
+
+ANOVA_2T <- fishBehavDatBinLD %>%
+  filter(Cycle %in% c("Dark", "Light")) %>%
+  group_by(plate_id, Cycle) %>%
+  mutate(Dose_mg_L = as.factor(Dose_mg_L),
+         Dose = factor(Dose, levels = c("Control", "Dose_5", "Dose_4", "Dose_3", "Dose_2", "Dose_1"), ordered = TRUE),
+         Group = as.factor(Group)) %>%
+  nest() %>%
+  dplyr::mutate(model = map(data, ~ aov(
+    totaldist ~ Dose_mg_L * time_end,
+    data = .
+  ))) %>% #Where 'Group' is the dose group replicate... group A B or C for one of 3 petri dishes in the dose group... Tukey's results showed us that there is a significant interaction between the subgroups and the repsonse variable
+  dplyr::select(model)
+
+ANOVACheck_2T <- ANOVA_2T %>%
+  mutate(model_tidy = map(model, broom::tidy)) %>%
+  unnest(model_tidy)
+
+ANOVACheck_2T <- ANOVACheck_2T %>%
+  ungroup() %>%
+  mutate(adj_p.value = p.adjust(p.value, method = "fdr")) %>%
+  mutate(is.significant = if_else(
+    condition = adj_p.value <= 0.05,
+    true = TRUE,
+    false = FALSE
+  ))
+DT::datatable(ANOVACheck_2T) #Final Data Frame for the ANOVA... will write later
+```
+
+```{r 2.ANOVA_results, echo=TRUE}
+ANOVA_Sig_Results <-
+  ANOVACheck[which(ANOVACheck$p.value[] <= 0.05), ]
+ANOVA_Sig_Results <- ANOVA_Sig_Results %>%
+  dplyr::select(plate_id, term, df, statistic, p.value)
+
+#Saving the ANCOVA Results
+write_csv(x = ANOVACheck, file = "Output/One_way_ANOVA_Results.csv") #ANOVA
+DT::datatable(ANOVA_Sig_Results) #Just the significant results of the ANOVA
+```
+
+```{r 2.ANCOVA_results, echo=TRUE}
+ANCOVA_Sig_Results <-
+  ANCOVACheck[which(ANCOVACheck$adj_p.value[] <= 0.05), ]
+ANCOVA_Sig_Results <- ANCOVA_Sig_Results %>%
+  dplyr::select(plate_id, term, df, statistic, adj_p.value)
+
+#Saving the ANCOVA Results
+write_csv(x = ANCOVACheck, file = "Output/ANCOVA_Results.csv") #ANCOVA
+DT::datatable(ANCOVA_Sig_Results) #Just the significant results of the ANCOVA
+```
+
+```{r 2.ANOVA_results, echo=TRUE}
+ANOVA_2F_Sig_Results <-
+  ANOVACheck_2F[which(ANOVACheck_2F$adj_p.value[] <= 0.05), ]
+ANOVA_2F_Sig_Results <- ANOVA_2F_Sig_Results %>%
+  dplyr::select(plate_id, term, df, statistic, adj_p.value)
+
+#Saving the ANCOVA Results
+write_csv(x = ANOVACheck_2F, file = "Output/Two_way_factorial_ANOVA_Results.csv") #ANOVA
+DT::datatable(ANOVA_2F_Sig_Results) #Just the significant results of the ANOVA
+```
+
+```{r 2.ANOVA_results, echo=TRUE}
+ANOVA_2T_Sig_Results <-
+  ANOVACheck_2T[which(ANOVACheck_2T$adj_p.value[] <= 0.05), ]
+ANOVA_2T_Sig_Results <- ANOVA_2T_Sig_Results %>%
+  dplyr::select(plate_id, term, df, statistic, adj_p.value)
+
+#Saving the ANCOVA Results
+write_csv(x = ANOVACheck_2T, file = "Output/Two_way_time_ANOVA_Results.csv") #ANOVA
+DT::datatable(ANOVA_2T_Sig_Results) #Just the significant results of the ANOVA
+```
+
+```{r 38Dunnetts_test_old_code, echo=FALSE}
+cycle_filter <- c("Light", "Dark")
+
+dun_list <- NULL
+chemicalNames_Cycle <- paste0(rep(chemicalNames, each = 2), rep(c("_Dark", "_Light")))
+for (j in 1:length(chemicalNames_Cycle)) {
+   temp_dun <- PMCMRplus::dunnettTest(ANOVA$model[[j]])
+   
+    temp_dun_df <- as.data.frame(temp_dun$p.value[,1]) %>%
+      rownames_to_column( var = "Dose") %>%
+      rename(pval = "temp_dun$p.value[, 1]")
+
+    dun_list[[chemicalNames_Cycle[j]]] <- temp_dun_df
+
+  # dun_list_2[[chemicalNames_Cycle[j]]] <- ldply(dun_list, .id = "Cycle")
+  #   
+    
+  # dun_list_2[[j]]$pval <- p.adjust(dun_list_2[[j]]$pval, method = "fdr") # p value adjustment https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6099145/ (for single test - same samples)
+
+    new_row <- as.data.frame(matrix(
+      data = c(0, 1),
+      nrow = 1,
+      ncol = 2,
+      byrow = TRUE
+    ))
+    colnames(new_row) <- c("Dose", "pval")
+    new_row$pval <- as.numeric(new_row$pval)
+    
+    dun_list[[j]] <- dun_list[[j]] %>%
+      rbind(new_row)
+}
+
+dunnett_binned <- plyr::ldply(dun_list, .id = "plate_id")
+
+dunnett_binned <- dunnett_binned %>%
+  dplyr::rename(Dose_mg_L = Dose) %>%
+  dplyr::mutate(Cycle = str_split(string = plate_id, pattern = "_", simplify = TRUE)[,2],
+                plate_id = str_split(string = plate_id, pattern = "_", simplify = TRUE)[,1]) %>%
+  dplyr::select(plate_id, Cycle, Dose_mg_L, pval) %>%
+  ungroup() %>%
+  dplyr::mutate(pval = p.adjust(p = pval, method = "fdr"))
+
+Dunnett_comb <- dunnett_binned
+```
+
+```{r 39summary_all_chems, include=FALSE}
+summary_fishBehavDatBinLD <- fishBehavDatBinLD %>%
+  dplyr::mutate(Cycle = factor(
+    Cycle,
+    levels = c(
+      "Acclimation",
+      "Light",
+      "Dark"
+    ),
+  )) %>%
+  dplyr::mutate(Dose = factor(Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)) %>%
+  dplyr::filter(Cycle != "Acclimation") %>%
+  group_by(plate_id, Cycle, Dose) %>%
+  dplyr::summarise(se = sd(totaldist, na.rm = TRUE)/sqrt(length(totaldist)), value = mean(totaldist, na.rm = TRUE), sd = sd(totaldist, na.rm = TRUE), Dose_mg_L = unique(as.character(Dose_mg_L)))
+```
+
+```{r 40dunnett_summary_all_chems, include=FALSE}
+Dunnett_comb$Cycle <-
+  factor(
+    Dunnett_comb$Cycle,
+    levels = c(
+      "Light",
+      "Dark"
+    ),
+  )
+dunnett_summary_all_chems_LD <-
+  right_join(Dunnett_comb, summary_fishBehavDatBinLD, by = c("Dose_mg_L", "plate_id", "Cycle"))
+dunnett_summary_all_chems_LD$Dose <- factor(dunnett_summary_all_chems_LD$Dose, levels = c("Control", "Dose5", "Dose4", "Dose3", "Dose2", "Dose1"), ordered = TRUE)
+```
+
+```{r 41meantotaldist_BinnedDatLD, echo=FALSE}
+p_list <- list()
+for (k in 1:length(chemicalNames)) {
+  labels <- c(dplyr::select(.data = dplyr::filter(metaData, plate_id == chemicalNames[k]), Control)[[1]],
+              dplyr::select(.data = dplyr::filter(metaData, plate_id == chemicalNames[k]), Dose5)[[1]],
+              dplyr::select(.data = dplyr::filter(metaData, plate_id == chemicalNames[k]), Dose4)[[1]],
+              dplyr::select(.data = dplyr::filter(metaData, plate_id == chemicalNames[k]), Dose3)[[1]],
+              dplyr::select(.data = dplyr::filter(metaData, plate_id == chemicalNames[k]), Dose2)[[1]],
+              dplyr::select(.data = dplyr::filter(metaData, plate_id == chemicalNames[k]), Dose1)[[1]])
+  p <- dunnett_summary_all_chems_LD %>%
+    dplyr::filter(plate_id == chemicalNames[k]) %>%
+    ggplot(aes(
+      x = factor(Cycle, levels = c("Light", "Dark"), ordered = TRUE),
+      y = value,
+      fill = Dose,
+    )) +
+    geom_tile(
+      data = data.frame(
+        Cycle = factor(
+          c("Light", "Dark"),
+          levels = c("Light", "Dark"),
+          ordered = TRUE
+        ),
+        alpha = c(0, 1)
+      ),
+      aes(
+        x = Cycle,
+        y = 0,
+        height = Inf,
+        width = 0.95,
+        alpha = alpha
+      ),
+      fill = "black"
+    ) +
+    scale_alpha_continuous(range = c(0, 0.2), guide = "none") +
+    geom_col(aes(x = factor(
+      Cycle, levels = c("Light", "Dark"), ordered = TRUE
+    )), position = "dodge",
+    colour = "black") +
+    geom_errorbar(aes(ymin = value + sd, ymax = value + sd),
+                  width = .5,
+                  position = position_dodge(0.9)) +
+    geom_linerange(aes(
+      ymin = value,
+      ymax = value + sd,
+      group = Dose
+    ),
+    position = position_dodge(width = 0.9)) +
+    scale_fill_grey(start = 1, end = 0, labels = labels, name = "Dose (mg/L)") +
+    scale_colour_grey(start = 1, end = 0, labels = labels, name = "Dose (mg/L)") +
+    geom_text(
+      aes(
+        label = if_else(
+          condition = pval > 0.1,
+          true = "",
+          false = if_else(
+            condition = pval <= 0.1 &
+              pval > 0.05,
+            true = "",
+            if_else(
+              condition = pval <= 0.05 &
+                pval > 0.01,
+              true = "",
+              false = if_else(
+                condition = pval <= 0.01 &
+                  pval > 0.001,
+                true = "",
+                false = if_else(pval <= 0.001 &
+                                  pval >= 0, true = "*", false = "")
+              )
+            )
+          )
+        ),
+        group = Dose,
+        y = value + sd + 50
+      ),
+      position = position_dodge(width = 0.9),
+      color = "red",
+      size = 5.75
+    ) +
+    ylab("Mean Total Distance Moved (mm)") +
+    xlab("") +
+    labs(title = chemicalNames[k]) +
+    theme_classic()
+  
+  p_list[[chemicalNames[k]]] <- list(p, chemicalNames[k])
+  #print(p)
+}
+```
+
+##### Plots Binned by cycle type (light or dark - 2 bins - 15mins each) {.tabset}
+```{r 41.1meantotaldist_BinnedDat, echo = FALSE, results = 'asis'}
+for (i in seq_along(p_list)){
+  temp <- p_list[[i]]
+  cat("######", temp[[2]], " \n")
+  print(temp[[1]])
+  cat(' \n\n')
+}
+```
+
+```{r 41.1meantotaldist_BinnedDatLD_OneFig, echo=FALSE}
+p1 <-
+  gridExtra::grid.arrange(
+    p_list[[1]][[1]],
+    p_list[[2]][[1]],
+    p_list[[3]][[1]],
+    p_list[[4]][[1]],
+    p_list[[5]][[1]],
+    p_list[[6]][[1]],
+    p_list[[7]][[1]],
+    p_list[[8]][[1]],
+    p_list[[9]][[1]],
+    p_list[[10]][[1]],
+    p_list[[11]][[1]],
+    p_list[[12]][[1]],
+    p_list[[13]][[1]],
+    p_list[[14]][[1]],
+    p_list[[15]][[1]]
+  )
+ggsave(
+  plot = p1,
+  filename = "Dunnett_test_ANOVA_One_way_Part1.png",
+  path = "~/MolToxLab/Behaviour/Jory_Behaviour_R_Markdown/Output",
+  device = "png",
+  scale = 4,
+  units = "px",
+  width = 1920,
+  height = 1080
+)
+p2 <-
+  gridExtra::grid.arrange(
+    p_list[[16]][[1]],
+    p_list[[17]][[1]],
+    p_list[[18]][[1]],
+    p_list[[19]][[1]],
+    p_list[[20]][[1]],
+    p_list[[21]][[1]],
+    p_list[[22]][[1]],
+    p_list[[23]][[1]],
+    p_list[[24]][[1]],
+    p_list[[25]][[1]],
+    p_list[[26]][[1]],
+    p_list[[27]][[1]],
+    p_list[[28]][[1]],
+    p_list[[29]][[1]]
+  )
+ggsave(
+  plot = p2,
+  filename = "Dunnett_test_ANOVA_One_way_Part2.png",
+  path = "~/MolToxLab/Behaviour/Jory_Behaviour_R_Markdown/Output",
+  device = "png",
+  scale = 4,
+  units = "px",
+  width = 1920,
+  height = 1080
+)
+```

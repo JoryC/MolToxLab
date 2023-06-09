@@ -17,7 +17,7 @@ output:
 ```
 
 ```{r Libraries, include = FALSE}
-library(plyr)
+#library(plyr)
 library(data.table)
 library(abind)
 library(dplyr)
@@ -121,13 +121,13 @@ h24_2 <- c(seq(
 ))
 #These objects represent the numnber in 1:4 that corresponds to the 24h and baseline plates... so we have 1-4 replicated 26 times (because we have 26 chemicals in the data frame)... 4*26=104
 #Create your 4 dataframes to prepare for creating average data sets
-list[Baseline_1] #Check and see that the output is Baseline_1.txt files
+#list[Baseline_1] #Check and see that the output is Baseline_1.txt files
 Base_1_dfl <- plyr::ldply(list[Baseline_1]) #Here we are subsetting the list object which contains data from each plate (replicated twice to control for instrument reading errors). Each subset contains data for different replicates (2) and two time points (baseline and 24h) = 4 different data frames
-list[Baseline_2]
+#list[Baseline_2]
 Base_2_dfl <- plyr::ldply(list[Baseline_2])
-list[h24_1]
+#list[h24_1]
 h24_1_dfl <- plyr::ldply(list[h24_1])
-list[h24_2]
+#list[h24_2]
 h24_2_dfl <- plyr::ldply(list[h24_2])
 #Simple average of the two data sets (Day 0 - Baseline, and Day 1 - 24h)
 Baseline_avg <-
@@ -227,8 +227,8 @@ h24_avg <-
   dplyr::select(-name)
 
 
-Baseline_avg #Combined data frame for every chemical (including blank wells)
-h24_avg #Combine data frame
+#Baseline_avg #Combined data frame for every chemical (including blank wells)
+#h24_avg #Combine data frame
 rm(Base_1_dfl,
    Base_2_dfl,
    h24_1_dfl,
@@ -320,11 +320,14 @@ Tidy_Data <- Tidy_Data %>%
   mutate(Norm_Baseline_Fluorescence = Baseline_Fluorescence - Baseline_Blank,
          Norm_h24_Fluorescence = h24_Fluorescence - h24_Blank,
          Delta_Fluorescence = Norm_h24_Fluorescence-Norm_Baseline_Fluorescence,
-         Relative_Delta_Fluorescence = Norm_h24_Fluorescence/Norm_Baseline_Fluorescence)
+         #Delta_Fluorescence = if_else(condition = Delta_Fluorescence < 0, true = 0, false = Delta_Fluorescence),
+         Delta_Fluorescence = Norm_h24_Fluorescence/Norm_Baseline_Fluorescence,
+         )
+  
 
 #Where delta fluorescence is NA
 Tidy_Data %>%
-  mutate(is_NA = is.na(Relative_Delta_Fluorescence)) %>%
+  mutate(is_NA = is.na(Delta_Fluorescence)) %>%
   filter(is_NA == TRUE)
   #None
 ```
@@ -337,7 +340,7 @@ Tidy_Data %>%
 #Test of normal distribution faceted by chemical
 Tidy_Data %>%
   group_by(Chemical) %>%
-  ggplot(aes(sample = Relative_Delta_Fluorescence)) +
+  ggplot(aes(sample = Delta_Fluorescence)) +
   geom_qq() +
   geom_qq_line() +
   facet_wrap(~ Chemical, scales = "free") +
@@ -348,7 +351,7 @@ Tidy_Data %>%
           without outliers removed")
 ```
 
-```{r Legacy_Outlier_removal_code_chunks_using Grubb's_Test, include=FALSE}
+```{r Legacy_Outlier_removal_code_chunks_using Grubbs_Test, include=FALSE}
 
 
 
@@ -403,11 +406,11 @@ Tidy_Data %>%
 #   ))
 # 
 # #-----------------------------------------------------------------------------#
-# #Testing for Outliers... Relative Change in Fluorescene column (Relative_Delta_Fluorescence)
+# #Testing for Outliers... Relative Change in Fluorescene column (Delta_Fluorescence)
 input_Tidy_Data <- Tidy_Data %>%
   group_by(Chemical) %>%
-  dplyr::select(Relative_Delta_Fluorescence) %>%
-  mutate(Relative_Delta_Fluorescence = round(Relative_Delta_Fluorescence, digits = 3)) %>% #Bug with grubbs and large decimal places
+  dplyr::select(Delta_Fluorescence) %>%
+  mutate(Delta_Fluorescence = round(Delta_Fluorescence, digits = 3)) %>% #Bug with grubbs and large decimal places
   # filter(Chemical %in% c("BPA", "BPAF")) %>% #Testing with smaller data set
   nest()
 
@@ -422,7 +425,7 @@ grubbs.flag <- function(x) {
     grubbs.result <- grubbs.test(test)
     pv <- grubbs.result$p.value
   }
-  return(data.frame(Relative_Delta_Fluorescence=x,Outlier=(x %in% outliers)))
+  return(data.frame(Delta_Fluorescence=x,Outlier=(x %in% outliers)))
 }
 
 grubbs_results <- input_Tidy_Data %>%
@@ -433,8 +436,8 @@ Tidy_Data_join <- grubbs_results %>%
   unnest(cols = c(grubbs_results))
 
 Tidy_Data_test <- Tidy_Data %>%
-  mutate(Relative_Delta_Fluorescence = round(Relative_Delta_Fluorescence, digits = 3)) %>%
-  inner_join(Tidy_Data_join, by = c("Chemical", "Relative_Delta_Fluorescence"))
+  mutate(Delta_Fluorescence = round(Delta_Fluorescence, digits = 3)) %>%
+  inner_join(Tidy_Data_join, by = c("Chemical", "Delta_Fluorescence"))
 Tidy_Data_test <- Tidy_Data_test[-which(duplicated(Tidy_Data_test)),] #Delete duplicates introduced by join
 
 test <- Tidy_Data_test %>%
@@ -442,13 +445,13 @@ test <- Tidy_Data_test %>%
   tally()
 
 #Outliers flagged
-Tidy_Data <- Tidy_Data_test %>%
-  mutate(Outlier = Outlier.y)
+Tidy_Data <- Tidy_Data_test
+  #mutate(Outlier = Outlier.y)
 
 #Outliers removed
 Tidy_Data_ol_rm <- Tidy_Data %>%
   mutate(across(
-    .cols = c("Relative_Delta_Fluorescence"),
+    .cols = c("Delta_Fluorescence"),
     .fns = ~ replace(x = ., list = Outlier, values = NA)
   ))
 
@@ -467,11 +470,11 @@ write_csv(x = Tylers_Data, file = "Data/Alamar_Blue_Tylers_Data.csv")
 
 ```{r 1.testing_assumptions_ofnormality_and_homogeneity_of_variance, echo=FALSE}
 #Mean and StDev of Delta of each Dose
-DoseSummary <- Tidy_Data %>%
+DoseSummary <- Tidy_Data_ol_rm %>%
   group_by(Chemical, `Dose(mg/L)`) %>%
   summarise(
-    StDev = sd(Relative_Delta_Fluorescence, na.rm = TRUE),
-    Mean = mean(Relative_Delta_Fluorescence, na.rm = TRUE),
+    StDev = sd(Delta_Fluorescence, na.rm = TRUE),
+    Mean = mean(Delta_Fluorescence, na.rm = TRUE),
     .groups = "keep"
   )
 DT::datatable(DoseSummary)
@@ -481,7 +484,7 @@ DT::datatable(DoseSummary)
 #Homogeneity of Variance
 LeveneResults <- Tidy_Data_ol_rm %>%
   group_by(Chemical) %>%
-  summarise(leveneTest(Relative_Delta_Fluorescence, as.factor(`Dose(mg/L)`)))
+  summarise(leveneTest(Delta_Fluorescence, as.factor(`Dose(mg/L)`)))
 #Adding an is.significant column to easily parse significant values in a spreadsheet
 LeveneResults <- LeveneResults %>%
   na.omit() %>%
@@ -496,7 +499,7 @@ DT::datatable(LeveneResults)
 #Var Check
 var_check <- Tidy_Data_ol_rm %>%
   group_by(Chemical, Dose) %>%
-  dplyr::mutate(variance = var(Relative_Delta_Fluorescence, na.rm = TRUE)) %>%
+  dplyr::mutate(variance = var(Delta_Fluorescence, na.rm = TRUE)) %>%
   dplyr::summarise(variance) %>%
   unique()
 
@@ -518,10 +521,13 @@ write_csv(x = LeveneResults, file = "Output/Levene_Test_Results.csv")
 ```{r 1.ANCOVA_results, echo=TRUE}
 #ANCOVA
 ANCOVA <- Tidy_Data_ol_rm %>%
+  mutate(`Dose(mg/L)` = as.factor(`Dose(mg/L)`),
+         Dose = factor(Dose, levels = c("Dose_6", "Dose_5", "Dose_4", "Dose_3", "Dose_2", "Dose_1"), ordered = TRUE),
+         Group = as.factor(Group)) %>%
   group_by(Chemical) %>%
   nest() %>%
   mutate(model = map(data, ~ aov(
-    Relative_Delta_Fluorescence ~ as.factor(`Dose(mg/L)`) + as.factor(Group),
+    Delta_Fluorescence ~ Dose + Group,
     data = .
   ))) %>% #Where 'Group' is the dose group replicate... group A B or C for one of 3 petri dishes in the dose group... This tells us if there were human error in making sure each replicate got the same dose
   dplyr::select(model)
@@ -549,9 +555,62 @@ write_csv(x = ANCOVACheck, file = "Output/ANCOVA_Results.csv") #ANCOVA
 ```
 
 ```{r 2.PostHoc_TukeysHSD, echo=TRUE, warning=FALSE, message=FALSE}
-#TukeyHSD's Test on Groups - testing for 'Group Effects'
-Tukey_results <- ANCOVA %>%
-  mutate(model = map(model, ~ TukeyHSD(x = .x))) #Performing the Tukey's test and saving it is a variable
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#ASSUMPTIONS
+#Homogeneity of Variance
+LeveneResults <- Tidy_Data_ol_rm %>%
+  group_by(Chemical, Dose) %>%
+  summarise(leveneTest(Delta_Fluorescence, as.factor(Group)))
+#Adding an is.significant column to easily parse significant values in a spreadsheet
+LeveneResults <- LeveneResults %>%
+  na.omit() %>%
+  mutate(is.significant = if_else(
+    condition = `Pr(>F)` < 0.05,
+    true = TRUE,
+    false = FALSE
+  ))
+
+DT::datatable(LeveneResults)
+
+#Var Check
+var_check <- Tidy_Data_ol_rm %>%
+  group_by(Chemical, Dose, Group) %>%
+  dplyr::mutate(variance = var(Delta_Fluorescence, na.rm = TRUE)) %>%
+  dplyr::summarise(variance) %>%
+  unique()
+
+# General rule of thumb is that ANOVA/ANCOVA is robust enough to tolerate minor differences in variance across groups. The largest group variance can be up to 4 times the smallest without posing problems. 
+var_check_2 <- var_check %>%
+  group_by(Chemical, Dose, Group) %>%
+  dplyr::summarise(max = max(variance, na.rm = TRUE), min = min(variance, na.rm = TRUE), check = if_else(condition = max <= min*4, true = "OK", false = "Not OK"))
+
+#Table shows mostly homogeneous variance
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+#One-way ANOVA to test for replicate subgroup effect
+anova_group_eff_test <- Tidy_Data_ol_rm %>%
+  group_by(Chemical, Dose) %>%
+  nest() %>%
+  dplyr::mutate(model = map(data, ~ aov(
+    Delta_Fluorescence ~ as.factor(Group),
+    data = .
+  ))) %>%
+  dplyr::mutate(tidy_aov = map(model, ~ broom::tidy(x = .x)))
+
+#Adjust P values
+anova_group_eff_adj_p <- anova_group_eff_test %>%
+  dplyr::select(Chemical, Dose, tidy_aov) %>%
+  unnest(tidy_aov) %>%
+  dplyr::filter(term == "as.factor(Group)") %>%
+  ungroup() %>%
+  dplyr::mutate(adj.p.value = p.adjust(p = p.value, method = "BH")) %>%
+  group_by(Chemical, Dose)
+
+#Tukey's Test
+Tukey_results <- anova_group_eff_test %>%
+  dplyr::mutate(model = map(model, ~ TukeyHSD(x = .x, which = "as.factor(Group)", conf.level = 0.95))) %>%
+  dplyr::select(model)
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #Following guide here https://schmidtpaul.github.io/DSFAIR/compactletterdisplay.html
@@ -560,11 +619,11 @@ Tukey_results <- ANCOVA %>%
 option1 <- Tukey_results %>%
   mutate(data = map(model, ~ broom::tidy(x = .x)))
 #option 2
-option2 <- ANCOVA %>%
+option2 <- anova_group_eff_test %>%
   mutate(option2 = map(model, ~ emmeans::emmeans(object = .x, specs = "Group"))) %>%
   mutate(option2 = map(option2, ~ pairs(x = .x,  adjust = "Tukey")))
 #option 3
-option3 <- ANCOVA %>%
+option3_1 <- anova_group_eff_test %>%
   mutate(option3 = map(model, ~ multcomp::cld(emmeans::emmeans(object = .x, specs = "Group"), adjust = "Tukey", details = TRUE, Letters = letters, alpha = 0.05)))
 
 #uniform format
@@ -581,19 +640,59 @@ option2 <- option2 %>%
   unnest(cols = c(data)) %>%
   mutate(adj.p.value = p.adjust(p.value, method = "fdr"))
   
-option3_t <- option3 %>%
+option3_t <- option3_1 %>%
   dplyr::select(option3) %>%
   mutate(data = map(option3, pluck(.x = "comparisons"))) %>%
   mutate(data2 = map(data, ~ as_tibble(x = .x))) %>%
   dplyr::select(data2) %>%
   unnest(cols = c(data2)) %>%
   mutate(adj.p.value = p.adjust(p.value, method = "fdr"))
-option3 <- option3 %>%
+option3 <- option3_1 %>%
   dplyr::select(option3) %>%
   mutate(data = map(option3, pluck(.x = "emmeans"))) %>%
   mutate(data2 = map(data, ~ as_tibble(x = .x))) %>%
   dplyr::select(data2) %>%
   unnest(cols = c(data2))
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#Magnitude of effect test
+#Testing Magnitude of effect represented by the percent difference in mean response comparisons
+join_to_option_3 <- Tidy_Data_ol_rm %>%
+  group_by(Chemical, Dose) %>%
+  dplyr::summarise(
+    mean_flu = mean(Delta_Fluorescence, na.rm = TRUE),
+    percent15 = quantile(Delta_Fluorescence, 0.15, na.rm = TRUE),
+    sd = sd(Delta_Fluorescence, na.rm = TRUE)
+  )
+option3_test <- option3 %>%
+  group_by(Chemical, Dose) %>%
+  inner_join(join_to_option_3) %>%
+  dplyr::mutate(.group2 = if_else(condition = abs(emmean - mean_flu) < sd, true = "a", false = .group)) %>%
+  dplyr::mutate(legacy_group = .group,
+         .group = .group2) %>%
+  dplyr::select(-.group2)
+big_tib <- option3_t %>%
+  dplyr::mutate(Group = substr(x = contrast, start = 1, stop = 1)) %>%
+  dplyr::mutate(Group = substr(x = contrast, start = 1, stop = 1),
+         contrast = substr(x = contrast, start = 5, stop = 5),
+         Group_1 = Group,
+         contrast_1 = contrast) %>%
+  pivot_longer(cols = c(Group, contrast), values_to = "Group", names_to = "X") %>%
+  dplyr::mutate(contrast = if_else(condition = X == "contrast", true = Group_1, false = contrast_1)) %>%
+  dplyr::filter(X == "Group") %>%
+  dplyr::select(-X, -Group, -contrast) %>%
+  inner_join(option3_test, by = c("Chemical", "Dose")) %>%
+  group_by(Chemical, Dose, estimate) %>%
+  dplyr::mutate(keep = if_else(condition = Group %in% c(Group_1, contrast_1), true = TRUE, false = FALSE)) %>% #Deleting meaningless rows
+  dplyr::filter(keep == TRUE) %>%
+  dplyr::filter(adj.p.value < 0.05) %>% #Filter only significant comparisons
+  dplyr::filter(emmean == max(emmean)) %>% #denominator
+  dplyr::mutate(percent_difference = abs((estimate/emmean)*100)) %>% #endpoint for pooled sub-groups justification
+  dplyr::mutate(percent_difference_mean_flu = abs((estimate/mean_flu)*100))
+  
+hist(big_tib$percent_difference, breaks = 100)
+hist(big_tib$percent_difference_mean_flu)
+
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -623,301 +722,477 @@ gg_Tukey <- Tukey_join_to_Tidy %>%
 
 
 #Write to a .csv
-write_csv(Dunnett_comb, file = "Output/Dunnett_test_results.csv")
+#write_csv(Dunnett_comb, file = "Output/Dunnett_test_results.csv")
 write_csv(Tukey_results, file = "Output/Tukey_HSD_results.csv")
 #write_csv(option_3_t)
 
+perc_diff <- option3_t %>%
+  dplyr::mutate(Group = substr(x = contrast, start = 1, stop = 1)) %>%
+  dplyr::mutate(Group = substr(x = contrast, start = 1, stop = 1),
+         contrast = substr(x = contrast, start = 5, stop = 5),
+         Group_1 = Group,
+         contrast_1 = contrast) %>%
+  pivot_longer(cols = c(Group, contrast), values_to = "Group", names_to = "X") %>%
+  dplyr::mutate(contrast = if_else(condition = X == "contrast", true = Group_1, false = contrast_1)) %>%
+  dplyr::filter(X == "Group") %>%
+  dplyr::select(-X, -Group, -contrast) %>%
+  inner_join(option3_test, by = c("Chemical", "Dose")) %>%
+  group_by(Chemical, Dose, estimate) %>%
+  dplyr::mutate(keep = if_else(condition = Group %in% c(Group_1, contrast_1), true = TRUE, false = FALSE)) %>% #Deleting meaningless rows
+  dplyr::filter(keep == TRUE) %>%
+  dplyr::mutate(percent_difference = abs((estimate/emmean)*100)) %>% #endpoint for pooled sub-groups justification
+  dplyr::mutate(percent_difference_mean_flu = abs((estimate/mean_flu)*100))
+write_csv(perc_diff, file = "Output/Compact_letter_display_Emmeans_with_comparison_percent_differences.csv")
 
-DT::datatable(Tukey_results)
+hist(x = perc_diff$percent_difference, breaks = 2000, xlim = c(-1,5000))
+```
+
+```{r Tukey_Group_Eff_Plot, echo=TRUE, warning=FALSE, message=FALSE}
+#Group Variance v2
+y_values_4_geom_text <- Tidy_Data_ol_rm %>%
+  group_by(Chemical, Dose) %>%
+  dplyr::summarise(max_y = max(Delta_Fluorescence, na.rm = TRUE))
+gg_Tukey <- gg_Tukey %>%
+  inner_join(y_values_4_geom_text)
+
+gg_data <- Tidy_Data_ol_rm %>%
+  na.omit() %>%
+  group_by(Chemical, Dose) %>%
+  dplyr::mutate(flu_show = as.numeric(dplyr::between(
+    x = Delta_Fluorescence,
+    left = quantile(Delta_Fluorescence, na.rm = TRUE)[[2]] - (1.5 * IQR(Delta_Fluorescence, na.rm = TRUE)),
+    right = quantile(Delta_Fluorescence, na.rm = TRUE)[[4]] + (1.5 * IQR(Delta_Fluorescence, na.rm = TRUE))
+  ))) %>%
+  dplyr::mutate(flu_ol_rm = if_else(flu_show == 1, true = Delta_Fluorescence, false = NA)) %>%
+  dplyr::select(Chemical,
+                Group,
+                `Dose(mg/L)`,
+                Dose,
+                Delta_Fluorescence,
+                flu_show,
+                flu_ol_rm)
+model <- anova_group_eff_test$model
+model_means_cld <- option3 %>%
+  group_by(Chemical) %>%
+  dplyr::mutate(Group = forcats::fct_reorder(Group, emmean)) %>%
+  dplyr::mutate(cont_group = .group)
+# gg_data <- gg_data %>%
+#   group_by(Chemical) %>%
+#   dplyr::mutate(Group = fct_relevel(Group, levels(model_means_cld$Group)))
+library(scales)
+
+chemicalNames <- unique(Tidy_Data_ol_rm$Chemical)
+
+for (i in chemicalNames) {
+  temp_dat <- gg_data %>%
+    dplyr::filter(Chemical == i)
+  temp_mdl <- model_means_cld %>%
+    dplyr::filter(Chemical == i)
+  
+  p <- ggplot() +
+  #y axis
+  scale_y_continuous(
+    name = "Change in Fluorescence over 24h (RFU)",
+    breaks = pretty_breaks(),
+    expand = expansion(mult = (c(0.2, 0.2)))
+  ) +
+  #x axis
+  scale_x_discrete(
+    name = "Groups (pseudo-replicates)"
+  ) +
+  #layout
+  theme_classic() +
+  #black data points
+  geom_point(
+    data = temp_dat,
+    aes(y = Delta_Fluorescence, x = Group),
+    position = position_nudge(x = -0.2)
+  ) +
+  #black boxplot
+  geom_boxplot(
+    data = temp_dat,
+    aes(y = Delta_Fluorescence, x = Group),
+    width = 0.05,
+    outlier.shape = NA,
+    position = position_nudge(x = -0.1)
+  ) +
+  #red mean value
+  geom_point(
+    data = temp_mdl,
+    aes(y = emmean, x = Group),
+    size = 2,
+    color = "red"
+  ) +
+  #red mean errorbar
+  geom_errorbar(
+    data = temp_mdl,
+    aes(ymin = lower.CL, ymax = upper.CL, x = Group),
+    width = 0.05,
+    color = "red"
+  ) +
+  #red letters
+  geom_text(
+    data = temp_mdl,
+    aes(
+      y = emmean,
+      x = Group,
+      label = str_trim(cont_group)
+    ),
+    position = position_nudge(x = 0.1),
+    hjust = 0,
+    color = "red"
+  ) +
+  facet_wrap( ~ Dose, scales = "free") +
+  # ylim(c(-0.1, 1)) +
+  labs(
+    caption = str_wrap("Black dots represent delta fluorescence values. Red dots and error bars represent (estimated marginal) means ± 95% confidence interval per group. Means not sharing any letter are significantly different by the Tukey-test at the 5% level of significance.", width = 70)
+  ) +
+    ggtitle(i)
+  
+  ggsave(
+  width = 1920,
+  height = 1080,
+  units = "px",
+  scale = 3,
+  filename = paste0("Output/", i, "/delta_fluorescence_Group_Eff_Tukey.png"),
+  plot = p,
+  path = getwd(),
+  device = "png"
+)
+}
+
+```
+
+```{r 1.ANOVA-two-way_results, echo=TRUE}
+#Two-Way ANOVA
+ANOVA <- Tidy_Data_ol_rm %>%
+  group_by(Chemical) %>%
+  mutate(`Dose(mg/L)` = as.factor(`Dose(mg/L)`),
+         Dose = factor(Dose, levels = c("Dose_6", "Dose_5", "Dose_4", "Dose_3", "Dose_2", "Dose_1"), ordered = TRUE),
+         Group = as.factor(Group)) %>%
+  nest() %>%
+  dplyr::mutate(model = map(data, ~ aov(
+    Delta_Fluorescence ~ Dose * Group,
+    data = .
+  ))) %>% #Where 'Group' is the dose group replicate... group A B or C for one of 3 petri dishes in the dose group... Tukey's results showed us that there is a significant interaction between the subgroups and the repsonse variable
+  dplyr::select(model)
+
+ANOVACheck <- ANOVA %>%
+  mutate(model_tidy = map(model, tidy)) %>%
+  unnest(model_tidy)
+
+ANOVACheck <- ANOVACheck %>%
+  mutate(adj_p.value = p.adjust(p.value, method = "fdr")) %>%
+  mutate(is.significant = if_else(
+    condition = adj_p.value <= 0.05,
+    true = TRUE,
+    false = FALSE
+  ))
+DT::datatable(ANOVACheck) #Final Data Frame for the ANOVA... will write later
+```
+
+```{r 2.ANCOVA_results, echo=TRUE}
+ANOVA_Sig_Results <-
+  ANOVACheck[which(ANOVACheck$adj_p.value[] <= 0.05), ]
+ANOVA_Sig_Results <- ANOVA_Sig_Results %>%
+  dplyr::select(Chemical, term, df, statistic, adj_p.value)
+
+#Saving the ANCOVA Results
+write_csv(x = ANOVACheck, file = "Output/Two_way_ANOVA_Results.csv") #ANOVA
+DT::datatable(ANOVA_Sig_Results) #Just the significant results of the ANCOVA
+```
+
+
+```{r Check_if_ANCOVA_and_two-way-ANOVA_models_are_different, echo=FALSE, include=FALSE}
+chemicalNames <- unique(Tidy_Data_ol_rm$Chemical)
+model_check <- map2(.x = ANCOVA$model, .y = ANOVA$model, .f = anova)
+names(model_check) <- chemicalNames
+
+list <- list()
+for (i in names(model_check)) {
+  temp <- broom::tidy(model_check[[i]])
+  list[[i]] <- temp
+}
+names(list) <- chemicalNames
+model_check_2 <- plyr::ldply(list)
+model_check_2 <- model_check_2 %>%
+  na.omit() %>%
+  mutate(adj.p.value = p.adjust(p.value, method = "fdr"))
+
+
+write_csv(model_check_2, "Output/Comparison_two_way_ANOVA_and_ANCOVA.csv")
+#These results tell me that ANCOVA is perfectly legitimate since the interaction effects between the two independent variables is weak
 ```
 
 ```{r 1.PostHoc_Dunnett, echo=TRUE}
 #PostHoc tests
 set.seed(2345)
 
-#Dunnett's Test
-Dunnett_results <- Tidy_Data_ol_rm %>%
+AllDoses <-
+  read.csv(file = "MetaData.csv",
+           skip = 1,
+           header = TRUE)
+AllDoses_2 <- AllDoses %>%
+  gather(key = Dose, value = "Dose(mg/L)", Dose_1:Dose_6) %>%
+  mutate(Dose = if_else(condition = Dose == "Dose_6", true = "Control", false = Dose))
+
+#Performing Dunnett's test on a two-way ANOVA
+
+library(multcomp)
+
+fit_dunnett <- ANCOVA %>%
+  dplyr::mutate(Dunnett = map(model, ~ glht(.x, linfct = mcp(Dose="Dunnett")))) %>%
+  dplyr::mutate(tidy_Dunnett = map(Dunnett, ~ broom::tidy(.x))) %>%
+  dplyr::mutate(tidy_Dunnett_1 = map(tidy_Dunnett, ~ mutate(.x, Chemical = Chemical)))
+
+Dunnett_comb <- plyr::ldply(fit_dunnett$tidy_Dunnett_1) %>%
+  dplyr::mutate(Dose = str_split(contrast, pattern = " - ", simplify = TRUE)[,1]) %>%
+  dplyr::select(Chemical, Dose, estimate, std.error, statistic, adj.p.value) %>%
+  dplyr::mutate(adj.p.value = p.adjust(adj.p.value, method = "fdr")) # p-values not already adjusted
+
+#Emmeans for multiple comparisons
+control <- c("Dose_6")
+option3_1 <- fit_dunnett %>%
+    mutate(option3 = map(model, ~ multcomp::cld(emmeans::emmeans(object = .x, specs = pairwise~Dose), details = TRUE, Letters = letters, alpha = 0.05)))
+
+# #Emmmeans data frame
+option3 <- option3_1 %>%
+    dplyr::select(option3) %>%
+    mutate(data = map(option3, pluck(.x = "emmeans"))) %>%
+    mutate(data2 = map(data, ~ as_tibble(x = .x))) %>%
+    dplyr::select(data2) %>%
+    unnest(cols = c(data2))
+# 
+# 
+model <- fit_dunnett$Dunnett
+model_means_cld <- option3 %>%
   group_by(Chemical) %>%
-  nest() %>%
-  mutate(model = map(data, ~ DunnettTest(
-    x = .$Norm_Fluorescence, g = .$`Dose(mg/L)`
-  ), data = .)) #Performing the Dunnett's test and saving it is a variable
+  dplyr::mutate(Group = forcats::fct_reorder(Dose, emmean, .na_rm = TRUE)) %>%
+  dplyr::mutate(cont_group = .group) %>%
+  dplyr::mutate(Dose = if_else(condition = Dose == "Dose_6", true = "Control", false = Dose),
+                Group = if_else(condition = Dose == "Dose_6", true = "Control", false = Dose)) %>%
+  dplyr::mutate(
+    Dose = factor(Dose, levels = c("Control", "Dose_5", "Dose_4", "Dose_3", "Dose_2", "Dose_1"), ordered = TRUE),
+    Group = factor(Dose, levels = c("Control", "Dose_5", "Dose_4", "Dose_3", "Dose_2", "Dose_1"), ordered = TRUE)
+  ) %>%
+  dplyr::mutate(adj_factor = emmean/4) %>%
+  dplyr::inner_join(AllDoses_2)
 
-#Creating list of summaries
-#Since the PostHocTest object cannot be coerced to a tidy tibble using tidy()... we got creative
-Dunnett_list <-
-  list() #What we are trying to do is index the results and see what the significant results were... so we are using a list which can be later coerced into a tibble to easily index...
-for (i in 1:length(unique(Tidy_Data$Chemical))) {
-  Dunnett_list[[Dunnett_results$Chemical[i]]] <-
-    Dunnett_results$model[[i]][["0"]] %>% #Take Dunnett's test results without any of the fancy summary information and shove it into a named list
-    as.data.frame() %>% #Coerce to a data frame temporarily so what we can take the row names of the reults and turn them into a variable with rownames_to_column
-    rownames_to_column(var = "dose")
-}
-Dunnett_comb <-
-  plyr::ldply(Dunnett_list) #this function combines all of the lists together and gives them a variable name according to the chemical
-Dunnett_comb$dose = substr(Dunnett_comb$dose,
-                           start = 1,
-                           stop = nchar(Dunnett_comb$dose) - 2) %>%
-  as.numeric() #Here we are fixing the dose column... the dose column has the test dose related to the control... but we just want to see what the test dose is without it giving us redundant information about the comparison to the control for every observation...
-Dunnett_comb <- as_tibble(Dunnett_comb) #Coerce to a tidy tibble
-#Great, a nice tibble that we can export
+write_csv(Dunnett_comb, "Output/ANCOVA_Dunnetts_Results.csv")
+write_csv(model_means_cld, "Output/ANCOVA_Dunnetts_Compact_Letter_Display_EmMeans.csv")
+#This was my old code to run Dunnett's test using a one-way ANOVA. However, we know now that we must use a two-way ANOVA because of interactions between the subgroups and dose groups. So we will use a different method that utilized the `multcomp` package
 
-#Now just to add one more column
-Dunnett_comb <- Dunnett_comb %>%
-  mutate(adj_p.value = p.adjust(pval, method = "fdr")) %>%
-  mutate(is.significant = if_else(
-    condition = pval < 0.05,
-    true = TRUE,
-    false = FALSE
-  ))
-DT::datatable(Dunnett_comb)
+# #Dunnett's Test
+# Dunnett_results <- Tidy_Data_ol_rm %>%
+#   group_by(Chemical) %>%
+#   nest() %>%
+#   mutate(model = map(data, ~ DunnettTest(
+#     x = .$Delta_Fluorescence, g = .$Dose, control = "Dose_6"
+#   ), data = .)) #Performing the Dunnett's test and saving it is a variable
+# 
+# #Creating list of summaries
+# #Since the PostHocTest object cannot be coerced to a tidy tibble using tidy()... we got creative
+# Dunnett_list <-
+#   list() #What we are trying to do is index the results and see what the significant results were... so we are using a list which can be later coerced into a tibble to easily index...
+# for (i in 1:length(unique(Tidy_Data_ol_rm$Chemical))) {
+#   Dunnett_list[[Dunnett_results$Chemical[i]]] <-
+#     Dunnett_results$model[[i]][["Dose_6"]] %>% #Take Dunnett's test results without any of the fancy summary information and shove it into a named list
+#     as.data.frame() %>% #Coerce to a data frame temporarily so what we can take the row names of the reults and turn them into a variable with rownames_to_column
+#     rownames_to_column(var = "dose")
+# }
+# Dunnett_comb <-
+#   plyr::ldply(Dunnett_list) #this function combines all of the lists together and gives them a variable name according to the chemical
+# Dunnett_comb$Dose = substr(Dunnett_comb$dose,
+#                            start = 1,
+#                            stop = nchar(Dunnett_comb$dose) - 7) #Here we are fixing the dose column... the dose column has the test dose related to the control... but we just want to see what the test dose is without it giving us redundant information about the comparison to the control for every observation...
+# Dunnett_comb <- as_tibble(Dunnett_comb) #Coerce to a tidy tibble
+# #Great, a nice tibble that we can export
+# 
+# #Now just to add one more column
+# Dunnett_comb <- Dunnett_comb %>%
+#   mutate(adj.p.value = p.adjust(pval, method = "fdr")) %>%
+#   mutate(is.significant = if_else(
+#     condition = pval < 0.05,
+#     true = TRUE,
+#     false = FALSE
+#   )) %>%
+#   dplyr::select(-dose)
+# DT::datatable(Dunnett_comb)
 
 #Write to a .csv
-write_csv(Dunnett_comb, file = "Output/Dunnett_test_results.csv")
 
-# #indexing what the significant results were...
-# Dunnett_Sig_Results <-
-#   Dunnett_comb[which(Dunnett_comb$pval <= 0.05), ]
-# Dunnett_Sig_Results
-# #Cool!
+# 
+# # #indexing what the significant results were...
+Dunnett_Sig_Results <-
+  Dunnett_comb[which(Dunnett_comb$adj.p.value <= 0.05), ]
+
+Dunnett_Sig_Results
+# # #Cool!
 ```
 
-
-
-```{r 1.plot_Group_variance_check, echo=FALSE}
-#Group Variance v2
+```{r 5.Plot_preparations, include=FALSE}
 y_values_4_geom_text <- Tidy_Data_ol_rm %>%
-  group_by(Chemical) %>%
-  summarise(max_y = max(Norm_Fluorescence, na.rm = TRUE))
-gg_Tukey <- gg_Tukey %>%
-  inner_join(y_values_4_geom_text)
+  group_by(Chemical, Dose) %>%
+  summarise(max_y = max(Delta_Fluorescence, na.rm = TRUE),
+            min_y = min(Delta_Fluorescence, na.rm = TRUE),
+            median_y = median(Delta_Fluorescence, na.rm = TRUE))
+
+gg_Dunnett <- Dunnett_comb %>%
+  inner_join(y_values_4_geom_text) %>%
+  inner_join(AllDoses_2) %>%
+  inner_join(model_means_cld)
+
+gg_ANCOVA <- ANCOVACheck %>%
+  dplyr::filter(term == "Dose") %>%
+  dplyr::select(Chemical, term, adj_p.value, is.significant)
+
 gg_data <- Tidy_Data_ol_rm %>%
+  inner_join(gg_ANCOVA) %>%
   na.omit() %>%
   group_by(Chemical) %>%
-  mutate(Norm_Fluorescence_show = as.numeric(
-    between(
-      x = Norm_Fluorescence,
-      left = quantile(Norm_Fluorescence, na.rm = TRUE)[2] - 1.5 * IQR(Norm_Fluorescence, na.rm = TRUE),
-      right = quantile(Norm_Fluorescence, na.rm = TRUE)[4] + 1.5 * IQR(Norm_Fluorescence, na.rm = TRUE)
+  mutate(Delta_Fluorescence_show = as.numeric(
+    dplyr::between(
+      x = Delta_Fluorescence,
+      left = quantile(Delta_Fluorescence, na.rm = TRUE)[2] - 1.5 * IQR(Delta_Fluorescence, na.rm = TRUE),
+      right = quantile(Delta_Fluorescence, na.rm = TRUE)[4] + 1.5 * IQR(Delta_Fluorescence, na.rm = TRUE)
     )
   )) %>%
+  mutate(Dose = if_else(condition = Dose == "Dose_6", true = "Control", false = Dose)) %>%
   mutate(
-    Norm_Fluorescence_ol_rm = if_else(Norm_Fluorescence_show == 1, true = Norm_Fluorescence, false = NULL)
+    Delta_Fluorescence_ol_rm = if_else(Delta_Fluorescence_show == 1, true = Delta_Fluorescence, false = NA),
+    Dose = factor(Dose, levels = c("Control", "Dose_5", "Dose_4", "Dose_3", "Dose_2", "Dose_1"), ordered = TRUE)
   ) %>%
   dplyr::select(
     Chemical,
     Group,
     Dose,
     `Dose(mg/L)`,
-    Norm_Fluorescence,
-    Norm_Fluorescence_show,
-    Norm_Fluorescence_ol_rm
+    Delta_Fluorescence,
+    Delta_Fluorescence_show,
+    Delta_Fluorescence_ol_rm,
+    term,
+    adj_p.value,
+    is.significant
   )
-model <- ANCOVA
-model_means_cld <- option3 %>%
-  group_by(Chemical) %>%
-  mutate(Group = fct_reorder(Group, emmean)) %>%
-  mutate(cont_group = .group)
-# gg_data <- gg_data %>%
-#   group_by(Chemical) %>%
-#   mutate(Group = fct_relevel(Group, levels(model_means_cld$Group)))
+```
 
+```{r 6.Plot, include=FALSE}
 p <- ggplot() +
   #y axis
   scale_y_continuous(
-    name = "Fluorescence",
+    name = "Delta fluorescence over 24h",
     breaks = pretty_breaks(),
     expand = expansion(mult = (c(0.2, 0.2)))
   ) +
   #x axis
   scale_x_discrete(
-    name = "Groups"
+    name = "Dose (mg/L)",
+    expand = expansion(mult = (c(0.2, 0.2))),
+    breaks = waiver()
   ) +
   #layout
   theme_classic() +
   #black data points
   geom_point(
     data = gg_data,
-    aes(y = Norm_Fluorescence, x = Group),
-    position = position_nudge(x = -0.2)
+    aes(y = Delta_Fluorescence, x = as.factor(`Dose(mg/L)`), group = as.factor(`Dose(mg/L)`)),
+    position = position_nudge(x = -0.2),
+    show.legend = FALSE
   ) +
+  #scale_color_manual(values = c("TRUE" = "black", "FALSE" = "grey")) +
   #black boxplot
-  geom_boxplot(
-    data = gg_data,
-    aes(y = Norm_Fluorescence, x = Group),
-    width = 0.05,
-    outlier.shape = NA,
-    position = position_nudge(x = -0.1)
-  ) +
+  # geom_boxplot(
+  #   data = gg_data,
+  #   aes(y = Delta_Fluorescence, x = as.factor(`Dose(mg/L)`), group = as.factor(`Dose(mg/L)`)),
+  #   width = 0.2,
+  #   outlier.shape = NA,
+  #   position = position_nudge(x = -0.3),
+  #   show.legend = FALSE
+  # ) +
   #red mean value
   geom_point(
     data = model_means_cld,
-    aes(y = emmean, x = Group),
+    aes(y = emmean, x = as.factor(`Dose(mg/L)`)),
     size = 2,
-    color = "red"
+    color = "red",
+    position = position_nudge(x = 0)
   ) +
   #red mean errorbar
   geom_errorbar(
     data = model_means_cld,
-    aes(ymin = lower.CL, ymax = upper.CL, x = Group),
+    aes(ymin = lower.CL, ymax = upper.CL, x = as.factor(`Dose(mg/L)`)),
     width = 0.05,
-    color = "red"
+    color = "red",
+    position = position_nudge(x = 0)
+  ) +
+  #red asterix
+  geom_text(
+    data = gg_Dunnett,
+    aes(
+      label = if_else(
+        condition = adj.p.value > 0.1,
+        true = "",
+        false = if_else(
+          condition = adj.p.value <= 0.1 &
+            adj.p.value > 0.05,
+          true = "",
+          if_else(
+            condition = adj.p.value <= 0.05 &
+              adj.p.value > 0.01,
+            true = "*",
+            false = if_else(
+              condition = adj.p.value <= 0.01 &
+                adj.p.value > 0.001,
+              true = "**",
+              false = if_else(adj.p.value <= 0.001 &
+                                adj.p.value >= 0, true = "***", false = "")
+            )
+          )
+        )
+      ),
+      group = as.factor(`Dose(mg/L)`),
+      y = emmean,
+      x = as.factor(`Dose(mg/L)`),
+    ),
+    position = position_nudge(x = 0.1, y = 0),
+    hjust = 0,
+    vjust = 0,
+    color = "red",
+    size = 6
   ) +
   #red letters
-  geom_text(
-    data = model_means_cld,
-    aes(
-      y = emmean,
-      x = Group,
-      label = str_trim(cont_group)
-    ),
-    position = position_nudge(x = 0.1),
-    hjust = 0,
-    color = "red"
-  ) +
+  # geom_text(
+  #   data = model_means_cld,
+  #   aes(
+  #     y = emmean,
+  #     x = as.factor(`Dose(mg/L)`),
+  #     label = str_trim(cont_group),
+  #   ),
+  #   position = position_nudge(x = 0.2, y = -0.1),
+  #   hjust = 0.5,
+  #   vjust = 1,
+  #   color = "red"
+  # ) +
   facet_wrap( ~ Chemical, scales = "free") +
   labs(
-    caption = str_wrap("Black dots represent raw data. Red dots and error bars represent (estimated marginal) means ± 95% confidence interval per group. Means not sharing any letter are significantly different by the Tukey-test at the 5% level of significance.", width = 70)
-  )
+    caption = str_wrap("Black dots represent response values (the change in fluorescence over 24h). Red points represent the estimated marginal means for each dose group (means adjusted for covariate in subgroups). Red error bars represent the 95% confidence intervals of the estimated marginal means. Red asterix represent statistical significance of the post hoc Dunnett's test (*** - p < 0.001, ** - p < 0.01, * - p < 0.05)", width = 280))
+
 ```
 
-```{r 2.plot_Group_variance_check, echo=FALSE}
+```{r 7.Plot, include=FALSE}
 ggsave(
   width = 1920,
   height = 1080,
   units = "px",
-  scale = 3,
-  filename = "Output/Images/Alamar_Blue_Group_Eff_Tukey.png",
+  scale = 3.5,
+  filename = "Output/Images/Alamar_Blue_Change_in_Fluorescence.png",
   plot = p,
   path = getwd(),
   device = "png"
 )
 ```
 
-```{r 3.plot_Group_variance_check, echo=FALSE}
-knitr::include_graphics("./Output/Images/Alamar_Blue_Group_Eff_Tukey.png")
+```{r 8.Plot,echo=FALSE}
+knitr::include_graphics("Output/Images/Alamar_Blue_Change_in_Fluorescence.png")
 ```
 
-```{r 4.plot_z_scores_after_removing_outlier_groups, echo=FALSE}
-# Remove those groups that are outliers as seen in Alamar_Blue_Group_Eff_Tukey.png
-#No code for this step right now, just did it in excel...
-
-
-# 24-DMP - Group A
-# DES - Group A
-# Fadrozole - All--None?
-# Fenitrothione - Group A
-
-Tidy_Data_ol_rm <- read_csv(file = "Data/Alamar_Blue_clean_dat.csv")
-
-y_values_4_geom_text <- Tidy_Data_ol_rm %>%
-  group_by(Chemical) %>%
-  summarise(max_y = max(Norm_Fluorescence, na.rm = TRUE))
-gg_Tukey <- gg_Tukey %>%
-  inner_join(y_values_4_geom_text)
-gg_data <- Tidy_Data_ol_rm %>%
-  na.omit() %>%
-  group_by(Chemical) %>%
-  mutate(Norm_Fluorescence_show = as.numeric(
-    between(
-      x = Norm_Fluorescence,
-      left = quantile(Norm_Fluorescence, na.rm = TRUE)[2] - 1.5 * IQR(Norm_Fluorescence, na.rm = TRUE),
-      right = quantile(Norm_Fluorescence, na.rm = TRUE)[4] + 1.5 * IQR(Norm_Fluorescence, na.rm = TRUE)
-    )
-  )) %>%
-  mutate(
-    Norm_Fluorescence_ol_rm = if_else(Norm_Fluorescence_show == 1, true = Norm_Fluorescence, false = NULL)
-  ) %>%
-  dplyr::select(
-    Chemical,
-    Group,
-    Dose,
-    `Dose(mg/L)`,
-    Norm_Fluorescence,
-    Norm_Fluorescence_show,
-    Norm_Fluorescence_ol_rm
-  )
-model <- ANCOVA
-model_means_cld <- option3 %>%
-  group_by(Chemical) %>%
-  mutate(Group = fct_reorder(Group, emmean)) %>%
-  mutate(cont_group = .group)
-# gg_data <- gg_data %>%
-#   group_by(Chemical) %>%
-#   mutate(Group = fct_relevel(Group, levels(model_means_cld$Group)))
-
-p <- ggplot() +
-  #y axis
-  scale_y_continuous(
-    name = "Fluorescence",
-    breaks = pretty_breaks(),
-    expand = expansion(mult = (c(0.2, 0.2)))
-  ) +
-  #x axis
-  scale_x_discrete(
-    name = "Groups"
-  ) +
-  #layout
-  theme_classic() +
-  #black data points
-  geom_point(
-    data = gg_data,
-    aes(y = Norm_Fluorescence, x = Group),
-    position = position_nudge(x = -0.2)
-  ) +
-  #black boxplot
-  geom_boxplot(
-    data = gg_data,
-    aes(y = Norm_Fluorescence, x = Group),
-    width = 0.05,
-    outlier.shape = NA,
-    position = position_nudge(x = -0.1)
-  ) +
-  #red mean value
-  geom_point(
-    data = model_means_cld,
-    aes(y = emmean, x = Group),
-    size = 2,
-    color = "red"
-  ) +
-  #red mean errorbar
-  geom_errorbar(
-    data = model_means_cld,
-    aes(ymin = lower.CL, ymax = upper.CL, x = Group),
-    width = 0.05,
-    color = "red"
-  ) +
-  #red letters
-  geom_text(
-    data = model_means_cld,
-    aes(
-      y = emmean,
-      x = Group,
-      label = str_trim(cont_group)
-    ),
-    position = position_nudge(x = 0.1),
-    hjust = 0,
-    color = "red"
-  ) +
-  facet_wrap( ~ Chemical, scales = "free") +
-  labs(
-    caption = str_wrap("Black dots represent raw data. Red dots and error bars represent (estimated marginal) means ± 95% confidence interval per group. Means not sharing any letter are significantly different by the Tukey-test at the 5% level of significance.", width = 70)
-  )
-```
-
-```{r 5.plot_z_scores_after_removing_outlier_groups, echo=FALSE}
-ggsave(
-  width = 1920,
-  height = 1080,
-  units = "px",
-  scale = 3,
-  filename = "Output/Images/Alamar_Blue_Group_Eff_Tukey_group_ol_rm.png",
-  plot = p,
-  path = getwd(),
-  device = "png"
-)
-```
-
-```{r 6.plot_z_scores_OL_removed, echo=FALSE}
-knitr::include_graphics("./Output/Images/Alamar_Blue_Group_Eff_Tukey_group_ol_rm.png")
-```
