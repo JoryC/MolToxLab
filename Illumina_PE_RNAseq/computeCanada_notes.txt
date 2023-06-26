@@ -1,0 +1,141 @@
+
+
+#scratch folder is for storing the output of scripts. Storage only lasts for 60 days
+#projects directory is a special directory with the name of your supervisor
+#Nearline is a tape-based filesystem intended for inactive data. Datasets which you do not expect to access for months are good candidates to be stored in /nearline.
+#use a VM for web scraping
+#RAC is necessary if you need a lot of computational resources
+#Write jobs in your own home directory folder and then share them with Jason by copying what you want to shar to the projects/your-username/ folder
+
+#Filesystem	Default Quota	Lustre-based	Backed up	Purged	Available by Default	Mounted on Compute Nodes
+#Home Space	50 GB and 500K files per user[1]	Yes	Yes	No	Yes	Yes
+#Scratch Space	20 TB and 1M files per user	Yes	No	Files older than 60 days are purged.[2]	Yes	Yes
+#Project Space	1 TB and 500K files per group[3]	Yes	Yes	No	Yes	Yes
+#Nearline Space	2 TB and 5000 files per group	Yes	Yes	No	Yes	No
+
+#Best practices
+#Regularly clean up your data in the scratch and project spaces, because those filesystems are used for huge data collections.
+#Only use text format for files that are smaller than a few megabytes.
+#As far as possible, use scratch and local storage for temporary files. For local storage you can use the temporary directory created by the job scheduler for this, named $SLURM_TMPDIR.
+#If your program must search within a file, it is fastest to do it by first reading it completely before searching.
+#If you no longer use certain files but they must be retained, archive and compress them, and if possible move them to an alternative location like nearline.
+#For more on managing many files, see Handling large collections of files, especially if you are limited by a quota on the number of files.
+#Having any sort of parallel write access to a file stored on a shared filesystem like home, scratch and project is likely to create problems unless you are using a specialized tool such as MPI-IO.
+#If your needs are not well served by the available storage options please contact technical support.
+
+#Storage types
+#Unlike your personal computer, our systems will typically have several storage spaces or filesystems and you should ensure that you are using the right space for the right task. In this section we will discuss the principal filesystems available on most of our systems and the intended use of each one along with some of its characteristics.
+#HOME: While your home directory may seem like the logical place to store all your files and do all your work, in general this isn't the case; your home normally has a relatively small quota and doesn't have especially good performance for writing and reading large amounts of data. The most logical use of your home directory is typically source code, small parameter files and job submission scripts.
+#PROJECT: The project space has a significantly larger quota and is well-adapted to sharing data among members of a research group since it, unlike the home or scratch, is linked to a professor's account rather than an individual user. The data stored in the project space should be fairly static, that is to say the data are not likely to be changed many times in a month. Otherwise, frequently changing data, including just moving and renaming directories, in project can become a heavy burden on the tape-based backup system.
+#SCRATCH: For intensive read/write operations on large files (> 100 MB per file), scratch is the best choice. Remember however that important files must be copied off scratch since they are not backed up there, and older files are subject to purging. The scratch storage should therefore be used for temporary files: checkpoint files, output from jobs and other data that can easily be recreated.
+#SLURM_TMPDIR: While a job is running, $SLURM_TMPDIR is a unique path to a temporary folder on a local fast filesystem on each compute node reserved for the job. This is the best location to temporarily store large collections of small files (< 1 MB per file). Note that this space is shared between jobs on each node and the total available space depends on the node specifications. Finally, when the job ends, this folder is deleted. A more detailed discussion of using $SLURM_TMPDIR is available at this page.
+
+
+
+
+
+#commands
+sq #to view the job state
+cat slurm-1.out #view the output
+seff [jobID] #view the efficacy of your job request
+
+#Also you can use these settings in your bash script to get emails when a job starts and ends
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=you@some.email.address
+
+#Use FileZilla for file transfers
+
+#Modules!
+module list
+
+#Nextflow Pipeline
+#nextflow should be run on the Narval cluster
+ssh narval4
+#Installation
+module purge # we make sure that some previously loaded package are not polluting the installation 
+module load python/3.8
+python -m venv nf-core-env
+source nf-core-env/bin/activate
+python -m pip install nf_core
+#nextflow download needs writable folder
+mkdir ~/projects/def-jobrien/group_writable
+setfacl -d -m g::rwx $HOME/projects/def-profname/group_writable #changing permissions
+#Define pipeline
+export NFCORE_PL=rnaseq
+export PL_VERSION=3.12.0
+module load nextflow/22.10.6
+module load apptainer/1.1.6
+#make a cache directory for apptainer
+mkdir /project/def-jobrien/group_writable/NFX_SINGULARITY_CACHEDIR
+export NXF_SINGULARITY_CACHEDIR=/project/def-jobrien/group_writable/NFX_SINGULARITY_CACHEDIR
+#Start the download ... use the scratch directory because it should not be stored in the projects folder or home directory
+cd ~/scratch
+nf-core download --singularity-cache-only --container singularity  --compress none -r ${PL_VERSION}  -p 6  ${NFCORE_PL}
+#chekc out the workflow config
+cat nf-core-rnaseq-3.12.0/workflow/nextflow.config
+#Make a config file in a hidden directory for the cluster
+nano ~/.nextflow/config
+process {
+  executor = 'slurm' 
+  pollInterval = '60 sec'
+  clusterOptions = '--account=def-jobrien'
+  submitRateLimit = '60/1min'
+  queueSize = 100 
+  errorStrategy = 'retry'
+  maxRetries = 1
+  errorStrategy = { task.exitStatus in [125,139] ? 'retry' : 'finish' }
+  memory = { check_max( 4.GB * task.attempt, 'memory' ) }
+  cpu = 1  
+  time = '3h' 
+}
+
+profiles {
+  beluga{
+    max_memory='186G'
+    max_cpu=40
+    max_time='168h'
+  }
+  narval{
+    max_memory='249G'
+    max_cpu=64
+    max_time='168h'
+  }
+}
+
+#Submitting job
+nextflow run nf-core-${NFCORE_PL}-${PL_VERSION}/workflow -profile test,singularity,narval  --outdir ${NFCORE_PL}_OUTPUT
+
+#See the progress with
+squeue -u $USER
+
+
+#Check the library fragment type!!! https://salmon.readthedocs.io/en/latest/library_type.html
+#After running salmon with the library type set to 'auto', salmon predicts that the library type is of the 'ISR' type - Inward, stranded, and Read one comes from the reverse strand
+
+
+
+nextflow run nf-core-${NFCORE_PL}-${PL_VERSION}/workflow -profile singularity,narval --outdir ${NFCORE_PL}_OUTPUT --input ~/projects/def-jobrien/group_writable/Test_Sample_List.csv --fasta ~/projects/def-jobrien/group_writable/zf_references/Danio_rerio.GRCz11.dna.primary_assembly.fa.gz --gtf ~/projects/def-jobrien/group_writable/zf_references/Danio_rerio.GRCz11.107.gtf.gz --save_trimmed --pseudo_aligner salmon --extra_salmon_quant_args '--seqBias --gcBias --validateMappings' --skip_alignment --skip_umi_extract
+
+#--remove_ribo_rna #this step takes a very long time. Removing it from the pipeline and then we will remove the rRNA downstream fromt he quantified transcripts file. It takes minutes to remove rRNA downstream compared to removing at this step in teh pipeline which takes hours-even days
+#--save_non_ribo_reads #same as above
+# --salmon_quant_libtype SR #Might need to change this to SF depending on how resutls look... After running the pipeline once with some sample data
+#The libtpye is inferred from the sample sheet. I set this to 'auto'.
+#--transcript_fasta ~/projects/def-jobrien/group_writable/zf_references/Danio_rerio.GRCz11.cdna.all.fa.gz
+#This argument is ont needed becasue salmon will build this file and the index by default
+
+#If you have already run this pipeline once, you will be left with a build of the reference transcripts titleed 'genome.transcripts.fa' and a salmon index in a folder called 'salmon'. Copy the reference transcripts fasta and salmon index folder for use later on! this saves time int he pipeline because you don' need to build another index which is very resource intensive (especially demanding on memory)
+#Then once you have them saved you can run the pipeline again using this command that doesn't include the refernce genome anymore and also doesn't include an annotation file
+
+#remember to change directories to scratch first ebfore running this
+
+nextflow run nf-core-${NFCORE_PL}-${PL_VERSION}/workflow -profile singularity,narval --outdir ${NFCORE_PL}_OUTPUT --input ./Test_Sample_List.csv --fasta /home/jory04/projects/def-jobrien/group_writable/zf_references/Danio_rerio.GRCz11.dna.primary_assembly.fa.gz --gtf /home/jory04/projects/def-jobrien/group_writable/zf_references/Danio_rerio.GRCz11.107.gtf.gz --salmon_index /home/jory04/projects/def-jobrien/group_writable/zf_references/salmon/ --save_trimmed --pseudo_aligner salmon --extra_salmon_quant_args '--seqBias --gcBias --validateMappings' --skip_alignment --skip_umi_extract 
+
+# Command run to do quantification of all files without any rRNA removal
+nextflow run nf-core-${NFCORE_PL}-${PL_VERSION}/workflow -profile singularity,narval --outdir ${NFCORE_PL}_OUTPUT --input ./Sample_List_Master_Sheet.csv --fasta /home/jory04/projects/def-jobrien/group_writable/zf_references/Danio_rerio.GRCz11.dna.primary_assembly.fa.gz --gtf /home/jory04/projects/def-jobrien/group_writable/zf_references/Danio_rerio.GRCz11.107.gtf.gz --salmon_index /home/jory04/projects/def-jobrien/group_writable/zf_references/salmon/ --save_trimmed --pseudo_aligner salmon --extra_salmon_quant_args '--seqBias --gcBias --validateMappings' --skip_alignment --skip_umi_extract 
+
+
+#TESTING BIOTYPE WITH 1 FILE
+
+nextflow run nf-core-${NFCORE_PL}-${PL_VERSION}/workflow -profile singularity,narval --outdir ${NFCORE_PL}_OUTPUT --input ./Sample_List_Master_Sheet.csv --fasta /home/jory04/projects/def-jobrien/group_writable/zf_references/Danio_rerio.GRCz11.dna.primary_assembly.fa.gz --gtf /home/jory04/projects/def-jobrien/group_writable/zf_references/Danio_rerio.GRCz11.107.gtf.gz --salmon_index /home/jory04/projects/def-jobrien/group_writable/zf_references/salmon/ --save_trimmed --pseudo_aligner salmon --extra_salmon_quant_args '--seqBias --gcBias --validateMappings' --skip_alignment --skip_umi_extract --gtf_extra_attributes gene_biotype
+
+

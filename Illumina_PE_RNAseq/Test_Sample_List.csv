@@ -1,0 +1,4 @@
+sample,fastq_1,fastq_2,strandedness
+1-Decanol_0_A,./fq_files/NS.2049.001.UDP0097_i7---UDP0097_i5.1-Decanol_0_A_R1.fastq.gz,./fq_files/NS.2049.001.UDP0097_i7---UDP0097_i5.1-Decanol_0_A_R2.fastq.gz,auto
+1-Decanol_0_B,./fq_files/NS.2049.001.UDP0098_i7---UDP0098_i5.1-Decanol_0_B_R1.fastq.gz,./fq_files/NS.2049.001.UDP0098_i7---UDP0098_i5.1-Decanol_0_B_R2.fastq.gz,auto
+1-Decanol_0_C,./fq_files/NS.2049.001.UDP0099_i7---UDP0099_i5.1-Decanol_0_C_R1.fastq.gz,./fq_files/NS.2049.001.UDP0099_i7---UDP0099_i5.1-Decanol_0_C_R2.fastq.gz,auto

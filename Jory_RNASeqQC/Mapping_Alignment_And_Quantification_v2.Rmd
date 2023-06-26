@@ -476,7 +476,7 @@ grep gene_name $1 \
 | grep transcript_id \
 | grep gene_id \
 | grep gene_biotype \
-| sed -E 's/.*gene_id \"(ENSDARG[0-9]+)\";.+transcript_id \"(ENSDART[0-9]+)\";.*gene_name \"([^\"]+)\";.*gene_biotype \"([^\"]+)\";.+/\1\t\2\t\3\t\4/' > tx2gene.tev
+| sed -E 's/.*gene_id \"(ENSDARG[0-9]+)\";.+transcript_id \"(ENSDART[0-9]+)\";.*gene_name \"([^\"]+)\";.*gene_biotype \"([^\"]+)\";.+/\1\t\2\t\3\t\4/' > tx2gene.tsv
 ```
 
 Install TxImport and ensembledb which will be used to summarize transcript abundance data to the gene-level
@@ -512,7 +512,7 @@ salmon_files <- list.files(path = "~/MastersBackup/Data/Qiaseq_UPXome_Whole_tran
 
 
 ```{r, include=FALSE}
-tx2gene <- list.files(path = "/home/joryc/MastersBackup/salmon_UPXome", pattern = ".tev", full.names = TRUE)
+tx2gene <- list.files(path = "/home/joryc/MastersBackup/salmon_UPXome", pattern = ".tsv", full.names = TRUE)
 tx2gene <- read_tsv(file = tx2gene, col_names = FALSE)
 colnames(tx2gene) <- c("GENEID", "TXNAME", "GENENAME", "BIOTYPE")
 
@@ -678,3 +678,13 @@ for (i in 1:length(colnames(dds@assays@data@listData[["counts"]]))){
 }
 ```
 
+```{r}
+#June 22, 2023 Loop for exporting gene counts data in HPC for use in Tyler's downstream pipeline
+# Use this for DESeq2
+for (i in samples){
+  sample <- i
+  temp <- counts_organized %>%
+    select(TXID,GENEID,GENENAME,BIOTYPE,all_of(sample))
+  write_csv(x = temp, file = paste0("~/projects/def-jobrien/group_writable/OUTPUTS/rnaseq_OUTPUT/Individual_Gene_counts/", sample, "_Gene_Counts_Illuminaseq-Salmon.csv"), col_names = TRUE)
+}
+```
