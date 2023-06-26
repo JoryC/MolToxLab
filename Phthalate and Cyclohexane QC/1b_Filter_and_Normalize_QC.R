@@ -177,7 +177,15 @@ QCplots[["nSig80_plot"]] <-
   labs(x = "Chemical", y = "nSig80", title = "nSig80") +
   theme_classic()
 
-multiplot(plotlist = QCplots, layout = matrix(c(1:4), nrow=4, byrow=TRUE))
+if(TRUE){
+  png(file = "QC.png", width = 500, height = 1600)
+  multiplot(plotlist = QCplots, layout = matrix(c(1:4), nrow=4, byrow=TRUE))
+  dev.off()
+  multiplot(plotlist = QCplots, layout = matrix(c(1:4), nrow=4, byrow=TRUE))
+} else {
+  multiplot(plotlist = QCplots, layout = matrix(c(1:4), nrow=4, byrow=TRUE))
+}
+
 
 #######################################################################
 
