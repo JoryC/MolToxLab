@@ -110,6 +110,8 @@ for(i in chemnames){
     geom_vline(xintercept = tPoD_values[tPoD_values$chemical==i, "first_mode"], color = "red", size = 0.8, linetype = "dashed") +
     geom_vline(xintercept = tPoD_values[tPoD_values$chemical==i, "X10th_percentile"], color = "green", size = 0.8, linetype = "dotted") +
     geom_vline(xintercept = tPoD_values[tPoD_values$chemical==i, "X20th_gene"], color = "purple", size = 0.8, linetype = "dotdash") +
+    geom_vline(xintercept = log10(lowestdoses$dose[lowestdoses$chemical == i]), color = "grey", size = 0.8, linetype = "solid") +
+    geom_vline(xintercept = log10(highestdoses$dose[highestdoses$chemical == i]), color = "grey", size = 0.8, linetype = "solid") +
     # labels
     labs(title = paste0(i," (n=",nrow(filtered_hist_data[[i]]), " genes)"), x = "logBMD", y = "Count") +
     # theme
@@ -117,7 +119,7 @@ for(i in chemnames){
     theme(plot.title = element_text(hjust = 0.5, size=12))
 }
 
-multiplot(plotlist = histPlots, layout = matrix(c(1:length(histPlots), NA), nrow=2, byrow=FALSE))
+multiplot(plotlist = histPlots, layout = matrix(c(1:length(histPlots), NA, NA), nrow=3, byrow=TRUE))
 
 
 
@@ -206,7 +208,7 @@ for(i in chemnames){
     theme(plot.title = element_text(hjust = 0.5, size=12))
 }
 
-multiplot(plotlist=reactomePlots, layout = matrix(c(1:length(reactomePlots), NA), nrow=2, byrow=FALSE))
+multiplot(plotlist=reactomePlots, layout = matrix(c(1:length(reactomePlots), NA, NA), nrow=3, byrow=T))
 
 # #### GO TERM ACCUMULATION PLOT ..... GROUPED BY LEVEL ####
 # 
@@ -320,7 +322,7 @@ for(i in chemnames){
     theme(plot.title = element_text(hjust = 0.5, size=12))
 }
 
-multiplot(plotlist=goPlots, layout = matrix(c(1:length(goPlots), NA), nrow=2, byrow=FALSE))
+multiplot(plotlist=goPlots, layout = matrix(c(1:length(goPlots), NA, NA), nrow=3, byrow=T))
 
 
   
