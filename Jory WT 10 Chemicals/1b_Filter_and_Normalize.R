@@ -40,10 +40,47 @@ for(i in dataFolders){
       filter(!BIOTYPE %in% c("rRNA",
                              "Mt_rRNA")) %>%
       select(GENEID,
-             COUNTDATA)
+             COUNTDATA) %>%
+      replace(is.na(.),0) %>%
+      distinct()
     colnames(loadRaw[[j]])<-c("gene", j)
   }
 }
+
+loadRaw_rRNA <- list()
+for(i in dataFolders){
+  fileNames <- list.files(paste0(i))
+  for(j in fileNames){
+    loadRaw_rRNA[[j]] <- read.csv(paste0(i,"/",j),
+                             header = TRUE,
+                             stringsAsFactors = FALSE) %>%
+      rename(COUNTDATA = 5) %>%
+      select(GENEID,
+             BIOTYPE,
+             COUNTDATA) %>%
+      filter(BIOTYPE %in% c("rRNA",
+                             "Mt_rRNA")) %>%
+      select(GENEID,
+             COUNTDATA) %>%
+      replace(is.na(.),0) %>%
+      distinct()
+    colnames(loadRaw_rRNA[[j]])<-c("gene", j)
+  }
+}
+
+rRNA_df <- loadRaw_rRNA %>% reduce(left_join, by = "gene") %>%
+  bind_rows(summarise_all(., ~if(is.numeric(.)) sum(.) else "rRNA")) %>%
+  filter(gene == "rRNA")
+
+restofdata_df <- loadRaw %>% reduce(left_join, by = "gene") %>%
+  bind_rows(summarise_all(., ~if(is.numeric(.)) sum(.) else "not rRNA")) %>%
+  filter(gene == "not rRNA")
+
+joined_df <- full_join(rRNA_df, restofdata_df) %>%
+  column_to_rownames(var="gene") %>%
+  t()
+
+write.csv(joined_df,"RNAseqData/joined_df.csv")
 
 ####
 
@@ -184,7 +221,7 @@ QCplots[["nSig80_plot"]] <-
   theme_classic()
 
 if(TRUE){
-  png(file = "QC.png", width = 500, height = 1600)
+  png(file = "QC.png", width = 1000, height = 2000)
   multiplot(plotlist = QCplots, layout = matrix(c(1:4), nrow=4, byrow=TRUE))
   dev.off()
   multiplot(plotlist = QCplots, layout = matrix(c(1:4), nrow=4, byrow=TRUE))
