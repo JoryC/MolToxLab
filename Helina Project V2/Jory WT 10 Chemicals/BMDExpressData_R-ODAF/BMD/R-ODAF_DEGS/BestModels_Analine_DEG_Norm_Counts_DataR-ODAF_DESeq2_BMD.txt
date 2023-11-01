@@ -1,0 +1,32 @@
+Benchmark Dose Analyses
+Data Source: null
+Work Source: Analine_DEG_Norm_Counts_DataR-ODAF_DESeq2
+BMDExpress3 Version: BMDExpress 3.00.0045 BETA
+Timestamp (Start Time): 07/13/2023 12:11.59
+Operating System: Linux
+BMDS Major Version: 3.x with shared library/DLL
+hill version: Hill EPA BMDS MLE ToxicR
+power version: Power EPA BMDS MLE ToxicR
+linear version: Linear EPA BMDS MLE ToxicR
+poly 2 version: Poly 2 EPA BMDS MLE ToxicR
+exponential 3 version: Exponential 3 EPA BMDS MLE ToxicR
+exponential 5 version: Exponential 5 EPA BMDS MLE ToxicR
+Models fit: hill, power, linear, poly 2, exponential 3, exponential 5
+Constant Variance: 1
+BMR Type: Standard Deviation
+BMR Factor: 1.0
+Polynomial 2 monotonic restriction: false
+Highest Dose: 10.0
+Lowest Positive Dose: 0.0010000000474974513
+Best Model Selection: Lowest AIC
+Fit Selected Models with Multiple Threads: 4
+Number of Available Processors On Machine: 6
+BMDL and BMDU Model Selection: Compute and utilize BMD and BMDL in best model selection
+Use Wald (Fast BMD): true
+Flag Hill Model with 'k' Parameter <: 1/3 of Lowest Positive Dose
+Best Model Selection with Flagged Hill Model: Select Next Best Model with P-Value > 0.05
+Total Run Time: 0 seconds
+Probe Id	BMDS Model		Genes	Gene Symbols	BMD	BMDL	BMDU	fitPValue	fitLogLikelihood	AIC	adverseDirection	2BMD/BMDL
+ENSDARG00000030335	Poly 2		404630	zc3h10	0.28914	0.17141	0.487732	0.0010344200770761036	-58.76162200192991	125.52324400385982	1	1.686832740213523	true	193.221	108.651	-11.052		
+ENSDARG00000033099	Poly 2		544651	kif7	0.717223	0.236139	2.17842	1.2214714461000753E-6	-70.97702200192991	149.95404400385982	1	3.0372915952045196	true	225.403	104.304	-11.6011		
+ENSDARG00000076997	Linear		567916	stxbp4	2.23222	1.51908	3.28014	0.3311002652026759	-50.592022001929905	107.18404400385981	-1	1.4694551965663427	true	115.258	-7.92327		

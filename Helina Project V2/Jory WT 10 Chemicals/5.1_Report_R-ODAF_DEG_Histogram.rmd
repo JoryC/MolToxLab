@@ -1,0 +1,550 @@
+---
+title: "R-ODAF DEG Analysis"
+author: "Jory Curry"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  html_document:
+    code_folding: show
+    df_print: paged
+    toc: true
+    toc_depth: 5
+    toc_float: true
+    theme: readable
+---
+
+```{r 1setup, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE)
+options(scipen = 9)
+```
+
+```{r, message=FALSE, echo=FALSE}
+#Library
+library(tidyverse)
+library(DT)
+source("BMDExpressFunctions.R")
+```
+
+#R-ODAF Differential Expression Analysis
+
+```{r echo=FALSE}
+#Import DEGs
+files <-
+  list.files(path = "~/MolToxBackups/Jory WT 10 Chemicals/RNAseqData/output", pattern = "DEG_table.txt")
+DEGs_list <- NULL
+for (i in 1:length(files)) {
+  temp_file <- files[i]
+  temp <-
+    read.table(
+      file = paste0(getwd(), "/RNAseqData/output/", files[i]),
+      sep = "\t",
+      header = TRUE
+    )
+  temp <- temp %>%
+    rownames_to_column(var = "gene")
+  DEGs_list[[str_split(temp_file, pattern = "_", simplify = TRUE)[, 1]]] <-
+    temp
+}
+```
+
+```{r echo=FALSE}
+#Plot DEG counts per chem
+p_list <- NULL
+n_DEGs_list <- NULL
+for (i in 1:length(DEGs_list)) {
+  n_DEGs <- DEGs_list[[i]] %>%
+    mutate(gene = str_split(gene, pattern = "[.]", simplify = TRUE)[, 1]) %>%
+    select(gene) %>%
+    unique() %>%
+    count()
+  p <- DEGs_list[[i]] %>%
+    mutate(comparison = str_split(
+      string = comparison,
+      pattern = "_",
+      simplify = TRUE
+    )[, 2]) %>%
+    mutate(comparison = factor(
+      comparison,
+      levels = unique(comparison),
+      ordered = TRUE
+    )) %>%
+    group_by(comparison) %>%
+    unique() %>%
+    tally(name = "DEG_count") %>%
+    ggplot(aes(x = comparison, y = DEG_count)) +
+    geom_bar(stat = "identity", fill = "black") +
+    #geom_smooth(aes(group = 1), method = "lm", se= FALSE, color = 'red', size = 1) +
+    theme_classic() +
+    xlab("Dose (mg/L)") +
+    ylab("Number of DEGs") +
+    ggtitle(names(DEGs_list[i]), subtitle = paste0("n=", n_DEGs, " genes"))
+  
+  
+  p_list[[names(DEGs_list[i])]] <- p
+  n_DEGs_list[[names(DEGs_list[i])]] <- n_DEGs
+}
+```
+
+The source code for R-ODAF’s DEG analysis can be found on GitHub (https://github.com/R-ODAF/Main/blob/main/scripts/R_ODAF_DEGs.R).
+
+The General pipeline can be seen here in Figure 1. I conducted a differential expression analysis using the R-ODAF pipeline, then used the differentially expressed genes as input for the BMD analysis. For the BMD analysis, I did not perform William's trend test to identify differentially expressed genes, because I use the R-ODAF `DESeq2::DESeq()` function to identify DEGs instead... the purpose of doing so was to facilitate a discussion of the differentially expressed genes from the R-ODAF pipeline and enriched gene sets from the R-ODAF pipeline. Since the R-ODAF DEG pipeline is less sensitive, it is less likely that DEGs are false-positive results. Thus, I can have more confidence in discussing enriched gene sets and differentially expressed genes identified from this analysis without worrying about false-positives. I reiterate that, the purpose of this section is to facilitate a discussion and not to identify points of departure, although it is possible to calculate tPODs using this method (which I have included below). One of the issues with calculating a tPOD from the R-ODAF DEG method is that it is less sensitive and thus I excluded this tPOD derivation method from the main body of my thesis and this section will end up in the supplementarty information.
+
+```{r echo=FALSE}
+knitr::include_graphics("Plots/R-ODAF_DEGs/Slide1.jpg")
+```
+ Again to reiterate, I followed the R-ODAF pipeline all the way down to the Differential Expresion analysis part of the pipeline. I then used the table of differentially expressed genes in the benchmark dose analysis. I did not filter the DEGs with William's trend test of a fold-change filter since DEGs have already been identified using the `DESeq2::DESeq()` function. I did however, keep the remaining filtering criteria downstream of the William's trend test and fold-change filter. 
+
+
+
+Please see the following code chunk for the source code used for this specific data set
+
+```{r, echo=TRUE, eval=FALSE}
+library(DESeq2)
+library(edgeR)
+
+norm_counts <- list()
+norm_CPM_counts <- list()
+all_DECounts_real <- list()
+
+minCoverage <- 5000000 #reads
+MinCount <- 1
+pAdjValue <- 0.01
+
+for(i in names(filter_list)) {
+  Samp4compare <- metadata %>%
+    filter(chemical == i) %>%
+    filter(!dose == 0) %>%
+    select(dose) %>%
+    unique() %>%
+    as.vector()
+  names(Samp4compare) <- NULL
+  Cont4compare <- metadata %>%
+    filter(chemical == i) %>%
+    filter(dose == 0) %>%
+    select(dose) %>%
+    unique() %>%
+    as.vector()
+  names(Cont4compare) <- NULL
+  DESIGN <- "dose"
+  
+  sampleData <- filter_list[[i]]
+  DESeqDesign <- metadata_list[[i]]
+  #MAke sure these are in the exact same order!!!!!
+  #all(rownames(DESeqDesign) %in% colnames(sampleData)) # Are all the row and coulm names matching?
+  #all(rownames(DESeqDesign) == colnames(sampleData)) #Are they in the exact same order?
+  if (all(rownames(DESeqDesign) == colnames(sampleData)) == FALSE) {
+    print(
+      "Metadata check: Rownames of DESeqDesign DO NOT MATCH the column names of sampleData!!!"
+    )
+    break
+  } else {
+    print("Metadata check: Rownames of DESeqDesign MATCH column names of sampleData!")
+  }
+  
+  sampleData[is.na(sampleData)] <- 0 #Replace NA with zero
+  sampleData <-
+    sampleData[, (colSums(sampleData) > minCoverage)] #Exclude samples with less than 5 million reads
+  
+  condition1 <- Cont4compare[[1]][1]
+  condition2 <- Samp4compare[[1]]
+  
+  DE_Design <- matrix(data = NA, ncol = 2)
+  DE_Design <- DESeqDesign %>%
+    filter(dose %in% c(condition1, condition2))
+  DE_Design$dose <-
+    factor(DE_Design$dose,
+           levels = c(sort(unique(DE_Design$dose))),
+           ordered = FALSE)
+  samples <- sampleData[, rownames(DE_Design)]
+  
+  ###########
+  print(paste(condition2, " vs ", condition1))
+  
+  colnames(samples) <- NULL
+  dds <-
+    DESeqDataSetFromMatrix(
+      countData = round(samples),
+      colData = as.data.frame(DE_Design),
+      design = as.formula(paste0("~", DESIGN[1]))
+    )
+  
+  #Re-level the data
+  dds$dose <- relevel(dds$dose, ref = "0")
+  
+  print("Wait... (dds step executing)")
+  dds <- DESeq(dds, quiet = TRUE)
+  
+  print(paste0(
+    "Filtering genes: 75% of at least 1 group need to be above ",
+    MinCount,
+    " CPM"
+  ))
+  
+  #Filter low readcounts (genes not meeting the condition : at least one condition with 75% of the samples above 1 CPM)
+  
+  SampPerGroup <- table(DE_Design[, DESIGN])
+  Counts <- counts(dds, normalized = TRUE)
+  CPMdds <- cpm(counts(dds, normalized = TRUE))
+  
+  Filter <- matrix(data = NA,
+                   ncol = 3,
+                   nrow = nrow(Counts))
+  rownames(Filter) <- rownames(Counts)
+  colnames(Filter) <- c("Low", "quantile", "spike")
+  
+  # Apply the "Relevance" condition
+  
+  for (gene in 1:nrow(dds)) {
+    CountsPass <- NULL
+    for (group in 1:length(SampPerGroup)) {
+      sampleCols <-
+        grep(paste0("^", dimnames(SampPerGroup)[[1]][group], "$"), DE_Design[, DESIGN]) #Once again R-ODAF has a bug where the grep is not explicit enough... for example if the group is "0" i greps all dimnames that contain a zero... annoying
+      Check <-
+        sum(CPMdds[gene, sampleCols] >= MinCount) >= 0.75 * SampPerGroup[group]
+      CountsPass <- c(CountsPass, Check)
+    }
+    
+    if (sum(CountsPass) > 0) {
+      Filter[gene, 1] <- 1
+    }	else {
+      Filter[gene, 1] <- 0
+    }
+    
+  }
+  
+  
+  compte <- Counts[Filter[, 1] == 1,]
+  Filter <- Filter[rownames(Filter) %in% rownames(compte),]
+  
+  print(
+    paste(
+      "Relevance filtering removed ",
+      nrow(dds) - nrow(Filter),
+      " genes from the ",
+      nrow(dds),
+      " assessed. ",
+      nrow(Filter),
+      " genes remaining",
+      sep = ""
+    )
+  )
+  
+  print("Obtaining the DESeq2 results")
+  
+  # compute the DEGs on the genes passing the Relevance condition
+  
+  res_list <- NULL
+  FileName_list <- NULL
+  DEsamples_list <- NULL
+  DECounts_list <- NULL
+  Filter_DEG_list <- NULL
+  for (k in condition2) {
+    res <-
+      results(
+        dds[rownames(compte),],
+        alpha = pAdjValue,
+        cooksCutoff = F,
+        independentFiltering = F,
+        contrast = c(DESIGN[1], k, condition1),
+        pAdjustMethod = 'fdr'
+      )
+    res_list[[paste0(i, "_", k)]] <- res
+    
+    FileName <- paste(i, k, "vs", condition1, "FDR", pAdjValue, sep = "_")
+    FileName_list[[paste0(i, "_", k)]] <- FileName
+    
+    DEsamples <- subset(res, res$padj < pAdjValue)
+    DEsamples_list[[paste0(i, "_", k)]] <- DEsamples
+    
+    DECounts <-
+      compte[rownames(compte) %in% rownames(DEsamples), , drop = FALSE] #R-ODAF has a bug where the rowname is dropped if only row is returned... Fixing that with a simple argument here
+    DECounts_list[[paste0(i, "_", k)]] <- DECounts
+    
+    Filter_DEG <-
+      Filter[rownames(Filter) %in% rownames(DECounts), , drop = FALSE]
+    Filter_DEG_list[[paste0(i, "_", k)]] <- Filter_DEG
+  }
+  
+  Filter_DEGs <- do.call(rbind, Filter_DEG_list)
+  rows_to_keep <- unique(rownames(Filter_DEGs))
+  Filter_DEGs <- Filter_DEGs[rows_to_keep,]
+  
+  all_DECounts <- do.call(rbind, DECounts_list)
+  rows_to_keep <- unique(rownames(all_DECounts))
+  all_DECounts <- all_DECounts[rows_to_keep,]
+  
+  all_DEsamples <- do.call(rbind, DEsamples_list)
+  all_DEsamples$comparison <- rep(names(DEsamples_list), sapply(DEsamples_list, nrow))
+  
+  norm_data <- counts(dds[rownames(compte)], normalized = TRUE) #Normalized counts data filtered for only relevant genes!!
+  
+    print("Check median against third quantile")
+    print("AND")
+    print("Check the presence of a spike")
+    for (j in 1:length(condition2)+1) {
+      for (gene in 1:nrow(all_DECounts)) {
+        # Check the median against third quantile
+        quantilePass <- NULL
+        sampleColsg1 <-
+          grep(paste0("^", dimnames(SampPerGroup)[[1]][1], "$"), DE_Design[, DESIGN])
+        sampleColsg2 <-
+          grep(paste0("^", dimnames(SampPerGroup)[[1]][j], "$"), DE_Design[, DESIGN])
+        
+        Check <- median(all_DECounts[gene,sampleColsg1]) > quantile(all_DECounts[gene,sampleColsg2], 0.75)[[1]]
+        quantilePass <-c(quantilePass, Check)
+        Check <- median(all_DECounts[gene,sampleColsg2]) > quantile(all_DECounts[gene,sampleColsg1], 0.75)[[1]]
+        quantilePass <-c(quantilePass, Check)
+        
+        if ( sum(quantilePass) > 0 ) {Filter_DEGs[gene,2] <- 1 }	else { Filter_DEGs[gene,2] <- 0 }
+        
+        # Check for spike 
+        spikePass <- NULL
+        for (group in 1:length(SampPerGroup)) { 
+          sampleCols<-grep(paste0("^", dimnames(SampPerGroup)[[1]][group], "$"),DE_Design[,DESIGN])
+          if (max(all_DECounts[gene,sampleCols]) ==0) {Check <- FALSE} else {
+            Check <- (max(all_DECounts[gene,sampleCols])/sum(all_DECounts[gene,sampleCols])) >= 1.4*(SampPerGroup[group])^(-0.66)
+            spikePass<-c(spikePass, Check)
+          }
+        }
+        if ( sum(spikePass) > 1 ) {Filter_DEGs[gene,3] <- 0 }	else { Filter_DEGs[gene,3] <- 1 }
+      }
+    }
+    DECounts_real <- all_DEsamples[rowSums(Filter_DEGs) == 3 ,]
+    DECounts_no_quant <- all_DEsamples[Filter_DEGs[,2] == 0 ,]
+    DECounts_spike <- all_DEsamples[Filter_DEGs[,3] == 0 ,]
+    
+    print(paste("A total of ",nrow(DECounts_real), " DEGs were selected, after ",nrow(DECounts_no_quant)," genes(s) removed by the quantile rule and ", nrow(DECounts_spike)," gene(s) with a spike",sep=""))
+    
+    write.table(norm_data,file=paste0(here::here(), "/RNAseqData/output/", i, "_R-ODAF_DESeq2_Norm_Data.txt"), sep="\t", quote=FALSE)
+    write.table(DECounts_real,file=paste0(here::here(), "/RNAseqData/output/", i, "_R-ODAF_DESeq2_DEG_table.txt"), sep="\t", quote=FALSE)
+}
+```
+
+```{r, echo = TRUE, eval = FALSE}
+ANILINE:
+[1] "Metadata check: Rownames of DESeqDesign MATCH column names of sampleData!"
+[1] "0.001  vs  0" "0.01  vs  0"  "0.1  vs  0"   "1  vs  0"     "10  vs  0"
+converting counts to integer mode
+[1] "Wait... (dds step executing)"
+[1] "Filtering genes: 75% of at least 1 group need to be above 1 CPM"
+[1] "Relevance filtering removed 3158 genes from the 21989 assessed. 18831 genes remaining"
+[1] "Obtaining the DESeq2 results"
+[1] "Check median against third quantile"
+[1] "AND"
+[1] "Check the presence of a spike"
+[1] "A total of 6 DEGs were selected, after 0 genes(s) removed by the quantile rule and 0 gene(s) with a spike"
+
+DECANOL:
+[1] "Metadata check: Rownames of DESeqDesign MATCH column names of sampleData!"
+[1] "0.0001  vs  0" "0.001  vs  0"  "0.01  vs  0"   "0.1  vs  0"    "1  vs  0"
+converting counts to integer mode
+[1] "Wait... (dds step executing)"
+[1] "Filtering genes: 75% of at least 1 group need to be above 1 CPM"
+[1] "Relevance filtering removed 2983 genes from the 23274 assessed. 20291 genes remaining"
+[1] "Obtaining the DESeq2 results"
+[1] "Check median against third quantile"
+[1] "AND"
+[1] "Check the presence of a spike"
+[1] "A total of 401 DEGs were selected, after 2 genes(s) removed by the quantile rule and 0 gene(s) with a spike"
+
+EE2:
+[1] "Metadata check: Rownames of DESeqDesign MATCH column names of sampleData!"
+[1] "0.0000001  vs  0" "0.000001  vs  0"  "0.00001  vs  0"   "0.0001  vs  0"    "0.001  vs  0"
+converting counts to integer mode
+[1] "Wait... (dds step executing)"
+[1] "Filtering genes: 75% of at least 1 group need to be above 1 CPM"
+[1] "Relevance filtering removed 3390 genes from the 22235 assessed. 18845 genes remaining"
+[1] "Obtaining the DESeq2 results"
+[1] "Check median against third quantile"
+[1] "AND"
+[1] "Check the presence of a spike"
+[1] "A total of 174 DEGs were selected, after 28 genes(s) removed by the quantile rule and 1 gene(s) with a spike"
+
+FADROZOLE:
+[1] "Metadata check: Rownames of DESeqDesign MATCH column names of sampleData!"
+[1] "0.0001  vs  0" "0.001  vs  0"  "0.01  vs  0"   "0.1  vs  0"    "1  vs  0"
+converting counts to integer mode
+[1] "Wait... (dds step executing)"
+[1] "Filtering genes: 75% of at least 1 group need to be above 1 CPM"
+[1] "Relevance filtering removed 3077 genes from the 22090 assessed. 19013 genes remaining"
+[1] "Obtaining the DESeq2 results"
+[1] "Check median against third quantile"
+[1] "AND"
+[1] "Check the presence of a spike"
+[1] "A total of 49 DEGs were selected, after 6 genes(s) removed by the quantile rule and 2 gene(s) with a spike"
+
+FENITROTHION:
+[1] "Metadata check: Rownames of DESeqDesign MATCH column names of sampleData!"
+[1] "0.0001  vs  0" "0.001  vs  0"  "0.01  vs  0"   "0.1  vs  0"    "1  vs  0"
+converting counts to integer mode
+[1] "Wait... (dds step executing)"
+[1] "Filtering genes: 75% of at least 1 group need to be above 1 CPM"
+[1] "Relevance filtering removed 2835 genes from the 23280 assessed. 20445 genes remaining"
+[1] "Obtaining the DESeq2 results"
+[1] "Check median against third quantile"
+[1] "AND"
+[1] "Check the presence of a spike"
+[1] "A total of 1303 DEGs were selected, after 128 genes(s) removed by the quantile rule and 1 gene(s) with a spike"
+
+GLYPHOSATE:
+[1] "Metadata check: Rownames of DESeqDesign MATCH column names of sampleData!"
+[1] "0.0001  vs  0" "0.001  vs  0"  "0.01  vs  0"   "0.1  vs  0"    "1  vs  0"
+converting counts to integer mode
+[1] "Wait... (dds step executing)"
+[1] "Filtering genes: 75% of at least 1 group need to be above 1 CPM"
+[1] "Relevance filtering removed 3268 genes from the 22157 assessed. 18889 genes remaining"
+[1] "Obtaining the DESeq2 results"
+[1] "Check median against third quantile"
+[1] "AND"
+[1] "Check the presence of a spike"
+[1] "A total of 14 DEGs were selected, after 0 genes(s) removed by the quantile rule and 0 gene(s) with a spike"
+
+MALATHION:
+[1] "Metadata check: Rownames of DESeqDesign MATCH column names of sampleData!"
+[1] "0.0001  vs  0" "0.001  vs  0"  "0.01  vs  0"   "0.1  vs  0"    "1  vs  0"
+converting counts to integer mode
+[1] "Wait... (dds step executing)"
+[1] "Filtering genes: 75% of at least 1 group need to be above 1 CPM"
+[1] "Relevance filtering removed 2896 genes from the 23315 assessed. 20419 genes remaining"
+[1] "Obtaining the DESeq2 results"
+[1] "Check median against third quantile"
+[1] "AND"
+[1] "Check the presence of a spike"
+[1] "A total of 163 DEGs were selected, after 4 genes(s) removed by the quantile rule and 0 gene(s) with a spike"
+
+PROCHLORAZ:
+[1] "Metadata check: Rownames of DESeqDesign MATCH column names of sampleData!"
+[1] "0.0001  vs  0" "0.001  vs  0"  "0.01  vs  0"   "0.1  vs  0"    "1  vs  0"
+converting counts to integer mode
+[1] "Wait... (dds step executing)"
+[1] "Filtering genes: 75% of at least 1 group need to be above 1 CPM"
+[1] "Relevance filtering removed 2906 genes from the 23213 assessed. 20307 genes remaining"
+[1] "Obtaining the DESeq2 results"
+[1] "Check median against third quantile"
+[1] "AND"
+[1] "Check the presence of a spike"
+[1] "A total of 259 DEGs were selected, after 20 genes(s) removed by the quantile rule and 0 gene(s) with a spike"
+
+TRENBOLONE:
+[1] "Metadata check: Rownames of DESeqDesign MATCH column names of sampleData!"
+[1] "0.00001  vs  0" "0.0001  vs  0"  "0.001  vs  0"   "0.01  vs  0"    "0.1  vs  0"
+converting counts to integer mode
+[1] "Wait... (dds step executing)"
+[1] "Filtering genes: 75% of at least 1 group need to be above 1 CPM"
+[1] "Relevance filtering removed 2960 genes from the 23265 assessed. 20305 genes remaining"
+[1] "Obtaining the DESeq2 results"
+[1] "Check median against third quantile"
+[1] "AND"
+[1] "Check the presence of a spike"
+[1] "A total of 72 DEGs were selected, after 0 genes(s) removed by the quantile rule and 1 gene(s) with a spike"
+```
+
+
+Following normalization and the ‘relevance’ filter, the DESeq2 R package was used to identify differentially expressed genes via the `DESeq2::DESeq()` function which applies Negative Binomial Generalized Linear Model (GLM) fitting and the Wald test for the GLM coefficients (Love et al., 2014). The model fit p-values were adjusted for multiple testing via the FDR adjustment (ɑ = 0.01). Genes with adjusted p-values greater than 0.01 were removed. 
+Furthermore, a spurious spike in expression filter was applied.
+
+Spurious Spike Threshold =1.4 (# of biological replicates)-0.66 
+
+If any samples exceeded the spurious spike threshold for a gene, the gene was removed. This function excludes genes with replicates representing more than 66% of the total read counts (with triplicate biological replicates). Spurious spikes in expression are defined as a single sample representing the majority of reads of a dose for a gene (Verheijen et al., 2022). Finally, a 3rd quartile rule filter was applied. It is common for DEG analyses to apply a fold-change filter. However, a fold-change filter can lead to the exclusion of genes that are differentially expressed, but have low expression levels. To replace the fold-change filter, the 3rd quartile rule can be used to remove genes from the gene list for which the median of a dose group is not higher than the 3rd quartile of the control group (Verheijen et al., 2022). The list of unique genes from all dose group comparisons (5 comparisons: three controls vs three dose 5, three control vs three dose 1) remaining after the before mentioned filters were considered DEGs responsive to treatment. Figure 2 shows the number of DEGs per chemical, grouped by dose, in a bar plot. The bar plots showing the number of DEGs in each dose group were made o to ensure that DEGs were dose-responseive and monotonic (Figure 2).
+
+```{r}
+#Plot
+multiplot(plotlist = p_list,
+          layout = matrix(
+            c(1:length(p_list), NA, NA),
+            nrow = 3,
+            ncol = 3,
+            byrow = TRUE
+          ))
+```
+
+A list of all the DEGs identified from the R-ODAF DEG analysis can be found in the following table (Table 1)... It can be exported to a csv file if you are interested in downloading the data.
+
+```{r}
+#Pull the DEG tables for supplementary Information
+all_DEGs <- plyr::ldply(DEGs_list) %>%
+  mutate(gene = str_split(gene, pattern = "[.]", simplify = TRUE)[, 1]) %>%
+  mutate(comparison = str_split(comparison, pattern = "_", simplify = TRUE)[, 2])
+datatable(
+  all_DEGs,
+  rownames = FALSE,
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Blfrtip',
+    buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+    lengthMenu = list(c(10, 25, 50, -1),
+                      c(10, 25, 50, "All"))
+  )
+)
+```
+
+#NTP Dose-response Analysis - Using the DEGs from the R-ODAF Differential Expresion Analysis pipeline
+
+```{r}
+knitr::include_graphics("Plots/R-ODAF_DEGs/R-ODAF_BMD_Histogram_small.svg")
+```
+
+A list of the filtered DEGs for the benchmark dose analysis can be found in the following table (Table 2)
+
+```{r}
+#Pull the filtered DEG tables for supplementary Information
+filtered_DEGs <- read_csv("All_Chemicals_BMD_Data_for_Histogram_R-ODAF_DEGs.csv")
+
+datatable(
+  filtered_DEGs,
+  rownames = FALSE,
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Blfrtip',
+    buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+    lengthMenu = list(c(10, 25, 50, -1),
+                      c(10, 25, 50, "All"))
+  )
+)
+```
+
+```{r}
+knitr::include_graphics("Plots/R-ODAF_DEGs/R-ODAF_GO_Plot_small.svg")
+```
+
+A table of the enriched GO terms can be found in the following table  (Table 3)...
+
+```{r}
+#Pull the enriched GO terms for supplementary Information
+GO_terms <- read_csv("All_Chemicals_GO_Data_R-ODAF_DEGs.csv")
+
+datatable(
+  GO_terms,
+  rownames = FALSE,
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Blfrtip',
+    buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+    lengthMenu = list(c(10, 25, 50, -1),
+                      c(10, 25, 50, "All"))
+  )
+)
+```
+
+```{r}
+knitr::include_graphics("Plots/R-ODAF_DEGs/R-ODAF_REACTOME_Plot_small.svg")
+```
+
+A table of all the enriched REACTOME pathways can be found in the following table (Table 4)...
+```{r}
+#Pull the enriched REACTOME pathways for supplementary Information
+REACTOME_paths <- read_csv("All_Chemicals_Reactome_Data_R-ODAF_DEGs.csv")
+
+datatable(
+  REACTOME_paths,
+  rownames = FALSE,
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Blfrtip',
+    buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+    lengthMenu = list(c(10, 25, 50, -1),
+                      c(10, 25, 50, "All"))
+  )
+)
+```
+

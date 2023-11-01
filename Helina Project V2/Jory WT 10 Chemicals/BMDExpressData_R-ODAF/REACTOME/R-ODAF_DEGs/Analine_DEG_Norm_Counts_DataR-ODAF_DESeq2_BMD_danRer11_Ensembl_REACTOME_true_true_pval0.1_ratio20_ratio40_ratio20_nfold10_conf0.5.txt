@@ -1,0 +1,24 @@
+Signaling Pathway Analyses
+Organism Code: dre
+Signaling Pathway File Creation Date: 10/06/22
+Pathway DB Name: REACTOME
+Deduplicate Gene Sets: false
+Data Source: Analine_DEG_Norm_Counts_DataR-ODAF_DESeq2
+Work Source: Analine_DEG_Norm_Counts_DataR-ODAF_DESeq2_BMD
+BMDExpress3 Version: BMDExpress 3.00.0045 BETA
+Timestamp (Start Time): 07/13/2023 12:15.59
+Remove Promiscuous Probes: true
+Remove BMD > Highest Dose from Category Descriptive Statistics: true
+Remove BMD with p-Value < Cutoff: 0.1
+Remove genes with BMD/BMDL >: 20.0
+Remove genes with BMDU/BMDL >: 40.0
+Remove genes with BMDU/BMD >: 20.0
+Remove genes with BMD values > N fold below the lowest positive does: 10.0
+Identify conflicting probe sets: 0.5
+Category Count: 3
+Total Run Time: 5 seconds
+
+GO/Pathway/Gene Set/Gene ID	GO/Pathway/Gene Set/Gene Name	All Genes (Expression Data)	All Genes (Platform)	Input Genes	Genes with BMD <= Highest Dose	Genes with BMD p-Value >= 	Genes with BMD/BMDL <= 	Genes with BMDU/BMD <= 	Genes with BMDU/BMDL <= 	Genes with BMD <= N-Fold Lowest Positive Dose 	Genes That Passed All Filters	Fisher's A Parameter	Fisher's B Parameter	Fisher's C Parameter	Fisher's D Parameter	Fisher's Exact Left P-Value	Fisher's Exact Right P-Value	Fisher's Exact Two Tail	Percentage	Entrez Gene IDs	Gene Symbols	Probe IDs	Genes with Conflicting Probesets	BMD Mean	BMD Median	BMD Minimum	BMD Standard Deviation	BMD wMean	BMD wSD	BMDL Mean	BMDL Median	BMDL Minimum	BMDL Standard Deviation	BMDL wMean	BMDL wSD	BMDU Mean	BMDU Median	BMDU Minimum	BMDU Standard Deviation	BMDU wMean	BMDU wSD	5th Percentile Index	BMD at 5th Percentile of Total Genes	10th Percentile Index	BMD at 10th Percentile of Total Genes	BMDL at 5th Percentile of Total Genes	BMDL at 10th Percentile of Total Genes	BMDU at 5th Percentile of Total Genes	BMDU at 10th Percentile of Total Genes	BMD List	BMDL List	BMDU List	Probes with Adverse Direction Up	Probes with Adverse Direction Down	Genes with Adverse Direction Up	Genes Up List	Genes Up Probes List	Genes Up BMD Mean	Genes Up BMD Median	Genes Up SD	Genes Up BMDL Mean	Genes Up BMDL Median	Genes Up BMDL SD	Genes Up BMDU Mean	Genes Up BMDU Median	Genes Up BMDU SD	BMD list (up)	BMDL List (up)	BMDU List (up)	Genes with Adverse Direction Down	Genes Down List	Genes Down Probes List	Genes Down BMD Mean	Genes Down BMD Median	Genes Down SD	Genes Down BMDL Mean	Genes Down BMDL Median	Genes Down BMDL SD	Genes Down BMDU Mean	Genes Down BMDU Median	Genes Down BMDU SD	BMD list (down)	BMDL List (down)	BMDU List (down)	Genes with Adverse Conflict Count	Genes Conflict List	Genes Conflict Probes List	BMD list (Conflict)	BMDL list (Conflict)	BMDU list (Conflict)	Model Counts	Mean Fold Change	Total Fold Change	Min Fold Change	Max Fold Change	Standard Deviation Fold Change	Median Fold Change	Lower bound of the 95% confidence interval -  BMD	Upper bound of the 95% confidence interval -  BMD	Lower bound of the 95% confidence interval -  BMDL	Upper bound of the 95% confidence interval -  BMDL	Lower bound of the 95% confidence interval -  BMDU	Upper bound of the 95% confidence interval -  BMDU	Overall Direction	Percent Genes With Overall Direction Up	Percent Genes With Overall Direction Down	Percent Genes With Overall Direction Conflict
+R-DRE-162582	Signal Transduction	1	1356	1	1	0	1	1	1	1	0	0	0	1356	3546	1.0	1.0	1.0	0.0																																		0	0	0															0															0																							
+R-DRE-5358351	Signaling by Hedgehog	1	81	1	1	0	1	1	1	1	0	0	0	81	4821	1.0	1.0	1.0	0.0																																		0	0	0															0															0																							
+R-DRE-5632684	Hedgehog 'on' state	1	53	1	1	0	1	1	1	1	0	0	0	53	4849	1.0	1.0	1.0	0.0																																		0	0	0															0															0																							
